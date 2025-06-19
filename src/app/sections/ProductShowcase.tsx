@@ -6,7 +6,7 @@ export const ProductShowcase = () => {
       <Product productName="Motxilla 72h" backgroundColor="#c5b3a1" />
       <div className="grid grid-cols-2 grid-rows-2 gap-2">
         <Product productName="Menjar" backgroundColor="#585956" />
-        <Product productName="Aigua" backgroundColor="#585956" />
+        <Product productName="Aigues" backgroundColor="#585956" />
         <Product productName="Foc" backgroundColor="#585956" />
         <Product productName="Ganivets" backgroundColor="#585956" />
       </div>

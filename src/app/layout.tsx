@@ -16,7 +16,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Bugout",
-  description: "La revolución de las mochilas de supervivencia",
+  description:
+    "La revolución de las mochilas de supervivencia para todos los publicos",
 };
 
 export default function RootLayout({
@@ -25,7 +26,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="es">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[80px] min-h-dvh flex flex-col`}
       >

@@ -1,14 +1,15 @@
 "use client";
 
+import { use } from "react";
 import { useCart } from "../../../context/cart/CartContext";
 import { ProductImage } from "../components/ProductImage";
 
-export default function ProductPage({
-  params,
-}: {
-  params: { productName: string };
-}) {
-  const { productName } = params;
+interface ProductPageProps {
+  params: Promise<{ productName: string }>;
+}
+
+export default function ProductPage({ params }: ProductPageProps) {
+  const { productName } = use(params);
   const { dispatch } = useCart();
 
   const addToCart = (productName: string) => {
@@ -23,6 +24,10 @@ export default function ProductPage({
       },
     });
   };
+
+  if (!productName) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <div

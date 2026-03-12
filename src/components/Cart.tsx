@@ -93,21 +93,21 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
       {/* Cart Sidebar */}
       <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-slate-50">
-          <h2 className="text-2xl font-bold text-gray-900">
+        <div className="flex items-center justify-between p-6 border-b border-[#EEE8CE] bg-[#EEE8CE]/20">
+          <h2 className="text-2xl font-bold text-[#243C58]">
             Shopping Cart
             {getTotalItems() > 0 && (
-              <span className="ml-2 bg-orange-500 text-white text-sm px-2 py-1 rounded-full">
+              <span className="ml-2 bg-[#FF780C] text-white text-sm px-2 py-1 rounded-full">
                 {getTotalItems()}
               </span>
             )}
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            className="p-2 hover:bg-[#EEE8CE]/50 rounded-lg transition-colors duration-200"
           >
             <svg
-              className="w-6 h-6 text-gray-600"
+              className="w-6 h-6 text-[#243C58]"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -127,7 +127,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
           {groupedItems.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🛒</div>
-              <h3 className="text-xl font-medium text-gray-900 mb-2">
+              <h3 className="text-xl font-medium text-[#243C58] mb-2">
                 Your cart is empty
               </h3>
               <p className="text-gray-600 mb-6">
@@ -135,7 +135,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
               </p>
               <button
                 onClick={onClose}
-                className="bg-orange-600 hover:bg-orange-700 text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200"
+                className="bg-[#FF780C] hover:bg-[#e66b0a] text-white font-medium py-2 px-6 rounded-lg transition-colors duration-200"
               >
                 Continue Shopping
               </button>
@@ -145,14 +145,14 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
               {groupedItems.map((item) => (
                 <div
                   key={item.id}
-                  className="bg-gray-50 rounded-lg p-4 border border-gray-200"
+                  className="bg-[#EEE8CE]/10 rounded-lg p-4 border border-[#EEE8CE]"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
-                      <h4 className="font-medium text-gray-900 mb-1">
+                      <h4 className="font-medium text-[#243C58] mb-1">
                         {item.name}
                       </h4>
-                      <p className="text-orange-600 font-medium">
+                      <p className="text-[#FF780C] font-medium">
                         ${item.price.toFixed(2)}
                       </p>
                     </div>
@@ -184,7 +184,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                         onClick={() =>
                           updateQuantity(item.id, item.quantity - 1)
                         }
-                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200"
                       >
                         <svg
                           className="w-4 h-4"
@@ -201,7 +201,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                         </svg>
                       </button>
 
-                      <span className="font-medium text-gray-900 min-w-[2rem] text-center">
+                      <span className="font-medium text-[#243C58] min-w-[2rem] text-center">
                         {item.quantity}
                       </span>
 
@@ -209,7 +209,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                         onClick={() =>
                           updateQuantity(item.id, item.quantity + 1)
                         }
-                        className="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center hover:bg-gray-100 transition-colors duration-200"
+                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200"
                       >
                         <svg
                           className="w-4 h-4"
@@ -228,7 +228,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                     </div>
 
                     <div className="text-right">
-                      <p className="font-bold text-gray-900">
+                      <p className="font-bold text-[#243C58]">
                         ${(item.price * item.quantity).toFixed(2)}
                       </p>
                     </div>
@@ -241,20 +241,20 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
 
         {/* Footer */}
         {groupedItems.length > 0 && (
-          <div className="border-t border-gray-200 p-6 bg-slate-50">
+          <div className="border-t border-[#EEE8CE] p-6 bg-[#EEE8CE]/20">
             {/* Subtotal */}
             <div className="flex justify-between items-center mb-4">
-              <span className="text-lg font-medium text-gray-900">
+              <span className="text-lg font-medium text-[#243C58]">
                 Subtotal:
               </span>
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-[#243C58]">
                 ${getTotalPrice().toFixed(2)}
               </span>
             </div>
 
             {/* Shipping Notice */}
-            <div className="bg-green-50 border border-green-200 rounded-lg p-3 mb-4">
-              <p className="text-sm text-green-800 text-center">
+            <div className="bg-[#EEE8CE]/30 border border-[#EEE8CE] rounded-lg p-3 mb-4">
+              <p className="text-sm text-[#243C58] text-center">
                 🚚 Free shipping on orders over $75
               </p>
             </div>
@@ -263,14 +263,14 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
             <div className="space-y-3">
               <button
                 onClick={handleCheckout}
-                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-[#FF780C] hover:bg-[#e66b0a] text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
               >
                 Proceed to Checkout
               </button>
 
               <button
                 onClick={onClose}
-                className="w-full border-2 border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-3 px-6 rounded-lg transition-colors duration-200"
+                className="w-full border-2 border-[#EEE8CE] text-[#243C58] hover:bg-[#EEE8CE]/50 font-medium py-3 px-6 rounded-lg transition-colors duration-200"
               >
                 Continue Shopping
               </button>

@@ -2,14 +2,14 @@ import Link from "next/link";
 
 export const Footer = () => {
   return (
-    <footer className="bg-slate-900 text-white">
+    <footer className="bg-[#243C58] text-white">
       {/* Main Footer Content */}
       <div className="max-w-7xl mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand Section */}
           <div className="lg:col-span-1">
-            <h3 className="text-2xl font-bold text-orange-500 mb-4">BUGOUT</h3>
-            <p className="text-gray-300 mb-6 leading-relaxed">
+            <h3 className="text-2xl font-bold text-[#FF780C] mb-4">BUGOUT</h3>
+            <p className="text-[#EEE8CE] mb-6 leading-relaxed">
               Professional survival kits and emergency preparedness gear for
               every situation. Be ready when it matters most.
             </p>
@@ -28,7 +28,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/products/24h-survival-backpack"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   24H Survival Kit
                 </Link>
@@ -36,7 +36,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/products/72h-survival-backpack"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   72H Survival Kit
                 </Link>
@@ -44,7 +44,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/products/custom-kit"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Custom Kit
                 </Link>
@@ -52,7 +52,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/products/accessories"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Accessories
                 </Link>
@@ -60,7 +60,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/products/sale"
-                  className="text-red-400 hover:text-red-300 transition-colors duration-200 font-semibold"
+                  className="text-[#FF780C] hover:text-[#e66b0a] transition-colors duration-200 font-semibold"
                 >
                   Sale Items
                 </Link>
@@ -75,7 +75,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/about"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   About Us
                 </Link>
@@ -83,7 +83,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/contact"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Contact
                 </Link>
@@ -91,7 +91,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/blog"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Survival Blog
                 </Link>
@@ -99,7 +99,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/careers"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Careers
                 </Link>
@@ -107,7 +107,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/reviews"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Reviews
                 </Link>
@@ -122,7 +122,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/help"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Help Center
                 </Link>
@@ -130,7 +130,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/shipping"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Shipping Info
                 </Link>
@@ -138,7 +138,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/returns"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Returns
                 </Link>
@@ -146,7 +146,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/size-guide"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Size Guide
                 </Link>
@@ -154,7 +154,7 @@ export const Footer = () => {
               <li>
                 <Link
                   href="/warranty"
-                  className="text-gray-300 hover:text-orange-500 transition-colors duration-200"
+                  className="text-[#EEE8CE] hover:text-[#FF780C] transition-colors duration-200"
                 >
                   Warranty
                 </Link>
@@ -164,13 +164,13 @@ export const Footer = () => {
         </div>
 
         {/* Newsletter Signup */}
-        <div className="mt-12 pt-8 border-t border-gray-700">
+        <div className="mt-12 pt-8 border-t border-[#EEE8CE]/30">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
             <div>
               <h4 className="text-xl font-bold mb-2 text-white">
                 Stay Prepared
               </h4>
-              <p className="text-gray-300">
+              <p className="text-[#EEE8CE]">
                 Get survival tips, gear reviews, and exclusive offers delivered
                 to your inbox.
               </p>
@@ -179,9 +179,9 @@ export const Footer = () => {
               <input
                 type="email"
                 placeholder="Enter your email"
-                className="flex-1 px-4 py-3 bg-slate-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200"
+                className="flex-1 px-4 py-3 bg-[#243C58]/50 border border-[#EEE8CE]/30 rounded-lg text-white placeholder-[#EEE8CE]/70 focus:outline-none focus:ring-2 focus:ring-[#FF780C] focus:border-transparent transition-all duration-200"
               />
-              <button className="bg-orange-600 hover:bg-orange-700 text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 whitespace-nowrap">
+              <button className="bg-[#FF780C] hover:bg-[#e66b0a] text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 whitespace-nowrap">
                 Subscribe
               </button>
             </div>
@@ -190,29 +190,29 @@ export const Footer = () => {
       </div>
 
       {/* Bottom Bar */}
-      <div className="border-t border-gray-700 bg-slate-950">
+      <div className="border-t border-[#EEE8CE]/30 bg-[#1a2d42]">
         <div className="max-w-7xl mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
-              <p className="text-gray-400 text-sm">
+              <p className="text-[#EEE8CE]/70 text-sm">
                 © {new Date().getFullYear()} BUGOUT. All rights reserved.
               </p>
               <div className="flex space-x-6">
                 <Link
                   href="/privacy"
-                  className="text-gray-400 hover:text-gray-300 text-sm transition-colors duration-200"
+                  className="text-[#EEE8CE]/70 hover:text-[#EEE8CE] text-sm transition-colors duration-200"
                 >
                   Privacy Policy
                 </Link>
                 <Link
                   href="/terms"
-                  className="text-gray-400 hover:text-gray-300 text-sm transition-colors duration-200"
+                  className="text-[#EEE8CE]/70 hover:text-[#EEE8CE] text-sm transition-colors duration-200"
                 >
                   Terms of Service
                 </Link>
                 <Link
                   href="/cookies"
-                  className="text-gray-400 hover:text-gray-300 text-sm transition-colors duration-200"
+                  className="text-[#EEE8CE]/70 hover:text-[#EEE8CE] text-sm transition-colors duration-200"
                 >
                   Cookies
                 </Link>
@@ -220,7 +220,7 @@ export const Footer = () => {
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-gray-400 text-sm">We accept:</span>
+              <span className="text-[#EEE8CE]/70 text-sm">We accept:</span>
               <div className="flex space-x-2">
                 <PaymentIcon type="visa" />
                 <PaymentIcon type="mastercard" />
@@ -275,7 +275,7 @@ const SocialLink = ({ href, icon }: SocialLinkProps) => {
   return (
     <Link
       href={href}
-      className="w-10 h-10 bg-slate-800 rounded-full flex items-center justify-center text-gray-300 hover:text-orange-500 hover:bg-slate-700 transition-all duration-200"
+      className="w-10 h-10 bg-[#243C58]/50 rounded-full flex items-center justify-center text-[#EEE8CE] hover:text-[#FF780C] hover:bg-[#243C58]/70 transition-all duration-200"
     >
       {getIcon(icon)}
     </Link>
@@ -288,8 +288,8 @@ interface PaymentIconProps {
 
 const PaymentIcon = ({ type }: PaymentIconProps) => {
   return (
-    <div className="w-8 h-6 bg-white rounded flex items-center justify-center">
-      <span className="text-xs font-bold text-gray-600 uppercase">
+    <div className="w-8 h-6 bg-[#EEE8CE] rounded flex items-center justify-center">
+      <span className="text-xs font-bold text-[#243C58] uppercase">
         {type.split("-")[0]}
       </span>
     </div>

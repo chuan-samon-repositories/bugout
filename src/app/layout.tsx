@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
-import { CartProvider } from "../context/cart/CartContext";
+import { initializeDependencies } from "../infrastructure/config/dependencies";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     "La revolución de las mochilas de supervivencia para todos los publicos",
 };
 
+// Initialize dependency injection container at application startup
+initializeDependencies();
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,11 +34,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[80px] min-h-dvh flex flex-col`}
       >
-        <CartProvider>
-          <Header />
-          {children}
-          <Footer />
-        </CartProvider>
+        <Header />
+        {children}
+        <Footer />
       </body>
     </html>
   );

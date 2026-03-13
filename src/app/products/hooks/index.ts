@@ -1,4 +1,2 @@
-// Hook exports
-export { useProducts } from "./useProducts";
-export { useProductFilters } from "./useProductFilters";
-export { useFilters } from "./useFilters";
+// This directory is deprecated. Use hooks from src/presentation/hooks instead.
+// All product and cart hooks have been migrated to the hexagonal architecture.

@@ -1,7 +1,9 @@
 "use client";
 
-import { useCart } from "../context/cart/CartContext";
+import { useCart } from "../presentation/hooks/useCart";
 import { useRouter } from "next/navigation";
+import { ProductId } from "../domain/value-objects/ProductId";
+import { Quantity } from "../domain/value-objects/Quantity";
 
 interface CartProps {
   isOpen: boolean;
@@ -9,58 +11,46 @@ interface CartProps {
 }
 
 export const Cart = ({ isOpen, onClose }: CartProps) => {
-  const { state, dispatch } = useCart();
+  const { cart, loading, addItem, removeItem, clearCart: clearCartAction, itemCount, totalAmount } = useCart();
   const router = useRouter();
 
-  const removeItem = (id: string) => {
-    dispatch({ type: "REMOVE_ITEM", payload: { id } });
-  };
-
-  const clearCart = () => {
-    dispatch({ type: "CLEAR_CART" });
-  };
-
-  const updateQuantity = (id: string, newQuantity: number) => {
-    const item = state.items.find((item) => item.id === id);
-    if (!item) return;
-
-    if (newQuantity <= 0) {
-      // Remove all instances of the item
-      for (let i = 0; i < item.quantity; i++) {
-        removeItem(id);
-      }
-    } else if (newQuantity > item.quantity) {
-      // Add items
-      const difference = newQuantity - item.quantity;
-      for (let i = 0; i < difference; i++) {
-        dispatch({
-          type: "ADD_ITEM",
-          payload: {
-            id: item.id,
-            name: item.name,
-            price: item.price,
-            quantity: 1,
-          },
-        });
-      }
-    } else {
-      // Remove items
-      const difference = item.quantity - newQuantity;
-      for (let i = 0; i < difference; i++) {
-        removeItem(id);
-      }
+  const handleRemoveItem = async (productId: string) => {
+    try {
+      await removeItem(new ProductId(productId));
+    } catch (error) {
+      console.error("Failed to remove item:", error);
     }
   };
 
-  const getTotalItems = () => {
-    return state.items.reduce((total, item) => total + item.quantity, 0);
+  const handleClearCart = async () => {
+    try {
+      await clearCartAction();
+    } catch (error) {
+      console.error("Failed to clear cart:", error);
+    }
   };
 
-  const getTotalPrice = () => {
-    return state.items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+  const updateQuantity = async (productId: string, newQuantity: number) => {
+    const cartItems = cart?.getItems() || [];
+    const item = cartItems.find((item) => item.product.id.value === productId);
+    if (!item) return;
+
+    const currentQuantity = item.quantity.value;
+
+    if (newQuantity <= 0) {
+      // Remove the item entirely
+      await handleRemoveItem(productId);
+    } else if (newQuantity > currentQuantity) {
+      // Add the difference
+      const difference = newQuantity - currentQuantity;
+      await addItem(new ProductId(productId), new Quantity(difference));
+    } else {
+      // For reducing quantity, we need to remove and re-add with new quantity
+      // First remove the item
+      await handleRemoveItem(productId);
+      // Then add it back with the new quantity
+      await addItem(new ProductId(productId), new Quantity(newQuantity));
+    }
   };
 
   const handleCheckout = () => {
@@ -69,16 +59,8 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
     router.push("/checkout");
   };
 
-  // Group items by id for better display
-  const groupedItems = state.items.reduce((acc, item) => {
-    const existingItem = acc.find((grouped) => grouped.id === item.id);
-    if (existingItem) {
-      existingItem.quantity += item.quantity;
-    } else {
-      acc.push({ ...item });
-    }
-    return acc;
-  }, [] as typeof state.items);
+  // Get cart items from domain entity
+  const cartItems = cart?.getItems() || [];
 
   if (!isOpen) return null;
 
@@ -91,14 +73,17 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
       />
 
       {/* Cart Sidebar */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col">
+      <div 
+        className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-[#EEE8CE] bg-[#EEE8CE]/20">
           <h2 className="text-2xl font-bold text-[#243C58]">
             Shopping Cart
-            {getTotalItems() > 0 && (
+            {itemCount > 0 && (
               <span className="ml-2 bg-[#FF780C] text-white text-sm px-2 py-1 rounded-full">
-                {getTotalItems()}
+                {itemCount}
               </span>
             )}
           </h2>
@@ -124,7 +109,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
 
         {/* Cart Items */}
         <div className="flex-1 overflow-y-auto p-6">
-          {groupedItems.length === 0 ? (
+          {cartItems.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🛒</div>
               <h3 className="text-xl font-medium text-[#243C58] mb-2">
@@ -142,24 +127,25 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
             </div>
           ) : (
             <div className="space-y-4">
-              {groupedItems.map((item) => (
+              {cartItems.map((item) => (
                 <div
-                  key={item.id}
+                  key={item.product.id.value}
                   className="bg-[#EEE8CE]/10 rounded-lg p-4 border border-[#EEE8CE]"
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex-1">
                       <h4 className="font-medium text-[#243C58] mb-1">
-                        {item.name}
+                        {item.product.name}
                       </h4>
                       <p className="text-[#FF780C] font-medium">
-                        ${item.price.toFixed(2)}
+                        ${item.product.price.amount.toFixed(2)}
                       </p>
                     </div>
                     <button
-                      onClick={() => updateQuantity(item.id, 0)}
+                      onClick={() => updateQuantity(item.product.id.value, 0)}
                       className="p-1 hover:bg-red-100 text-red-600 rounded transition-colors duration-200"
                       title="Remove item"
+                      disabled={loading}
                     >
                       <svg
                         className="w-4 h-4"
@@ -182,9 +168,10 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                     <div className="flex items-center space-x-3">
                       <button
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity - 1)
+                          updateQuantity(item.product.id.value, item.quantity.value - 1)
                         }
-                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200"
+                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading}
                       >
                         <svg
                           className="w-4 h-4"
@@ -202,14 +189,15 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                       </button>
 
                       <span className="font-medium text-[#243C58] min-w-[2rem] text-center">
-                        {item.quantity}
+                        {item.quantity.value}
                       </span>
 
                       <button
                         onClick={() =>
-                          updateQuantity(item.id, item.quantity + 1)
+                          updateQuantity(item.product.id.value, item.quantity.value + 1)
                         }
-                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200"
+                        className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={loading}
                       >
                         <svg
                           className="w-4 h-4"
@@ -229,7 +217,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
 
                     <div className="text-right">
                       <p className="font-bold text-[#243C58]">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ${item.subtotal().amount.toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -240,7 +228,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
         </div>
 
         {/* Footer */}
-        {groupedItems.length > 0 && (
+        {cartItems.length > 0 && (
           <div className="border-t border-[#EEE8CE] p-6 bg-[#EEE8CE]/20">
             {/* Subtotal */}
             <div className="flex justify-between items-center mb-4">
@@ -248,7 +236,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                 Subtotal:
               </span>
               <span className="text-2xl font-bold text-[#243C58]">
-                ${getTotalPrice().toFixed(2)}
+                ${totalAmount.amount.toFixed(2)}
               </span>
             </div>
 
@@ -263,7 +251,8 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
             <div className="space-y-3">
               <button
                 onClick={handleCheckout}
-                className="w-full bg-[#FF780C] hover:bg-[#e66b0a] text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105"
+                className="w-full bg-[#FF780C] hover:bg-[#e66b0a] text-white font-bold py-3 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading}
               >
                 Proceed to Checkout
               </button>
@@ -275,10 +264,11 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                 Continue Shopping
               </button>
 
-              {groupedItems.length > 0 && (
+              {cartItems.length > 0 && (
                 <button
-                  onClick={clearCart}
-                  className="w-full text-red-600 hover:text-red-700 font-medium py-2 transition-colors duration-200"
+                  onClick={handleClearCart}
+                  className="w-full text-red-600 hover:text-red-700 font-medium py-2 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={loading}
                 >
                   Clear Cart
                 </button>

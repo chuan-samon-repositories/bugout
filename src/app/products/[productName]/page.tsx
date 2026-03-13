@@ -1,7 +1,9 @@
 "use client";
 
 import { use, useState } from "react";
-import { useCart } from "../../../context/cart/CartContext";
+import { useCart } from "../../../presentation/hooks/useCart";
+import { ProductId } from "../../../domain/value-objects/ProductId";
+import { Quantity } from "../../../domain/value-objects/Quantity";
 import { ProductImage } from "../components/ProductImage";
 import Link from "next/link";
 
@@ -120,23 +122,19 @@ const getProductData = (productName: string): ProductData => {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { productName } = use(params);
-  const { dispatch } = useCart();
+  const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [selectedImage, setSelectedImage] = useState(0);
 
   const product = getProductData(productName);
 
-  const addToCart = () => {
-    dispatch({
-      type: "ADD_ITEM",
-      payload: {
-        id: productName,
-        name: product.name,
-        price: product.price,
-        quantity: quantity,
-      },
-    });
+  const handleAddToCart = async () => {
+    try {
+      await addItem(new ProductId(productName), new Quantity(quantity));
+    } catch (error) {
+      console.error("Failed to add item to cart:", error);
+    }
   };
 
   if (!productName) {
@@ -283,7 +281,7 @@ export default function ProductPage({ params }: ProductPageProps) {
 
             <div className="flex space-x-4">
               <button
-                onClick={addToCart}
+                onClick={handleAddToCart}
                 className="flex-1 bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
               >
                 Add to Cart - ${product.price * quantity}

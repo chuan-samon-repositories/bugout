@@ -1,17 +1,20 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCart } from "../../context/cart/CartContext";
+import { useCart } from "../../presentation/hooks/useCart";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function CheckoutPage() {
-  const { state, dispatch } = useCart();
+  const { cart, clearCart } = useCart();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderNumber, setOrderNumber] = useState("");
+
+  const cartItems = cart?.getItems() || [];
+  const itemCount = cart?.itemCount() || 0;
 
   const [formData, setFormData] = useState({
     // Customer Information
@@ -50,10 +53,10 @@ export default function CheckoutPage() {
 
   // Redirect if cart is empty
   useEffect(() => {
-    if (state.items.length === 0 && !orderComplete) {
+    if (itemCount === 0 && !orderComplete) {
       router.push("/products");
     }
-  }, [state.items.length, orderComplete, router]);
+  }, [itemCount, orderComplete, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<
@@ -70,10 +73,7 @@ export default function CheckoutPage() {
   };
 
   const getTotalPrice = () => {
-    return state.items.reduce(
-      (total, item) => total + item.price * item.quantity,
-      0
-    );
+    return cart?.totalAmount().amount || 0;
   };
 
   const getShippingCost = () => {
@@ -110,25 +110,18 @@ export default function CheckoutPage() {
     setIsProcessing(true);
 
     // Simulate order processing
-    setTimeout(() => {
+    setTimeout(async () => {
       const orderNum = `BUGOUT-${Date.now().toString().slice(-6)}`;
       setOrderNumber(orderNum);
       setOrderComplete(true);
       setIsProcessing(false);
-      dispatch({ type: "CLEAR_CART" });
+      await clearCart();
     }, 3000);
   };
 
-  // Group items by id for display
-  const groupedItems = state.items.reduce((acc, item) => {
-    const existingItem = acc.find((grouped) => grouped.id === item.id);
-    if (existingItem) {
-      existingItem.quantity += item.quantity;
-    } else {
-      acc.push({ ...item });
-    }
-    return acc;
-  }, [] as typeof state.items);
+  // Group items by id for display - not needed with new architecture
+  // Each cart item already has the correct quantity
+  const groupedItems = cartItems;
 
   if (orderComplete) {
     return (
@@ -183,7 +176,7 @@ export default function CheckoutPage() {
     );
   }
 
-  if (state.items.length === 0) {
+  if (itemCount === 0) {
     return null; // Will redirect via useEffect
   }
 
@@ -745,23 +738,23 @@ export default function CheckoutPage() {
               {/* Items */}
               <div className="space-y-4 mb-6">
                 {groupedItems.map((item) => (
-                  <div key={item.id} className="flex items-center space-x-3">
+                  <div key={item.product.id.value} className="flex items-center space-x-3">
                     <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
                       <span className="text-orange-600 font-bold">
-                        {item.quantity}x
+                        {item.quantity.value}x
                       </span>
                     </div>
                     <div className="flex-1">
                       <h4 className="font-medium text-gray-900 text-sm">
-                        {item.name}
+                        {item.product.name}
                       </h4>
                       <p className="text-orange-600 text-sm">
-                        ${item.price.toFixed(2)} each
+                        ${item.product.price.amount.toFixed(2)} each
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-gray-900">
-                        ${(item.price * item.quantity).toFixed(2)}
+                        ${item.subtotal().amount.toFixed(2)}
                       </p>
                     </div>
                   </div>

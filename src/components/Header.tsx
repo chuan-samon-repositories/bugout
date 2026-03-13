@@ -1,19 +1,15 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { Cart } from "./Cart";
-import { useCart } from "../context/cart/CartContext";
+import { useCart } from "../presentation/hooks/useCart";
 import Link from "next/link";
 
 export const Header = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
-  const { state } = useCart();
-
-  const cartAmount = useMemo(() => {
-    return state.items.reduce((total, item) => total + item.quantity, 0);
-  }, [state.items]);
+  const { itemCount } = useCart();
 
   const toggleCart = () => {
     setCartOpen(!cartOpen);
@@ -92,9 +88,9 @@ export const Header = () => {
                   />
                 </svg>
                 <span className="ml-2 hidden sm:inline">Cart</span>
-                {cartAmount > 0 && (
+                {itemCount > 0 && (
                   <span className="absolute -top-2 -right-2 bg-[#FF780C] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center animate-bounce">
-                    {cartAmount}
+                    {itemCount}
                   </span>
                 )}
               </button>
@@ -113,7 +109,10 @@ export const Header = () => {
           ></div>
 
           {/* Side Menu */}
-          <div className="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300">
+          <div 
+            className="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               {/* Close Button */}
               <div className="flex justify-between items-center mb-8">

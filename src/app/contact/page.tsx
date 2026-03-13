@@ -378,7 +378,7 @@ export default function ContactPage() {
       </div>
 
       {/* Emergency Contact */}
-      <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+      {/* <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
         <h2 className="text-2xl font-bold text-red-800 mb-4">
           Emergency Product Support
         </h2>
@@ -394,7 +394,7 @@ export default function ContactPage() {
             💬 Emergency Chat
           </button>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

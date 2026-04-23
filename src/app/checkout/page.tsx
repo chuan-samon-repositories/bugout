@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useCart } from "../../presentation/hooks/useCart";
+import { useCartContext } from "../../presentation/context/CartContext";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function CheckoutPage() {
-  const { cart, clearCart } = useCart();
+  const { cart, loading, clearCart } = useCartContext();
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -51,12 +51,12 @@ export default function CheckoutPage() {
     specialInstructions: "",
   });
 
-  // Redirect if cart is empty
+  // Redirect if cart is empty (skip while cart is still loading to avoid false redirect)
   useEffect(() => {
-    if (itemCount === 0 && !orderComplete) {
+    if (!loading && itemCount === 0 && !orderComplete) {
       router.push("/products");
     }
-  }, [itemCount, orderComplete, router]);
+  }, [loading, itemCount, orderComplete, router]);
 
   const handleInputChange = (
     e: React.ChangeEvent<

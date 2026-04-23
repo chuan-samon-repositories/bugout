@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { Cart } from "./Cart";
-import { useCart } from "../presentation/hooks/useCart";
+import { useCartContext } from "../presentation/context/CartContext";
 import Link from "next/link";
 
 export const Header = () => {
   const [cartOpen, setCartOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [navMenuOpen, setNavMenuOpen] = useState(false);
-  const { itemCount } = useCart();
+  const { itemCount } = useCartContext();
 
   const toggleCart = () => {
     setCartOpen(!cartOpen);

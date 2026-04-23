@@ -32,12 +32,19 @@ export class Cart {
     if (!item) {
       throw new NotFoundError(`Product ${productId.value} not in cart`);
     }
-    
+
     if (item.quantity.value > 1) {
       item.updateQuantity(new Quantity(item.quantity.value - 1));
     } else {
       this.items.delete(productId.value);
     }
+  }
+
+  deleteItem(productId: ProductId): void {
+    if (!this.items.has(productId.value)) {
+      throw new NotFoundError(`Product ${productId.value} not in cart`);
+    }
+    this.items.delete(productId.value);
   }
 
   clear(): void {

@@ -58,8 +58,22 @@ export class ManageCartUseCase {
   }
 
   /**
+   * Removes an entire item from the cart regardless of its quantity.
+   *
+   * @param productId - The ID of the product to delete
+   * @returns Promise resolving to the updated Cart
+   * @throws NotFoundError if product is not in the cart
+   */
+  async deleteFromCart(productId: ProductId): Promise<Cart> {
+    const cart = await this.cartRepository.load();
+    cart.deleteItem(productId);
+    await this.cartRepository.save(cart);
+    return cart;
+  }
+
+  /**
    * Clears all items from the cart.
-   * 
+   *
    * @returns Promise resolving when the cart is cleared
    */
   async clearCart(): Promise<void> {

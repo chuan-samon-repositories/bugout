@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Header } from "../components/Header";
 import { Footer } from "../components/Footer";
-import { initializeDependencies } from "../infrastructure/config/dependencies";
+import { Providers } from "./Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,9 +21,6 @@ export const metadata: Metadata = {
     "La revolución de las mochilas de supervivencia para todos los publicos",
 };
 
-// Initialize dependency injection container at application startup
-initializeDependencies();
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -34,9 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[80px] min-h-dvh flex flex-col`}
       >
-        <Header />
-        {children}
-        <Footer />
+        <Providers>
+          <Header />
+          {children}
+          <Footer />
+        </Providers>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCart } from "../presentation/hooks/useCart";
+import { useCartContext } from "../presentation/context/CartContext";
 import { useRouter } from "next/navigation";
 import { ProductId } from "../domain/value-objects/ProductId";
 import { Quantity } from "../domain/value-objects/Quantity";
@@ -11,14 +11,30 @@ interface CartProps {
 }
 
 export const Cart = ({ isOpen, onClose }: CartProps) => {
-  const { cart, loading, addItem, removeItem, clearCart: clearCartAction, itemCount, totalAmount } = useCart();
+  const { cart, loading, addItem, removeItem, deleteItem, clearCart: clearCartAction, itemCount, totalAmount } = useCartContext();
   const router = useRouter();
 
-  const handleRemoveItem = async (productId: string) => {
+  const handleDecrement = async (productId: string) => {
     try {
       await removeItem(new ProductId(productId));
     } catch (error) {
-      console.error("Failed to remove item:", error);
+      console.error("Failed to decrement item:", error);
+    }
+  };
+
+  const handleIncrement = async (productId: string) => {
+    try {
+      await addItem(new ProductId(productId), new Quantity(1));
+    } catch (error) {
+      console.error("Failed to increment item:", error);
+    }
+  };
+
+  const handleDeleteItem = async (productId: string) => {
+    try {
+      await deleteItem(new ProductId(productId));
+    } catch (error) {
+      console.error("Failed to delete item:", error);
     }
   };
 
@@ -27,29 +43,6 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
       await clearCartAction();
     } catch (error) {
       console.error("Failed to clear cart:", error);
-    }
-  };
-
-  const updateQuantity = async (productId: string, newQuantity: number) => {
-    const cartItems = cart?.getItems() || [];
-    const item = cartItems.find((item) => item.product.id.value === productId);
-    if (!item) return;
-
-    const currentQuantity = item.quantity.value;
-
-    if (newQuantity <= 0) {
-      // Remove the item entirely
-      await handleRemoveItem(productId);
-    } else if (newQuantity > currentQuantity) {
-      // Add the difference
-      const difference = newQuantity - currentQuantity;
-      await addItem(new ProductId(productId), new Quantity(difference));
-    } else {
-      // For reducing quantity, we need to remove and re-add with new quantity
-      // First remove the item
-      await handleRemoveItem(productId);
-      // Then add it back with the new quantity
-      await addItem(new ProductId(productId), new Quantity(newQuantity));
     }
   };
 
@@ -142,7 +135,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                       </p>
                     </div>
                     <button
-                      onClick={() => updateQuantity(item.product.id.value, 0)}
+                      onClick={() => handleDeleteItem(item.product.id.value)}
                       className="p-1 hover:bg-red-100 text-red-600 rounded transition-colors duration-200"
                       title="Remove item"
                       disabled={loading}
@@ -167,9 +160,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <button
-                        onClick={() =>
-                          updateQuantity(item.product.id.value, item.quantity.value - 1)
-                        }
+                        onClick={() => handleDecrement(item.product.id.value)}
                         className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={loading}
                       >
@@ -193,9 +184,7 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
                       </span>
 
                       <button
-                        onClick={() =>
-                          updateQuantity(item.product.id.value, item.quantity.value + 1)
-                        }
+                        onClick={() => handleIncrement(item.product.id.value)}
                         className="w-8 h-8 rounded-full border border-[#EEE8CE] flex items-center justify-center hover:bg-[#EEE8CE]/50 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={loading}
                       >

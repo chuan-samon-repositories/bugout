@@ -1,7 +1,7 @@
 "use client";
 
 import { use, useState } from "react";
-import { useCart } from "../../../presentation/hooks/useCart";
+import { useCartContext } from "../../../presentation/context/CartContext";
 import { ProductId } from "../../../domain/value-objects/ProductId";
 import { Quantity } from "../../../domain/value-objects/Quantity";
 import { ProductImage } from "../components/ProductImage";
@@ -122,7 +122,7 @@ const getProductData = (productName: string): ProductData => {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { productName } = use(params);
-  const { addItem } = useCart();
+  const { addItem } = useCartContext();
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState("description");
   const [selectedImage, setSelectedImage] = useState(0);

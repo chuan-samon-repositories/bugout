@@ -11,7 +11,7 @@ interface CartProps {
 }
 
 export const Cart = ({ isOpen, onClose }: CartProps) => {
-  const { cart, loading, addItem, removeItem, deleteItem, clearCart: clearCartAction, itemCount, totalAmount } = useCartContext();
+  const { cart, loading, addItem, removeItem, deleteItem, clearCart: clearCartAction, getCheckoutUrl, itemCount, totalAmount } = useCartContext();
   const router = useRouter();
 
   const handleDecrement = async (productId: string) => {
@@ -46,10 +46,15 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
     }
   };
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
+    const url = await getCheckoutUrl();
     onClose();
-    // Navigate to checkout page using Next.js router
-    router.push("/checkout");
+    // External URL (e.g. Shopify hosted checkout) → hard navigate; local route → soft navigate
+    if (url.startsWith("http")) {
+      window.location.href = url;
+    } else {
+      router.push(url);
+    }
   };
 
   // Get cart items from domain entity

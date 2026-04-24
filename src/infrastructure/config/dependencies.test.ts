@@ -1,187 +1,130 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { DependencyContainer, initializeDependencies } from "./dependencies";
-import { JsonProductAdapter } from "../adapters/JsonProductAdapter";
-import { ApiProductAdapter } from "../adapters/ApiProductAdapter";
-import { LocalStorageCartAdapter } from "../adapters/LocalStorageCartAdapter";
+import {
+  JsonProductAdapter,
+  ShopifyProductAdapter,
+  LocalStorageCartAdapter,
+  ShopifyCartAdapter,
+  LocalCheckoutAdapter,
+  ShopifyCheckoutAdapter,
+} from "../adapters";
 import { GetProductsUseCase } from "../../application/use-cases/GetProductsUseCase";
 import { FilterProductsUseCase } from "../../application/use-cases/FilterProductsUseCase";
 import { ManageCartUseCase } from "../../application/use-cases/ManageCartUseCase";
+import { CreateCheckoutUseCase } from "../../application/use-cases/CreateCheckoutUseCase";
+
+const SHOPIFY_CONFIG = {
+  storeDomain: "test.myshopify.com",
+  storefrontAccessToken: "test-token",
+};
 
 describe("DependencyContainer", () => {
   beforeEach(() => {
-    // Reset the singleton instance before each test
-    // @ts-expect-error Only god knows why this is needed
+    // @ts-expect-error Reset singleton between tests
     DependencyContainer.instance = undefined;
   });
 
   describe("initialization", () => {
     test("initialize creates a singleton instance", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
+      DependencyContainer.initialize({ provider: "local" });
       const instance1 = DependencyContainer.getInstance();
       const instance2 = DependencyContainer.getInstance();
-
       expect(instance1).toBe(instance2);
     });
 
-    test("getInstance creates default instance if not initialized", () => {
+    test("getInstance creates default local instance if not initialized", () => {
       const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(JsonProductAdapter);
+      expect(instance.getProductRepository()).toBeInstanceOf(JsonProductAdapter);
     });
 
-    test("initialize with json adapter type", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
+    test("local provider wires JSON + localStorage + local checkout", () => {
+      DependencyContainer.initialize({ provider: "local" });
       const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(JsonProductAdapter);
+      expect(instance.getProductRepository()).toBeInstanceOf(JsonProductAdapter);
+      expect(instance.getCartRepository()).toBeInstanceOf(LocalStorageCartAdapter);
+      expect(instance.getCheckoutService()).toBeInstanceOf(LocalCheckoutAdapter);
     });
 
-    test("initialize with api adapter type", () => {
-      DependencyContainer.initialize({
-        productAdapterType: "api",
-        apiBaseUrl: "https://api.example.com",
-        apiAuthToken: "test-token",
-      });
+    test("shopify provider wires Shopify adapters", () => {
+      DependencyContainer.initialize({ provider: "shopify", shopify: SHOPIFY_CONFIG });
       const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(ApiProductAdapter);
+      expect(instance.getProductRepository()).toBeInstanceOf(ShopifyProductAdapter);
+      expect(instance.getCartRepository()).toBeInstanceOf(ShopifyCartAdapter);
+      expect(instance.getCheckoutService()).toBeInstanceOf(ShopifyCheckoutAdapter);
     });
   });
 
   describe("getProductRepository", () => {
-    test("returns JsonProductAdapter when configured for json", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(JsonProductAdapter);
-    });
-
-    test("returns ApiProductAdapter when configured for api", () => {
-      DependencyContainer.initialize({
-        productAdapterType: "api",
-        apiBaseUrl: "https://api.example.com",
-      });
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(ApiProductAdapter);
-    });
-
     test("returns new instance on each call", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
+      DependencyContainer.initialize({ provider: "local" });
       const instance = DependencyContainer.getInstance();
-      const repo1 = instance.getProductRepository();
-      const repo2 = instance.getProductRepository();
-
-      // Should create new instances, not reuse
-      expect(repo1).not.toBe(repo2);
+      expect(instance.getProductRepository()).not.toBe(instance.getProductRepository());
     });
   });
 
   describe("getCartRepository", () => {
-    test("returns LocalStorageCartAdapter", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getCartRepository();
-
-      expect(repository).toBeInstanceOf(LocalStorageCartAdapter);
+    test("local provider returns LocalStorageCartAdapter", () => {
+      DependencyContainer.initialize({ provider: "local" });
+      expect(DependencyContainer.getInstance().getCartRepository()).toBeInstanceOf(LocalStorageCartAdapter);
     });
   });
 
   describe("use case factory methods", () => {
     test("getGetProductsUseCase returns configured use case", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
-      const instance = DependencyContainer.getInstance();
-      const useCase = instance.getGetProductsUseCase();
-
-      expect(useCase).toBeInstanceOf(GetProductsUseCase);
+      DependencyContainer.initialize({ provider: "local" });
+      expect(DependencyContainer.getInstance().getGetProductsUseCase()).toBeInstanceOf(GetProductsUseCase);
     });
 
     test("getFilterProductsUseCase returns configured use case", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
-      const instance = DependencyContainer.getInstance();
-      const useCase = instance.getFilterProductsUseCase();
-
-      expect(useCase).toBeInstanceOf(FilterProductsUseCase);
+      DependencyContainer.initialize({ provider: "local" });
+      expect(DependencyContainer.getInstance().getFilterProductsUseCase()).toBeInstanceOf(FilterProductsUseCase);
     });
 
     test("getManageCartUseCase returns configured use case", () => {
-      DependencyContainer.initialize({ productAdapterType: "json" });
-      const instance = DependencyContainer.getInstance();
-      const useCase = instance.getManageCartUseCase();
-
-      expect(useCase).toBeInstanceOf(ManageCartUseCase);
+      DependencyContainer.initialize({ provider: "local" });
+      expect(DependencyContainer.getInstance().getManageCartUseCase()).toBeInstanceOf(ManageCartUseCase);
     });
 
-    test("use cases receive correct adapter based on configuration", () => {
-      DependencyContainer.initialize({
-        productAdapterType: "api",
-        apiBaseUrl: "https://api.example.com",
-      });
-      const instance = DependencyContainer.getInstance();
-      const useCase = instance.getGetProductsUseCase();
-
-      // Verify the use case was created (we can't easily inspect the injected dependency)
-      expect(useCase).toBeInstanceOf(GetProductsUseCase);
+    test("getCreateCheckoutUseCase returns configured use case", () => {
+      DependencyContainer.initialize({ provider: "local" });
+      expect(DependencyContainer.getInstance().getCreateCheckoutUseCase()).toBeInstanceOf(CreateCheckoutUseCase);
     });
   });
 
   describe("initializeDependencies", () => {
-    test("initializes with environment variables", () => {
-      // Mock environment variables
-      const originalEnv = process.env;
-      process.env = {
-        ...originalEnv,
-        NEXT_PUBLIC_PRODUCT_ADAPTER: "json",
-      };
-
-      initializeDependencies();
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
-
-      expect(repository).toBeInstanceOf(JsonProductAdapter);
-
-      // Restore original environment
-      process.env = originalEnv;
-    });
-
-    test("defaults to json adapter when env var not set", () => {
-      // Mock environment variables without NEXT_PUBLIC_PRODUCT_ADAPTER
+    test("defaults to local provider when env var not set", () => {
       const originalEnv = process.env;
       process.env = { ...originalEnv };
-      delete process.env.NEXT_PUBLIC_PRODUCT_ADAPTER;
+      delete process.env.NEXT_PUBLIC_COMMERCE_PROVIDER;
 
       initializeDependencies();
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
+      expect(DependencyContainer.getInstance().getProductRepository()).toBeInstanceOf(JsonProductAdapter);
 
-      expect(repository).toBeInstanceOf(JsonProductAdapter);
-
-      // Restore original environment
       process.env = originalEnv;
     });
 
-    test("initializes with api adapter from environment", () => {
-      // Mock environment variables
+    test("uses local provider from env", () => {
+      const originalEnv = process.env;
+      process.env = { ...originalEnv, NEXT_PUBLIC_COMMERCE_PROVIDER: "local" };
+
+      initializeDependencies();
+      expect(DependencyContainer.getInstance().getProductRepository()).toBeInstanceOf(JsonProductAdapter);
+
+      process.env = originalEnv;
+    });
+
+    test("uses shopify provider from env", () => {
       const originalEnv = process.env;
       process.env = {
         ...originalEnv,
-        NEXT_PUBLIC_PRODUCT_ADAPTER: "api",
-        NEXT_PUBLIC_API_BASE_URL: "https://api.example.com",
-        NEXT_PUBLIC_API_AUTH_TOKEN: "test-token",
+        NEXT_PUBLIC_COMMERCE_PROVIDER: "shopify",
+        NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN: "mystore.myshopify.com",
+        NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN: "test-token",
       };
 
       initializeDependencies();
-      const instance = DependencyContainer.getInstance();
-      const repository = instance.getProductRepository();
+      expect(DependencyContainer.getInstance().getProductRepository()).toBeInstanceOf(ShopifyProductAdapter);
 
-      expect(repository).toBeInstanceOf(ApiProductAdapter);
-
-      // Restore original environment
       process.env = originalEnv;
     });
   });

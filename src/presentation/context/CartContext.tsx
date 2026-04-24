@@ -14,6 +14,7 @@ interface CartContextValue {
   removeItem: (productId: ProductId) => Promise<void>;
   deleteItem: (productId: ProductId) => Promise<void>;
   clearCart: () => Promise<void>;
+  getCheckoutUrl: () => Promise<string>;
   itemCount: number;
   totalAmount: Money;
 }
@@ -24,15 +25,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [cart, setCart] = useState<Cart | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const useCase = useMemo(
+  const cartUseCase = useMemo(
     () => DependencyContainer.getInstance().getManageCartUseCase(),
     [],
   );
 
+  const checkoutUseCase = useMemo(
+    () => DependencyContainer.getInstance().getCreateCheckoutUseCase(),
+    [],
+  );
+
   const loadCart = useCallback(async () => {
-    const loadedCart = await useCase.getCart();
+    const loadedCart = await cartUseCase.getCart();
     setCart(loadedCart);
-  }, [useCase]);
+  }, [cartUseCase]);
 
   useEffect(() => {
     loadCart();
@@ -42,56 +48,65 @@ export function CartProvider({ children }: { children: ReactNode }) {
     async (productId: ProductId, quantity: Quantity) => {
       setLoading(true);
       try {
-        const updatedCart = await useCase.addToCart(productId, quantity);
+        const updatedCart = await cartUseCase.addToCart(productId, quantity);
         setCart(updatedCart);
       } finally {
         setLoading(false);
       }
     },
-    [useCase],
+    [cartUseCase],
   );
 
   const removeItem = useCallback(
     async (productId: ProductId) => {
       setLoading(true);
       try {
-        const updatedCart = await useCase.removeFromCart(productId);
+        const updatedCart = await cartUseCase.removeFromCart(productId);
         setCart(updatedCart);
       } finally {
         setLoading(false);
       }
     },
-    [useCase],
+    [cartUseCase],
   );
 
   const deleteItem = useCallback(
     async (productId: ProductId) => {
       setLoading(true);
       try {
-        const updatedCart = await useCase.deleteFromCart(productId);
+        const updatedCart = await cartUseCase.deleteFromCart(productId);
         setCart(updatedCart);
       } finally {
         setLoading(false);
       }
     },
-    [useCase],
+    [cartUseCase],
   );
 
   const clearCart = useCallback(async () => {
     setLoading(true);
     try {
-      await useCase.clearCart();
+      await cartUseCase.clearCart();
       setCart(new Cart());
     } finally {
       setLoading(false);
     }
-  }, [useCase]);
+  }, [cartUseCase]);
+
+  const getCheckoutUrl = useCallback(async () => {
+    setLoading(true);
+    try {
+      return await checkoutUseCase.execute();
+    } finally {
+      setLoading(false);
+    }
+  }, [checkoutUseCase]);
 
   const itemCount = useMemo(() => cart?.itemCount() ?? 0, [cart]);
   const totalAmount = useMemo(() => cart?.totalAmount() ?? new Money(0), [cart]);
 
   return (
-    <CartContext.Provider value={{ cart, loading, addItem, removeItem, deleteItem, clearCart, itemCount, totalAmount }}>
+    <CartContext.Provider value={{ cart, loading, addItem, removeItem, deleteItem, clearCart, getCheckoutUrl, itemCount, totalAmount }}>
       {children}
     </CartContext.Provider>
   );

@@ -101,15 +101,15 @@ export const Header = () => {
 
       {/* Side Navigation Overlay */}
       {navMenuOpen && (
-        <div className="fixed inset-0 z-40">
+        <div className="fixed inset-x-0 top-[50px] bottom-0 z-40">
           {/* Overlay Background */}
           <div
-            className="absolute inset-0 bg-black bg-opacity-50"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setNavMenuOpen(false)}
           ></div>
 
           {/* Side Menu */}
-          <div 
+          <div
             className="absolute left-0 top-0 h-full w-80 bg-white shadow-2xl transform transition-transform duration-300"
             onClick={(e) => e.stopPropagation()}
           >

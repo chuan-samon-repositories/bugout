@@ -66,13 +66,13 @@ export const Cart = ({ isOpen, onClose }: CartProps) => {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 z-40 transition-opacity duration-300"
+        className="fixed inset-x-0 top-[50px] bottom-0 bg-black/40 z-40 transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Cart Sidebar */}
       <div 
-        className="fixed right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col"
+        className="fixed right-0 top-[50px] h-[calc(100vh-50px)] w-full max-w-md bg-white shadow-2xl z-50 transform transition-transform duration-300 flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

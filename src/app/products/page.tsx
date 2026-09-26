@@ -1,98 +1,71 @@
-"use client";
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import type { Product } from "@/domain/entities/product/Product";
+import { getContainer } from "@/infrastructure/config";
+import { parseCatalogSearchParams } from "@/presentation/components/catalog/catalogSearchParams";
+import { CatalogView } from "@/presentation/components/catalog/CatalogView";
+import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
+import { AlertCircleIcon, buttonClasses, Container, PageHeader, Spinner } from "@/presentation/components/ui";
+import { messages } from "@/presentation/i18n";
+import { routes } from "@/presentation/routes";
 
-import { useMemo } from "react";
-import { useProductFilters } from "@/presentation/hooks";
-import { useFilters } from "./components/useFilters";
-import { generateCategories, sortOptions } from "./components/productHelpers";
-import {
-  ProductsHeader,
-  CompactFilters,
-  ProductsGrid,
-  LoadingSpinner,
-  ErrorMessage,
-} from "./components";
-import { Product as UIProduct } from "./types";
-import { Product as DomainProduct } from "@/domain/entities/product/Product";
-import { FilterCriteria, SortOption } from "@/application/dtos/FilterCriteria";
-import { FilterState } from "./types";
+export const metadata: Metadata = {
+  title: messages.catalog.list.metaTitle,
+  description: messages.catalog.list.metaDescription,
+  alternates: { canonical: routes.products },
+};
 
-/**
- * Transform domain Product entity to UI Product type
- */
-function transformProductForUI(product: DomainProduct): UIProduct {
-  return {
-    id: product.id.value,
-    name: product.name,
-    price: product.price.amount,
-    originalPrice: product.originalPrice?.amount,
-    rating: product.rating,
-    reviews: product.reviews,
-    description: product.description,
-    category: product.category,
-    featured: product.isFeatured(),
-    inStock: product.inStock,
-    badge: product.badge || undefined,
-  };
+interface ProductsPageProps {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-/**
- * Convert UI FilterState to application FilterCriteria
- */
-function convertFilterStateToFilterCriteria(filters: FilterState): FilterCriteria {
-  return {
-    category: filters.selectedCategory !== "all" ? filters.selectedCategory : undefined,
-    priceRange: {
-      min: filters.priceRange[0],
-      max: filters.priceRange[1],
-    },
-    inStockOnly: filters.inStock,
-    onSaleOnly: filters.onSale,
-    sortBy: filters.sortBy as SortOption,
-  };
-}
+const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];
 
-export default function ProductsPage() {
-  const { filters, updateFilters } = useFilters();
-  
-  // Convert filters to FilterCriteria for the new architecture
-  const filterCriteria = useMemo(
-    () => convertFilterStateToFilterCriteria(filters),
-    [filters]
-  );
+export default async function ProductsPage({ searchParams }: ProductsPageProps) {
+  const criteria = parseCatalogSearchParams(await searchParams);
 
-  // Use new presentation layer hooks
-  const { products: domainProducts, loading, error } = useProductFilters(filterCriteria);
-
-  // Transform domain products to UI products
-  const uiProducts = useMemo(
-    () => domainProducts.map(transformProductForUI),
-    [domainProducts]
-  );
-
-  const categories = useMemo(() => generateCategories(uiProducts), [uiProducts]);
-
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
-  if (error) {
-    return <ErrorMessage message={error} />;
+  let products: Product[];
+  try {
+    products = await getContainer().getGetProductsUseCase().execute();
+  } catch (error) {
+    console.error("Could not load the catalog", error);
+    return <CatalogUnavailable />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 py-8">
-      <ProductsHeader productCount={uiProducts.length} />
+    <Container>
+      <Suspense fallback={<CatalogFallback />}>
+        <CatalogView products={products.map(toProductSnapshot)} initialCriteria={criteria} />
+      </Suspense>
+    </Container>
+  );
+}
 
-      {/* Compact Filters */}
-      <CompactFilters
-        categories={categories}
-        filters={filters}
-        onFilterChange={updateFilters}
-        sortOptions={sortOptions}
-      />
+function CatalogFallback() {
+  return (
+    <>
+      <PageHeader title={messages.catalog.list.title} breadcrumbs={breadcrumbs} />
+      <div className="flex justify-center py-16 text-navy">
+        <Spinner size="lg" label={messages.catalog.list.loading} />
+      </div>
+    </>
+  );
+}
 
-      {/* Products Grid */}
-      <ProductsGrid products={uiProducts} />
-    </div>
+function CatalogUnavailable() {
+  return (
+    <Container className="pb-16">
+      <PageHeader title={messages.catalog.list.title} breadcrumbs={breadcrumbs} />
+      <div role="alert" className="flex flex-col items-start gap-4 rounded-xl border border-danger/30 bg-white p-6 sm:flex-row">
+        <AlertCircleIcon className="size-6 shrink-0 text-danger" />
+        <div className="min-w-0">
+          <h2 className="text-lg font-semibold text-ink">{messages.catalog.list.unavailableTitle}</h2>
+          <p className="mt-1 text-muted">{messages.errors.catalogUnavailable}</p>
+          <a href={routes.products} className={buttonClasses({ variant: "secondary", size: "sm", className: "mt-4" })}>
+            {messages.common.retry}
+          </a>
+        </div>
+      </div>
+    </Container>
   );
 }

@@ -1,27 +1,46 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/*
+ * Brand tokens. Use these utilities (bg-navy, text-accent, border-sand, ...)
+ * instead of raw hex values so the palette stays consistent.
+ * - orange:  decorative brand orange; not for text on white (2.6:1 contrast)
+ * - accent:  AA-compliant orange for buttons (white text 5.1:1) and links on white
+ * - orange-on-navy: AA orange for text on navy backgrounds (4.8:1)
+ */
+@theme {
+  --color-navy: #243c58;
+  --color-navy-deep: #1a2d42;
+  --color-sand: #eee8ce;
+  --color-orange: #ff780c;
+  --color-orange-on-navy: #ff8a2b;
+  --color-accent: #b84d00;
+  --color-accent-hover: #9a4000;
+  --color-accent-soft: #fff1e6;
+  --color-ink: #1b2430;
+  --color-muted: #5b6573;
+  --color-danger: #b42318;
+  --color-success: #1f7a4d;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --header-height: 4rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-/* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--header-height);
 }
 
-/* Custom animations */
+body {
+  background: #ffffff;
+  color: var(--color-ink);
+}
+
 @keyframes fade-in {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -29,24 +48,19 @@ html {
   }
 }
 
-.animate-fade-in {
-  animation: fade-in 0.5s ease-out;
+@utility animate-fade-in {
+  animation: fade-in 0.3s ease-out;
 }
 
-.shadow-3xl {
-  box-shadow: 0 35px 60px -12px rgba(0, 0, 0, 0.4);
-}
-
-/* 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
-} */
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

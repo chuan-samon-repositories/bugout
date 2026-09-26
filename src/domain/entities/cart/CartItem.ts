@@ -3,16 +3,17 @@ import { Quantity } from '../../value-objects/Quantity';
 import { Product } from '../product/Product';
 
 /**
- * CartItem entity representing a product-quantity pair in a shopping cart.
+ * Immutable product-quantity pair inside a Cart.
+ * Quantity changes go through the Cart aggregate, which returns new items.
  */
 export class CartItem {
   constructor(
     public readonly product: Product,
-    public quantity: Quantity
+    public readonly quantity: Quantity,
   ) {}
 
-  updateQuantity(newQuantity: Quantity): void {
-    this.quantity = newQuantity;
+  withQuantity(quantity: Quantity): CartItem {
+    return new CartItem(this.product, quantity);
   }
 
   subtotal(): Money {

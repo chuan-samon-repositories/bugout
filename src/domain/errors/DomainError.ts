@@ -7,10 +7,6 @@ export abstract class DomainError extends Error {
   constructor(message: string) {
     super(message);
     this.name = this.constructor.name;
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, this.constructor);
-    }
   }
 }
 
@@ -22,12 +18,25 @@ export class ValidationError extends DomainError {}
 
 /**
  * Thrown when a requested resource cannot be found.
- * Examples: product not found by ID, cart item not in cart.
+ * Examples: product not found by id or slug, cart item not in cart.
  */
 export class NotFoundError extends DomainError {}
+
+/** Stable identifiers for business rule violations, so callers can react without parsing messages. */
+export type BusinessRuleCode =
+  | 'MAX_QUANTITY_EXCEEDED'
+  | 'OUT_OF_STOCK'
+  | 'CURRENCY_MISMATCH';
 
 /**
  * Thrown when a business rule is violated.
  * Examples: exceeding maximum cart quantity, adding out-of-stock items.
  */
-export class BusinessRuleError extends DomainError {}
+export class BusinessRuleError extends DomainError {
+  constructor(
+    public readonly code: BusinessRuleCode,
+    message: string,
+  ) {
+    super(message);
+  }
+}

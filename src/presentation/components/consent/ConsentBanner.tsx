@@ -19,7 +19,7 @@ export function ConsentBanner() {
     <div
       role="region"
       aria-label={copy.region}
-      className="fixed inset-x-0 bottom-0 z-50 border-t border-sand bg-white shadow-[0_-4px_16px_rgb(0_0_0/0.08)]"
+      className="ph-no-capture fixed inset-x-0 bottom-0 z-50 border-t border-sand bg-white shadow-[0_-4px_16px_rgb(0_0_0/0.08)]"
     >
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:gap-6 lg:px-8">
         <p className="min-w-0 flex-1 text-sm text-ink">

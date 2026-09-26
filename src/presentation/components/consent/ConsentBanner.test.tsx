@@ -52,6 +52,11 @@ describe("ConsentBanner", () => {
     expect(reject.className).toBe(accept.className);
   });
 
+  it("is excluded from analytics autocapture, so the consent click itself is never recorded", async () => {
+    renderBanner();
+    expect(await screen.findByRole("region", { name: "Aviso de cookies" })).toHaveClass("ph-no-capture");
+  });
+
   it("stores acceptance, enables analytics and hides the banner", async () => {
     const setConsent = vi.spyOn(getContainer().getAnalyticsService(), "setConsent");
     const user = userEvent.setup();

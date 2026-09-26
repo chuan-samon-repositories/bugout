@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
-import { Money } from './Money';
+import { Money, discountPercentage } from './Money';
 import { ValidationError } from '../errors';
 
 describe('Money', () => {
@@ -80,5 +80,30 @@ describe('Money', () => {
     expect(small.greaterThan(big)).toBe(false);
     expect(small.greaterThanOrEqual(Money.fromMinor(100, 'EUR'))).toBe(true);
     expect(Money.zero('EUR').isZero()).toBe(true);
+  });
+});
+
+describe('discountPercentage', () => {
+  const eur = (major: number) => Money.fromMajor(major, 'EUR');
+
+  it('returns the whole-number percentage saved', () => {
+    expect(discountPercentage(eur(199), eur(249))).toBe(20);
+    expect(discountPercentage(eur(299), eur(399))).toBe(25);
+    expect(discountPercentage(eur(10), eur(30))).toBe(67);
+  });
+
+  it('is 0 when the original price is not higher or uses another currency', () => {
+    expect(discountPercentage(eur(199), eur(199))).toBe(0);
+    expect(discountPercentage(eur(199), eur(150))).toBe(0);
+    expect(discountPercentage(eur(199), Money.fromMajor(249, 'USD'))).toBe(0);
+  });
+
+  it('always returns an integer between 0 and 100', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 10_000_000 }), fc.integer({ min: 1, max: 10_000_000 }), (price, original) => {
+        const percent = discountPercentage(Money.fromMinor(price, 'EUR'), Money.fromMinor(original, 'EUR'));
+        return Number.isInteger(percent) && percent >= 0 && percent <= 100;
+      }),
+    );
   });
 });

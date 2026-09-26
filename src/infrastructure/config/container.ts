@@ -77,6 +77,17 @@ export class AppContainer {
     );
   }
 
+  /**
+   * True while the newsletter and contact use cases run on the simulated Local*
+   * adapters (`LocalNewsletterAdapter`, `LocalContactAdapter`), which only wait and
+   * resolve without delivering anything. That is always the case today, under both
+   * commerce providers, until a mail/CRM backend is connected. The UI uses it to
+   * label those forms honestly instead of claiming a message was sent.
+   */
+  isMessagingSimulated(): boolean {
+    return true;
+  }
+
   getSubscribeNewsletterUseCase(): SubscribeNewsletterUseCase {
     return this.once(
       'subscribeNewsletter',

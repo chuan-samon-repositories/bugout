@@ -63,12 +63,6 @@ describe('ManageCartUseCase', () => {
     expect((await useCase.getCart()).quantityOf(id('kit'))).toBe(1);
   });
 
-  it('removeFromCart removes one unit', async () => {
-    await useCase.addToCart(id('kit'), qty(3));
-    const cart = await useCase.removeFromCart(id('kit'));
-    expect(cart.quantityOf(id('kit'))).toBe(2);
-  });
-
   it('deleteFromCart removes the whole line', async () => {
     await useCase.addToCart(id('kit'), qty(3));
     await useCase.addToCart(id('food'), qty(1));

@@ -1,5 +1,5 @@
 import { ValidationError } from '../../errors';
-import { Money } from '../../value-objects/Money';
+import { Money, discountPercentage } from '../../value-objects/Money';
 import { ProductId } from '../../value-objects/ProductId';
 
 export interface ProductImage {
@@ -125,9 +125,9 @@ export class Product {
     return this.isOnSale() && this.originalPrice ? this.originalPrice.subtract(this.price) : null;
   }
 
+  /** Whole-number discount versus the original price; 0 when not on sale. */
   discountPercentage(): number {
-    if (!this.isOnSale() || !this.originalPrice) return 0;
-    return Math.round((1 - this.price.minor / this.originalPrice.minor) * 100);
+    return this.originalPrice ? discountPercentage(this.price, this.originalPrice) : 0;
   }
 
   isFeatured(): boolean {

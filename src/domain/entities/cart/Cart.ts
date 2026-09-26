@@ -36,16 +36,6 @@ export class Cart {
     this.put(item.product, quantity.value);
   }
 
-  /** Removes one unit; drops the line when it reaches zero. */
-  removeItem(productId: ProductId): void {
-    const item = this.requireItem(productId);
-    if (item.quantity.value > 1) {
-      this.items.set(productId.value, item.withQuantity(new Quantity(item.quantity.value - 1)));
-    } else {
-      this.items.delete(productId.value);
-    }
-  }
-
   /** Removes the whole line regardless of quantity. */
   deleteItem(productId: ProductId): void {
     this.requireItem(productId);

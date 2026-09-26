@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SHOPIFY_API_VERSION, ShopifyApiError, ShopifyClient, assertNoUserErrors } from './ShopifyClient';
+import { CART_CREATE_MUTATION, CART_QUERY } from './cartGraphql';
 import { jsonResponse, queuedFetch, sentRequest } from '../../testing/shopifyFixtures';
 
 describe('ShopifyClient', () => {
@@ -15,6 +16,23 @@ describe('ShopifyClient', () => {
     expect(request.init.method).toBe('POST');
     expect(request.init.headers).toMatchObject({ 'X-Shopify-Storefront-Access-Token': 'tok', 'Content-Type': 'application/json' });
     expect(request.variables).toEqual({ a: 1 });
+  });
+
+  it('caches queries for 5 minutes but never mutations or no-store requests', async () => {
+    const fetch = queuedFetch({ data: {} }, { data: {} }, { data: {} }, { data: {} });
+    const client = new ShopifyClient({ storeDomain: 's', storefrontAccessToken: 't' }, fetch);
+    await client.request('query Shop { shop { name } }');
+    await client.request(CART_CREATE_MUTATION, { lines: [] });
+    await client.request(CART_QUERY, { id: 'c' }, { noStore: true });
+    await client.request('# comment-free anonymous query\n{ shop { name } }');
+
+    expect(sentRequest(fetch, 0).init).toMatchObject({ next: { revalidate: 300 } });
+    expect(sentRequest(fetch, 0).init.cache).toBeUndefined();
+    expect(sentRequest(fetch, 1).init).toMatchObject({ cache: 'no-store' });
+    expect(sentRequest(fetch, 1).init.next).toBeUndefined();
+    expect(sentRequest(fetch, 2).init).toMatchObject({ cache: 'no-store' });
+    expect(sentRequest(fetch, 2).init.next).toBeUndefined();
+    expect(sentRequest(fetch, 3).init).toMatchObject({ next: { revalidate: 300 } });
   });
 
   it('honours a configured API version and tolerates a protocol in the domain', () => {

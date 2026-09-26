@@ -40,8 +40,21 @@ function toSnapshot(cart: ShopifyCartNode): RemoteSnapshot {
   return { cartId: cart.id, lines, duplicateLineIds };
 }
 
-/** Lines that can't be represented (unavailable, wrong currency, invalid data) are left out of the aggregate. */
+/**
+ * Lines that can't be represented (sold out, invalid data) are left out of the aggregate,
+ * and the next save removes them from Shopify. A price in another currency is a store
+ * configuration problem, not a bad line, so it fails loudly instead: dropping those lines
+ * would delete the visitor's whole cart remotely.
+ * @throws ShopifyApiError when a line is priced in a currency other than `currency`
+ */
 function toCart(remote: ShopifyCartNode, currency: CurrencyCode): Cart {
+  const foreign = remote.lines.nodes.find((line) => line.merchandise.price.currencyCode !== currency);
+  if (foreign) {
+    throw new ShopifyApiError(
+      `Shopify returned prices in ${foreign.merchandise.price.currencyCode} but the store currency is ${currency}. ` +
+        `Check that the Shopify market for Spain (ES) sells in ${currency}.`,
+    );
+  }
   const cart = new Cart(currency);
   for (const line of remote.lines.nodes) {
     try {
@@ -119,7 +132,11 @@ export class ShopifyCartAdapter implements CartRepository {
       this.snapshot = null;
       return null;
     }
-    const { cart } = await this.client.request<{ cart: ShopifyCartNode | null }>(CART_QUERY, { id: cartId });
+    const { cart } = await this.client.request<{ cart: ShopifyCartNode | null }>(
+      CART_QUERY,
+      { id: cartId },
+      { noStore: true },
+    );
     if (!cart) {
       await this.clear();
       return null;

@@ -89,3 +89,13 @@ export class Money {
     }
   }
 }
+
+/**
+ * Whole-number percentage saved by paying `price` instead of `original`
+ * (e.g. 199 € instead of 249 € → 20). Returns 0 when `original` is not a higher
+ * price in the same currency.
+ */
+export function discountPercentage(price: Money, original: Money): number {
+  if (original.currency !== price.currency || !original.greaterThan(price)) return 0;
+  return Math.round((1 - price.minor / original.minor) * 100);
+}

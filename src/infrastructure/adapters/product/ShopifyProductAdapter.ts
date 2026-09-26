@@ -10,13 +10,13 @@ import {
   VARIANT_FIELDS_FRAGMENT,
   mapShopifyProduct,
 } from '../shopify/productMapping';
-import { ShopifyClient } from '../shopify/ShopifyClient';
+import { STOREFRONT_CONTEXT, ShopifyClient } from '../shopify/ShopifyClient';
 
 const PAGE_SIZE = 100;
 const VARIANT_GID_PREFIX = 'gid://shopify/ProductVariant/';
 
 const PRODUCTS_QUERY = /* GraphQL */ `
-  query Products($first: Int!, $after: String) {
+  query Products($first: Int!, $after: String) ${STOREFRONT_CONTEXT} {
     products(first: $first, after: $after) {
       pageInfo { hasNextPage endCursor }
       nodes {
@@ -30,7 +30,7 @@ const PRODUCTS_QUERY = /* GraphQL */ `
 `;
 
 const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
-  query ProductByHandle($handle: String!) {
+  query ProductByHandle($handle: String!) ${STOREFRONT_CONTEXT} {
     product(handle: $handle) {
       ...ProductFields
       variants(first: 1) { nodes { ...VariantFields } }
@@ -41,7 +41,7 @@ const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
 `;
 
 const VARIANT_BY_ID_QUERY = /* GraphQL */ `
-  query VariantById($id: ID!) {
+  query VariantById($id: ID!) ${STOREFRONT_CONTEXT} {
     node(id: $id) {
       ... on ProductVariant {
         ...VariantFields
@@ -60,13 +60,38 @@ interface ProductsPage {
   };
 }
 
-/** Maps a product with its first variant; products without variants cannot be sold and map to null. */
-function mapWithFirstVariant(node: ShopifyProductWithVariants): Product | null {
-  const [variant] = node.variants.nodes;
-  return variant ? mapShopifyProduct(node, variant) : null;
+function reasonOf(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
-/** Catalog from the Shopify Storefront API. Product ids are variant GIDs (the cart merchandise id). */
+/**
+ * Maps a product and variant, or returns null (with a warning naming the handle and
+ * the reason) when Shopify data breaks a domain rule, e.g. a zero price or an invalid
+ * handle. One bad product then hides only itself instead of the whole catalog.
+ */
+function mapOrSkip(node: ShopifyProductNode, variant: ShopifyVariantNode | undefined): Product | null {
+  if (!variant) {
+    console.warn(`[shopify] Skipping product "${node.handle}": it has no variants`);
+    return null;
+  }
+  try {
+    return mapShopifyProduct(node, variant);
+  } catch (error) {
+    console.warn(`[shopify] Skipping product "${node.handle}": ${reasonOf(error)}`);
+    return null;
+  }
+}
+
+/** Maps a product with its first variant; see mapOrSkip. */
+function mapWithFirstVariant(node: ShopifyProductWithVariants): Product | null {
+  return mapOrSkip(node, node.variants.nodes[0]);
+}
+
+/**
+ * Catalog from the Shopify Storefront API, in the Spanish market context. Product ids
+ * are variant GIDs (the cart merchandise id). Products that cannot be mapped are left
+ * out of findAll() and are NotFoundError for findById()/findBySlug().
+ */
 export class ShopifyProductAdapter implements ProductRepository {
   constructor(private readonly client: ShopifyClient) {}
 
@@ -92,8 +117,9 @@ export class ShopifyProductAdapter implements ProductRepository {
     const { node } = await this.client.request<{
       node: (Partial<ShopifyVariantNode> & { product?: ShopifyProductNode }) | null;
     }>(VARIANT_BY_ID_QUERY, { id: id.value });
-    if (!node?.product) throw new NotFoundError(`Product ${id.value} not found`);
-    return mapShopifyProduct(node.product, node as ShopifyVariantNode);
+    const mapped = node?.product ? mapOrSkip(node.product, node as ShopifyVariantNode) : null;
+    if (!mapped) throw new NotFoundError(`Product ${id.value} not found`);
+    return mapped;
   }
 
   async findBySlug(slug: string): Promise<Product> {

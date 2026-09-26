@@ -1,8 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShopifyProductAdapter } from './ShopifyProductAdapter';
 import { NotFoundError } from '@/domain/errors';
 import { ProductId } from '@/domain/value-objects/ProductId';
-import { ShopifyApiError } from '../shopify/ShopifyClient';
+import { CATALOG_REVALIDATE_SECONDS, STOREFRONT_CONTEXT, ShopifyApiError } from '../shopify/ShopifyClient';
 import {
   productNode,
   productWithVariants,
@@ -17,7 +17,18 @@ const page = (nodes: unknown[], endCursor: string | null, hasNextPage: boolean) 
   data: { products: { pageInfo: { hasNextPage, endCursor }, nodes } },
 });
 
+const zeroPriced = (n: number) => variantNode(n, { price: { amount: '0.0', currencyCode: 'EUR' } });
+
 describe('ShopifyProductAdapter', () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it('pages through all products until the last page', async () => {
     const fetch = queuedFetch(
       page([productWithVariants({ handle: 'a' }, [variantNode(1)]), productWithVariants({ handle: 'b' }, [variantNode(2)])], 'c1', true),
@@ -37,6 +48,61 @@ describe('ShopifyProductAdapter', () => {
     const fetch = queuedFetch(page([productWithVariants({ handle: 'a' }, []), productWithVariants({ handle: 'b' })], null, false));
     const products = await new ShopifyProductAdapter(testClient(fetch)).findAll();
     expect(products.map((product) => product.slug)).toEqual(['b']);
+    expect(warn).toHaveBeenCalledWith('[shopify] Skipping product "a": it has no variants');
+  });
+
+  it('skips products that break a domain rule instead of failing the whole catalog', async () => {
+    const fetch = queuedFetch(
+      page(
+        [
+          productWithVariants({ handle: 'ok' }, [variantNode(1)]),
+          productWithVariants({ handle: 'free-sample' }, [zeroPriced(2)]),
+          productWithVariants({ handle: 'Bad Handle' }, [variantNode(3)]),
+          productWithVariants({ handle: 'also-ok' }, [variantNode(4)]),
+        ],
+        null,
+        false,
+      ),
+    );
+    const products = await new ShopifyProductAdapter(testClient(fetch)).findAll();
+    expect(products.map((product) => product.slug)).toEqual(['ok', 'also-ok']);
+    expect(warn).toHaveBeenCalledWith('[shopify] Skipping product "free-sample": Price must be positive');
+    expect(warn).toHaveBeenCalledWith('[shopify] Skipping product "Bad Handle": Invalid product slug: Bad Handle');
+  });
+
+  it('treats an unmappable product as not found by handle or id', async () => {
+    const byHandle = queuedFetch({ data: { product: productWithVariants({ handle: 'free-sample' }, [zeroPriced(2)]) } });
+    await expect(new ShopifyProductAdapter(testClient(byHandle)).findBySlug('free-sample')).rejects.toBeInstanceOf(NotFoundError);
+
+    const byId = queuedFetch({ data: { node: { ...zeroPriced(2), product: productNode({ handle: 'free-sample' }) } } });
+    await expect(new ShopifyProductAdapter(testClient(byId)).findById(new ProductId(variantGid(2)))).rejects.toBeInstanceOf(
+      NotFoundError,
+    );
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it('queries every operation in the Spanish context and lets Next.js cache catalog reads', async () => {
+    const fetch = queuedFetch(
+      page([], null, false),
+      { data: { product: productWithVariants() } },
+      { data: { node: { ...variantNode(1), product: productNode() } } },
+    );
+    const adapter = new ShopifyProductAdapter(testClient(fetch));
+    await adapter.findAll();
+    await adapter.findBySlug('mochila-24h');
+    await adapter.findById(new ProductId(variantGid(1)));
+    const expected = [
+      'query Products($first: Int!, $after: String)',
+      'query ProductByHandle($handle: String!)',
+      'query VariantById($id: ID!)',
+    ];
+    expected.forEach((operation, call) => {
+      const request = sentRequest(fetch, call);
+      expect(request.query).toContain(`${operation} ${STOREFRONT_CONTEXT} {`);
+      expect(request.init.next).toEqual({ revalidate: CATALOG_REVALIDATE_SECONDS });
+      expect(request.init.cache).toBeUndefined();
+    });
+    expect(CATALOG_REVALIDATE_SECONDS).toBe(300);
   });
 
   it('surfaces top-level GraphQL errors', async () => {

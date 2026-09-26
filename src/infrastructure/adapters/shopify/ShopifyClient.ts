@@ -2,6 +2,15 @@ import { ShopifyConfig } from '../../config/ShopifyConfig';
 
 export const DEFAULT_SHOPIFY_API_VERSION = '2026-07';
 
+/**
+ * Directive added to every Storefront operation so prices, availability and
+ * translations are resolved for the Spanish market (EUR, IVA included) in Spanish.
+ */
+export const STOREFRONT_CONTEXT = '@inContext(country: ES, language: ES)';
+
+/** Seconds a catalog query may be served from the Next.js data cache on the server. */
+export const CATALOG_REVALIDATE_SECONDS = 300;
+
 export interface ShopifyUserError {
   field?: string[] | null;
   message: string;
@@ -27,7 +36,20 @@ export class ShopifyApiError extends Error {
   }
 }
 
-export type FetchLike = (url: string, init: RequestInit) => Promise<Response>;
+/** RequestInit plus the Next.js data-cache options (ignored outside Next.js). */
+export type ShopifyRequestInit = RequestInit & { next?: { revalidate?: number | false } };
+
+export type FetchLike = (url: string, init: ShopifyRequestInit) => Promise<Response>;
+
+export interface ShopifyRequestOptions {
+  /**
+   * Bypasses every cache (`cache: 'no-store'`). Use for cart reads, which are
+   * per-visitor and must be fresh. Mutations always bypass caches.
+   */
+  noStore?: boolean;
+}
+
+const MUTATION_OPERATION = /^\s*mutation\b/;
 
 /** Minimal Storefront API GraphQL client shared by all Shopify adapters. */
 export class ShopifyClient {
@@ -47,15 +69,24 @@ export class ShopifyClient {
     };
   }
 
-  /** @throws ShopifyApiError on network failures, non-2xx responses and top-level GraphQL errors */
-  async request<T>(query: string, variables: Record<string, unknown> = {}): Promise<T> {
+  /**
+   * Sends one GraphQL operation. Queries may be cached by Next.js on the server for
+   * CATALOG_REVALIDATE_SECONDS; mutations and `noStore` requests are never cached.
+   * @throws ShopifyApiError on network failures, non-2xx responses and top-level GraphQL errors
+   */
+  async request<T>(query: string, variables: Record<string, unknown> = {}, options: ShopifyRequestOptions = {}): Promise<T> {
     const doFetch = this.fetchImpl ?? fetch;
+    const caching: ShopifyRequestInit =
+      options.noStore || MUTATION_OPERATION.test(query)
+        ? { cache: 'no-store' }
+        : { next: { revalidate: CATALOG_REVALIDATE_SECONDS } };
     let response: Response;
     try {
       response = await doFetch(this.endpoint, {
         method: 'POST',
         headers: this.headers,
         body: JSON.stringify({ query, variables }),
+        ...caching,
       });
     } catch (error) {
       throw new ShopifyApiError(`Shopify request failed: ${error instanceof Error ? error.message : String(error)}`);

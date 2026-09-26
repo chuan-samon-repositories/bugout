@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ManageCartUseCase } from '@/application/use-cases/ManageCartUseCase';
+import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { ShopifyCartAdapter } from './ShopifyCartAdapter';
 import { ShopifyCartIdStore, SHOPIFY_CART_ID_KEY } from '../shopify/ShopifyCartIdStore';
-import { ShopifyApiError } from '../shopify/ShopifyClient';
+import { STOREFRONT_CONTEXT, ShopifyApiError } from '../shopify/ShopifyClient';
 import { mapShopifyProduct } from '../shopify/productMapping';
 import { MemoryStorage } from '../../testing/MemoryStorage';
 import {
@@ -197,6 +199,58 @@ describe('ShopifyCartAdapter', () => {
   it('throws on top-level errors', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
     await expect(adapterWith(queuedFetch({ errors: [{ message: 'Throttled' }] })).load()).rejects.toThrow(/Throttled/);
+  });
+
+  it('fails loudly instead of dropping lines priced in another currency', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const remote = cartNode('cart-1', [
+      { lineId: 'l1', variant: 1, quantity: 2 },
+      { lineId: 'l2', variant: 2, quantity: 1 },
+    ]);
+    remote.lines.nodes[1].merchandise.price = { amount: '10.0', currencyCode: 'USD' };
+    const fetch = queuedFetch({ data: { cart: remote } });
+    const error = await adapterWith(fetch).load().catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(ShopifyApiError);
+    expect((error as Error).message).toMatch(/^Shopify returned prices in USD but the store currency is EUR/);
+  });
+
+  it('never deletes remote lines because of a currency mismatch', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 2 }]);
+    remote.lines.nodes[0].merchandise.price = { amount: '10.0', currencyCode: 'USD' };
+    const fetch = queuedFetch({ data: { cart: remote } });
+    const manageCart = new ManageCartUseCase(adapterWith(fetch), new InMemoryProductRepository([product(3)]));
+    await expect(manageCart.addToCart(pid(3), new Quantity(1))).rejects.toThrow(/currency/);
+    // Only the cart read: the failed load stops the use case before any line mutation.
+    expect(fetch).toHaveBeenCalledOnce();
+    expect(sentRequest(fetch, 0).query).toContain('query Cart(');
+  });
+
+  it('reads the cart in the Spanish context without any caching', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const fetch = queuedFetch({ data: { cart: cartNode('cart-1') } });
+    await adapterWith(fetch).load();
+    const request = sentRequest(fetch, 0);
+    expect(request.query).toContain(`query Cart($id: ID!) ${STOREFRONT_CONTEXT}`);
+    expect(request.init.cache).toBe('no-store');
+    expect(request.init.next).toBeUndefined();
+  });
+
+  it('sends every cart mutation in the Spanish context without any caching', async () => {
+    const created = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+    const fetch = queuedFetch(mutationResult('cartCreate', created), mutationResult('cartLinesUpdate', created));
+    const adapter = adapterWith(fetch);
+    const cart = new Cart('EUR');
+    cart.addItem(product(1), new Quantity(1));
+    await adapter.save(cart);
+    cart.setQuantity(pid(1), new Quantity(2));
+    await adapter.save(cart);
+    for (const call of [0, 1]) {
+      const request = sentRequest(fetch, call);
+      expect(request.query).toMatch(/^\s*mutation \w+\([^)]*\) @inContext\(country: ES, language: ES\) \{/);
+      expect(request.init.cache).toBe('no-store');
+      expect(request.init.next).toBeUndefined();
+    }
   });
 
   it('clear forgets the cart id', async () => {

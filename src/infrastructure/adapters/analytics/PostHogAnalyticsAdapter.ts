@@ -14,16 +14,39 @@ type Action = (posthog: PostHog) => void;
 
 const MAX_QUEUED_ACTIONS = 100;
 
+/** Prefix of the SDK's cookies and storage keys (`ph_<token>_posthog`, `ph_<token>_window_id`, …). */
+const SDK_KEY_PREFIX = 'ph_';
+/** Prefix of the SDK's consent record, `__ph_opt_in_out_<token>` ("1" opted in, "0" opted out). */
+const CONSENT_KEY_PREFIX = '__ph_opt_in_out_';
+const OPTED_OUT = '0';
+
 const importPostHog = async (): Promise<PostHog> => (await import('posthog-js')).default;
 
 function warn(message: string, error: unknown): void {
   console.warn(`[analytics] ${message}`, error);
 }
 
+function expirePostHogCookies(isPostHogKey: (name: string) => boolean): void {
+  if (typeof document === 'undefined') return;
+  const names = document.cookie
+    .split(';')
+    .map((cookie) => cookie.split('=')[0].trim())
+    .filter((name) => name !== '' && isPostHogKey(name));
+  const { hostname = '', pathname = '/' } = window.location ?? {};
+  for (const name of names) {
+    for (const path of new Set(['/', pathname])) {
+      document.cookie = `${name}=; Max-Age=0; Path=${path}`;
+      if (hostname) document.cookie = `${name}=; Max-Age=0; Path=${path}; Domain=${hostname}`;
+    }
+  }
+}
+
 /**
  * PostHog behind the visitor's consent. Nothing is loaded, sent or stored until
  * setConsent(true); the SDK is then imported on demand so it stays out of the
  * initial bundle. Calls made while it loads are queued and replayed after init.
+ * setConsent(false) resets and opts the SDK out, then removes PostHog's cookies and
+ * storage except its opt-out record, so nothing is captured on this or later pages.
  */
 export class PostHogAnalyticsAdapter implements AnalyticsService {
   private consented = false;
@@ -38,10 +61,6 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
 
   track(event: AnalyticsEvent): void {
     this.run((posthog) => posthog.capture(event.name, event.properties));
-  }
-
-  identify(distinctId: string, traits?: Traits): void {
-    this.run((posthog) => posthog.identify(distinctId, traits));
   }
 
   captureException(error: unknown, context?: Traits): void {
@@ -59,10 +78,13 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
     this.queue = [];
     if (this.posthog) {
       this.safely(this.posthog, (posthog) => {
-        posthog.opt_out_capturing();
+        // reset() clears the stored consent too, so it must run before opting out;
+        // the other way round the SDK forgets the opt-out and keeps capturing.
         posthog.reset();
+        posthog.opt_out_capturing();
       });
     }
+    this.removeLeftoverStorage();
   }
 
   /** Resolves when any in-flight SDK load has finished. */
@@ -94,6 +116,12 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
           capture_exceptions: true,
           person_profiles: 'identified_only',
           persistence: 'localStorage+cookie',
+          // Once opted out, the SDK also stops persisting its cookie and localStorage state.
+          opt_out_persistence_by_default: true,
+          disable_session_recording: true,
+          // No feature flags, surveys or remote config are used; this also stops the
+          // SDK from calling /flags after reset() when consent is withdrawn.
+          advanced_disable_flags: true,
         });
         posthog.opt_in_capturing();
         this.posthog = posthog;
@@ -108,6 +136,32 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
       .finally(() => {
         this.loading = null;
       });
+  }
+
+  /**
+   * Deletes every PostHog cookie (for the current host and path) and storage entry
+   * except the SDK's own opt-out record, which keeps a later init opted out. Also
+   * covers state left by earlier visits when the SDK was never loaded on this page.
+   */
+  private removeLeftoverStorage(): void {
+    const keep = `${CONSENT_KEY_PREFIX}${this.options.apiKey}`;
+    const isPostHogKey = (key: string) => key.startsWith(SDK_KEY_PREFIX) || key.startsWith(CONSENT_KEY_PREFIX);
+    try {
+      const { localStorage, sessionStorage } = window;
+      for (const storage of [localStorage, sessionStorage]) {
+        if (!storage) continue;
+        const keys = Array.from({ length: storage.length }, (_, index) => storage.key(index)).filter(
+          (key): key is string => key !== null && isPostHogKey(key),
+        );
+        for (const key of keys) {
+          if (storage === localStorage && key === keep && storage.getItem(key) === OPTED_OUT) continue;
+          storage.removeItem(key);
+        }
+      }
+      expirePostHogCookies(isPostHogKey);
+    } catch (error) {
+      warn('PostHog storage could not be cleared', error);
+    }
   }
 
   private safely(posthog: PostHog, action: Action): void {

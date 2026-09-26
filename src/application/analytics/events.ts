@@ -63,5 +63,3 @@ export type AnalyticsEvent =
     }
   | { name: 'newsletter_subscribed'; properties: { location: 'home' | 'footer' } }
   | { name: 'contact_message_sent'; properties: { topic: string } };
-
-export type AnalyticsEventName = AnalyticsEvent['name'];

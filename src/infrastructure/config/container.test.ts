@@ -16,6 +16,18 @@ const shopify: AppConfig = {
   shopify: { storeDomain: 'bugout-test.myshopify.com', storefrontAccessToken: 'token' },
 };
 
+function stubLocalStorage(): Map<string, string> {
+  const data = new Map<string, string>();
+  vi.stubGlobal('window', {
+    localStorage: {
+      getItem: (key: string) => data.get(key) ?? null,
+      setItem: (key: string, value: string) => data.set(key, value),
+      removeItem: (key: string) => data.delete(key),
+    },
+  });
+  return data;
+}
+
 describe('AppContainer', () => {
   afterEach(() => {
     vi.unstubAllEnvs();
@@ -51,7 +63,20 @@ describe('AppContainer', () => {
     expect(products).toHaveLength(6);
     expect(products[0].price.currency).toBe('EUR');
     await expect(container.getGetProductBySlugUseCase().execute('first-aid-pro')).resolves.toMatchObject({ slug: 'first-aid-pro' });
+    // No browser storage in node: the cart is empty, so checkout is refused.
+    await expect(container.getCreateCheckoutUseCase().execute()).rejects.toThrow('Cart is empty');
+  });
+
+  it('starts the in-app checkout for a non-empty local cart', async () => {
+    stubLocalStorage();
+    const container = createContainer(local);
+    await container.getManageCartUseCase().addToCart(new ProductId('first-aid-pro'), new Quantity(1));
     await expect(container.getCreateCheckoutUseCase().execute()).resolves.toEqual({ url: '/checkout', type: 'local' });
+  });
+
+  it('reports the newsletter and contact forms as simulated under both providers', () => {
+    expect(createContainer(local).isMessagingSimulated()).toBe(true);
+    expect(createContainer(shopify).isMessagingSimulated()).toBe(true);
   });
 
   it('wires the local order, newsletter and contact services', async () => {
@@ -71,14 +96,7 @@ describe('AppContainer', () => {
   });
 
   it('adds products to the local cart through the catalog', async () => {
-    const data = new Map<string, string>();
-    vi.stubGlobal('window', {
-      localStorage: {
-        getItem: (key: string) => data.get(key) ?? null,
-        setItem: (key: string, value: string) => data.set(key, value),
-        removeItem: (key: string) => data.delete(key),
-      },
-    });
+    const data = stubLocalStorage();
     const cart = await createContainer(local).getManageCartUseCase().addToCart(new ProductId('first-aid-pro'), new Quantity(2));
     expect(cart.totalAmount().minor).toBe(17800);
     expect(JSON.parse(data.get('bugout.cart') ?? '{}')).toEqual({ version: 2, items: [{ productId: 'first-aid-pro', quantity: 2 }] });

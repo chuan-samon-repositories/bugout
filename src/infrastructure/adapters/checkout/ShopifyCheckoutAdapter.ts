@@ -22,6 +22,7 @@ export class ShopifyCheckoutAdapter implements CheckoutService {
       const { cart: remote } = await this.client.request<{ cart: { checkoutUrl: string } | null }>(
         CART_CHECKOUT_URL_QUERY,
         { id: cartId },
+        { noStore: true },
       );
       if (remote) return remote.checkoutUrl;
       this.cartIds.clear();

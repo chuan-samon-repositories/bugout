@@ -10,7 +10,7 @@
     "inStock": true,
     "badge": "BESTSELLER",
     "featured": true,
-    "rating": { "average": 4.9, "count": 1247 },
+    "rating": null,
     "images": [
       { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 24H", "width": 1024, "height": 1536 }
     ],
@@ -55,7 +55,7 @@
     "inStock": true,
     "badge": "PREMIUM",
     "featured": true,
-    "rating": { "average": 5.0, "count": 2156 },
+    "rating": null,
     "images": [
       { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 72H", "width": 1024, "height": 1536 }
     ],
@@ -100,7 +100,7 @@
     "inStock": true,
     "badge": "SALE",
     "featured": false,
-    "rating": { "average": 4.7, "count": 856 },
+    "rating": null,
     "images": [
       { "url": "/images/products/backpack.png", "alt": "Kit de supervivencia personalizable", "width": 1024, "height": 1536 }
     ],
@@ -140,7 +140,7 @@
     "inStock": true,
     "badge": null,
     "featured": false,
-    "rating": { "average": 4.8, "count": 432 },
+    "rating": null,
     "images": [],
     "details": {
       "longDescription": "Raciones listas para comer que cubren 3 días a razón de 2400 kcal diarias para una persona. No necesitan cocción ni agua y se conservan durante años en su envase.",
@@ -173,7 +173,7 @@
     "inStock": true,
     "badge": null,
     "featured": false,
-    "rating": { "average": 4.6, "count": 328 },
+    "rating": null,
     "images": [],
     "details": {
       "longDescription": "Combina un filtro portátil de fibra hueca con pastillas potabilizadoras para obtener agua apta para el consumo a partir de ríos, fuentes o depósitos cuando falla el suministro.",
@@ -208,7 +208,7 @@
     "inStock": true,
     "badge": "SALE",
     "featured": false,
-    "rating": { "average": 4.9, "count": 674 },
+    "rating": null,
     "images": [],
     "details": {
       "longDescription": "Un botiquín completo y ordenado por compartimentos para atender heridas, quemaduras, torceduras y hemorragias hasta recibir asistencia médica.",

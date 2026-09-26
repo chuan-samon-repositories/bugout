@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { isValidSpanishPhone, validateCheckoutDetails } from './validateCheckoutDetails';
 import { buildCheckoutDetails } from '../testing/checkoutDetails';
+import { provinceForPostalCode } from './provinces';
+
+const addressFor = (postalCode: string) => ({ postalCode, province: provinceForPostalCode(postalCode) ?? 'Madrid' });
 
 describe('validateCheckoutDetails', () => {
   it('accepts complete details', () => {
@@ -36,7 +39,7 @@ describe('validateCheckoutDetails', () => {
 
   it('validates Spanish postal codes', () => {
     for (const postalCode of ['01001', '28013', '50006', ' 08001 ', '07001']) {
-      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({});
+      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: addressFor(postalCode) }), 'shipping')).toEqual({});
     }
     for (const postalCode of ['00123', '53001', '99999', '2801', '280133', 'ABCDE']) {
       expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({
@@ -52,8 +55,41 @@ describe('validateCheckoutDetails', () => {
       });
     }
     for (const postalCode of ['07001', '28013', '50001']) {
-      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({});
+      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: addressFor(postalCode) }), 'shipping')).toEqual({});
     }
+  });
+
+  it('reports a postal code that belongs to another province', () => {
+    const madrid = buildCheckoutDetails({ shippingAddress: { province: 'Madrid', postalCode: '08001' } });
+    expect(validateCheckoutDetails(madrid, 'shipping')).toEqual({ 'shippingAddress.postalCode': 'postalCodeMismatch' });
+    expect(validateCheckoutDetails(madrid, 'all')).toEqual({ 'shippingAddress.postalCode': 'postalCodeMismatch' });
+
+    const barcelona = buildCheckoutDetails({ shippingAddress: { province: 'Barcelona', postalCode: '08001' } });
+    expect(validateCheckoutDetails(barcelona, 'shipping')).toEqual({});
+
+    const balears = buildCheckoutDetails({ shippingAddress: { province: 'Illes Balears', postalCode: '07001' } });
+    expect(validateCheckoutDetails(balears, 'shipping')).toEqual({});
+  });
+
+  it('reports a non-shippable region before any province mismatch', () => {
+    for (const postalCode of ['35001', '38001', '51001', '52001']) {
+      const details = buildCheckoutDetails({ shippingAddress: { province: 'Madrid', postalCode } });
+      expect(validateCheckoutDetails(details, 'shipping')).toEqual({ 'shippingAddress.postalCode': 'unsupportedRegion' });
+    }
+    const malformed = buildCheckoutDetails({ shippingAddress: { province: 'Madrid', postalCode: '0800' } });
+    expect(validateCheckoutDetails(malformed, 'shipping')).toEqual({ 'shippingAddress.postalCode': 'invalidPostalCode' });
+  });
+
+  it('matches provinces regardless of case, accents and surrounding spaces', () => {
+    const details = buildCheckoutDetails({ shippingAddress: { province: ' avila ', postalCode: '05001' } });
+    expect(validateCheckoutDetails(details, 'shipping')).toEqual({});
+  });
+
+  it('reports an unknown province name as a mismatch but not a missing one', () => {
+    const unknown = buildCheckoutDetails({ shippingAddress: { province: 'Atlantis', postalCode: '28013' } });
+    expect(validateCheckoutDetails(unknown, 'shipping')).toEqual({ 'shippingAddress.postalCode': 'postalCodeMismatch' });
+    const missing = buildCheckoutDetails({ shippingAddress: { province: '', postalCode: '08001' } });
+    expect(validateCheckoutDetails(missing, 'shipping')).toEqual({ 'shippingAddress.province': 'required' });
   });
 
   it('only ships to Spain', () => {

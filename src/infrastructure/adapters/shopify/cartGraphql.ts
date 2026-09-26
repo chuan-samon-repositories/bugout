@@ -5,7 +5,7 @@ import {
   ShopifyVariantNode,
   VARIANT_FIELDS_FRAGMENT,
 } from './productMapping';
-import { ShopifyUserError } from './ShopifyClient';
+import { STOREFRONT_CONTEXT, ShopifyUserError } from './ShopifyClient';
 
 const CART_FIELDS_FRAGMENT = /* GraphQL */ `
   fragment CartFields on Cart {
@@ -48,41 +48,41 @@ export interface CartMutationPayload {
 const MUTATION_RESULT = 'cart { ...CartFields } userErrors { field message code }';
 
 export const CART_QUERY = /* GraphQL */ `
-  query Cart($id: ID!) {
+  query Cart($id: ID!) ${STOREFRONT_CONTEXT} {
     cart(id: $id) { ...CartFields }
   }
   ${CART_FIELDS_FRAGMENT}
 `;
 
 export const CART_CHECKOUT_URL_QUERY = /* GraphQL */ `
-  query CartCheckoutUrl($id: ID!) {
+  query CartCheckoutUrl($id: ID!) ${STOREFRONT_CONTEXT} {
     cart(id: $id) { checkoutUrl }
   }
 `;
 
 export const CART_CREATE_MUTATION = /* GraphQL */ `
-  mutation CartCreate($lines: [CartLineInput!]) {
+  mutation CartCreate($lines: [CartLineInput!]) ${STOREFRONT_CONTEXT} {
     cartCreate(input: { lines: $lines }) { ${MUTATION_RESULT} }
   }
   ${CART_FIELDS_FRAGMENT}
 `;
 
 export const CART_LINES_ADD_MUTATION = /* GraphQL */ `
-  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) {
+  mutation CartLinesAdd($cartId: ID!, $lines: [CartLineInput!]!) ${STOREFRONT_CONTEXT} {
     cartLinesAdd(cartId: $cartId, lines: $lines) { ${MUTATION_RESULT} }
   }
   ${CART_FIELDS_FRAGMENT}
 `;
 
 export const CART_LINES_UPDATE_MUTATION = /* GraphQL */ `
-  mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) {
+  mutation CartLinesUpdate($cartId: ID!, $lines: [CartLineUpdateInput!]!) ${STOREFRONT_CONTEXT} {
     cartLinesUpdate(cartId: $cartId, lines: $lines) { ${MUTATION_RESULT} }
   }
   ${CART_FIELDS_FRAGMENT}
 `;
 
 export const CART_LINES_REMOVE_MUTATION = /* GraphQL */ `
-  mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) {
+  mutation CartLinesRemove($cartId: ID!, $lineIds: [ID!]!) ${STOREFRONT_CONTEXT} {
     cartLinesRemove(cartId: $cartId, lineIds: $lineIds) { ${MUTATION_RESULT} }
   }
   ${CART_FIELDS_FRAGMENT}

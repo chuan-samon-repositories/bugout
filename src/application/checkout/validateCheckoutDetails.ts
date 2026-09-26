@@ -1,6 +1,7 @@
 import { CheckoutDetails } from '../dtos/Order';
 import { FieldErrors } from '../errors';
 import { isBlank, isValidEmail } from '../validation';
+import { provinceForPostalCode } from './provinces';
 
 export type CheckoutStep = 'contact' | 'shipping' | 'all';
 
@@ -27,6 +28,11 @@ export function isValidSpanishPhone(value: string): boolean {
   return SPANISH_PHONE.test(digits);
 }
 
+/** Case- and accent-insensitive comparison, so "avila" matches "Ávila". */
+function isSameProvince(selected: string, expected: string | null): boolean {
+  return expected !== null && selected.trim().localeCompare(expected, 'es', { sensitivity: 'base' }) === 0;
+}
+
 function validateContact({ customer }: CheckoutDetails, errors: FieldErrors): void {
   if (isBlank(customer.email)) errors['customer.email'] = 'required';
   else if (!isValidEmail(customer.email)) errors['customer.email'] = 'invalidEmail';
@@ -46,6 +52,8 @@ function validateShipping({ shippingAddress: address }: CheckoutDetails, errors:
     errors['shippingAddress.postalCode'] = 'invalidPostalCode';
   } else if (!isShippablePostalCode(address.postalCode)) {
     errors['shippingAddress.postalCode'] = 'unsupportedRegion';
+  } else if (!isBlank(address.province) && !isSameProvince(address.province, provinceForPostalCode(address.postalCode))) {
+    errors['shippingAddress.postalCode'] = 'postalCodeMismatch';
   }
   if ((address.country ?? '').trim().toUpperCase() !== SHIPPING_COUNTRY) {
     errors['shippingAddress.country'] = 'required';

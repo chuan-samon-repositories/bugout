@@ -134,18 +134,6 @@ describe('Cart', () => {
     expect(cart.totalAmount().minor).toBe(16000);
   });
 
-  it('removeItem removes one unit and drops the line at zero', () => {
-    const cart = new Cart('EUR');
-    const product = buildProduct();
-    cart.addItem(product, qty(2));
-    cart.removeItem(product.id);
-    expect(cart.quantityOf(product.id)).toBe(1);
-    cart.removeItem(product.id);
-    expect(cart.quantityOf(product.id)).toBe(0);
-    expect(cart.isEmpty()).toBe(true);
-    expect(() => cart.removeItem(product.id)).toThrow(NotFoundError);
-  });
-
   it('deleteItem removes the whole line', () => {
     const cart = new Cart('EUR');
     const keep = buildProduct({ id: 'keep' });

@@ -7,7 +7,6 @@ import { AnalyticsService } from '@/application/ports/AnalyticsService';
 const posthog = vi.hoisted(() => ({
   init: vi.fn(),
   capture: vi.fn(),
-  identify: vi.fn(),
   captureException: vi.fn(),
   opt_in_capturing: vi.fn(),
   opt_out_capturing: vi.fn(),
@@ -34,12 +33,11 @@ describe('PostHogAnalyticsAdapter', () => {
   it('drops everything before consent and never loads PostHog', async () => {
     const adapter = create();
     adapter.track(event);
-    adapter.identify('ana@example.es');
     adapter.captureException(new Error('boom'));
     await adapter.whenIdle();
     expect(posthog.init).not.toHaveBeenCalled();
     expect(posthog.capture).not.toHaveBeenCalled();
-    expect(posthog.identify).not.toHaveBeenCalled();
+    expect(posthog.captureException).not.toHaveBeenCalled();
   });
 
   it('initialises PostHog on consent with the privacy-friendly config', async () => {
@@ -54,6 +52,9 @@ describe('PostHogAnalyticsAdapter', () => {
       capture_exceptions: true,
       person_profiles: 'identified_only',
       persistence: 'localStorage+cookie',
+      opt_out_persistence_by_default: true,
+      disable_session_recording: true,
+      advanced_disable_flags: true,
     });
     expect(posthog.opt_in_capturing).toHaveBeenCalledOnce();
   });
@@ -69,14 +70,12 @@ describe('PostHogAnalyticsAdapter', () => {
     const adapter = create();
     adapter.setConsent(true);
     adapter.track(event);
-    adapter.identify('ana@example.es', { plan: 'demo' });
     const error = new Error('boom');
     adapter.captureException(error, { area: 'cart' });
     expect(posthog.capture).not.toHaveBeenCalled();
 
     await adapter.whenIdle();
     expect(posthog.capture).toHaveBeenCalledWith('cart_viewed', event.properties);
-    expect(posthog.identify).toHaveBeenCalledWith('ana@example.es', { plan: 'demo' });
     expect(posthog.captureException).toHaveBeenCalledWith(error, { area: 'cart' });
     expect(posthog.init.mock.invocationCallOrder[0]).toBeLessThan(posthog.capture.mock.invocationCallOrder[0]);
   });
@@ -89,13 +88,15 @@ describe('PostHogAnalyticsAdapter', () => {
     expect(posthog.capture).toHaveBeenCalledOnce();
   });
 
-  it('opts out and resets when consent is withdrawn, then drops events', async () => {
+  it('resets and then opts out when consent is withdrawn, then drops events', async () => {
     const adapter = create();
     adapter.setConsent(true);
     await adapter.whenIdle();
     adapter.setConsent(false);
     expect(posthog.opt_out_capturing).toHaveBeenCalledOnce();
     expect(posthog.reset).toHaveBeenCalledOnce();
+    // reset() also clears the stored consent, so opting out first would be undone.
+    expect(posthog.reset.mock.invocationCallOrder[0]).toBeLessThan(posthog.opt_out_capturing.mock.invocationCallOrder[0]);
 
     adapter.track(event);
     expect(posthog.capture).not.toHaveBeenCalled();
@@ -150,7 +151,6 @@ describe('NoopAnalyticsAdapter', () => {
     expect(() => {
       adapter.setConsent(true);
       adapter.track(event);
-      adapter.identify('x');
       adapter.captureException(new Error('x'));
     }).not.toThrow();
   });

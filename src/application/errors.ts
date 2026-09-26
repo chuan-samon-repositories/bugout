@@ -4,6 +4,8 @@ export type ValidationCode =
   | 'invalidPhone'
   | 'invalidPostalCode'
   | 'unsupportedRegion'
+  /** A valid, shippable postal code that belongs to a different province than the one selected. */
+  | 'postalCodeMismatch'
   | 'tooShort'
   | 'tooLong';
 

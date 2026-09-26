@@ -25,11 +25,6 @@ export class ManageCartUseCase {
     return this.update((cart) => cart.setQuantity(productId, quantity));
   }
 
-  /** Removes a single unit. */
-  removeFromCart(productId: ProductId): Promise<Cart> {
-    return this.update((cart) => cart.removeItem(productId));
-  }
-
   /** Removes the whole line. */
   deleteFromCart(productId: ProductId): Promise<Cart> {
     return this.update((cart) => cart.deleteItem(productId));

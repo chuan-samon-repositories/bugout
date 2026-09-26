@@ -29,6 +29,8 @@ describe('ShopifyCheckoutAdapter', () => {
     const fetch = queuedFetch({ data: { cart: { checkoutUrl: 'https://shop.test/checkouts/cart-1' } } });
     await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-1');
     expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-1' });
+    expect(sentRequest(fetch, 0).query).toContain('@inContext(country: ES, language: ES)');
+    expect(sentRequest(fetch, 0).init.cache).toBe('no-store');
   });
 
   it('creates the cart from the aggregate when there is no id', async () => {
@@ -38,6 +40,8 @@ describe('ShopifyCheckoutAdapter', () => {
     expect(url).toBe(created.checkoutUrl);
     expect(sentRequest(fetch, 0).variables).toEqual({ lines: [{ merchandiseId: variantGid(1), quantity: 2 }] });
     expect(storage.getItem(SHOPIFY_CART_ID_KEY)).toBe('cart-new');
+    expect(sentRequest(fetch, 0).query).toContain('mutation CartCreate($lines: [CartLineInput!]) @inContext(country: ES, language: ES)');
+    expect(sentRequest(fetch, 0).init.cache).toBe('no-store');
   });
 
   it('recreates the cart when the stored one has expired', async () => {

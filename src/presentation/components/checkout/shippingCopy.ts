@@ -5,7 +5,7 @@ import { formatMoney, formatNumber, messages } from "@/presentation/i18n";
 const copy = messages.checkout;
 
 export function shippingMethodLabel(rate: Pick<ShippingRate, "id">): string {
-  return copy.shippingMethods[rate.id];
+  return messages.common.shippingMethods[rate.id];
 }
 
 export function deliveryEstimate(rate: Pick<ShippingRate, "deliveryDays">): string {

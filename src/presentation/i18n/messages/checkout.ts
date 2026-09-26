@@ -43,11 +43,6 @@ export const checkout = {
   marketingOptIn: 'Quiero recibir por correo novedades y ofertas de Bugout.',
   provincePlaceholder: 'Selecciona una provincia',
   countryName: 'España',
-  shippingMethods: {
-    standard: 'Estándar',
-    express: 'Urgente',
-    overnight: '24 horas',
-  },
   deliveryEstimate: (min: number, max: number) =>
     min === max
       ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}`

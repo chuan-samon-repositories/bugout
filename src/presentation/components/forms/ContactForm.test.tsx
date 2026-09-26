@@ -2,13 +2,13 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getContainer } from "@/infrastructure/config";
 import ContactPage from "@/app/contact/page";
 import { ContactForm } from "./ContactForm";
 import { isContactTopic } from "./contactTopics";
 
 const analytics = vi.hoisted(() => ({
   track: vi.fn(),
-  identify: vi.fn(),
   captureException: vi.fn(),
   setConsent: vi.fn(),
 }));
@@ -23,7 +23,17 @@ vi.mock("@/infrastructure/config", async (importOriginal) => {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
+
+async function fillValidMessage() {
+  await userEvent.type(screen.getByRole("textbox", { name: "Nombre" }), "Ana García");
+  await userEvent.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "ana@example.es");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Tema" }), "order");
+  await userEvent.type(screen.getByRole("textbox", { name: "Asunto" }), "Pedido BUG-123");
+  await userEvent.type(screen.getByRole("textbox", { name: "Mensaje" }), "¿Cuándo llegará mi pedido?");
+  await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+}
 
 describe("ContactForm", () => {
   it("maps field errors to Spanish copy, lists them and focuses the first invalid field", async () => {
@@ -60,14 +70,23 @@ describe("ContactForm", () => {
     expect(screen.getByText("4 / 2000 caracteres")).toBeInTheDocument();
   });
 
-  it("sends the message, shows the success panel, tracks the topic and resets", async () => {
+  it("says it is a demo while messaging is simulated and does not claim the message was sent", async () => {
     render(<ContactForm />);
-    await userEvent.type(screen.getByRole("textbox", { name: "Nombre" }), "Ana García");
-    await userEvent.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "ana@example.es");
-    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Tema" }), "order");
-    await userEvent.type(screen.getByRole("textbox", { name: "Asunto" }), "Pedido BUG-123");
-    await userEvent.type(screen.getByRole("textbox", { name: "Mensaje" }), "¿Cuándo llegará mi pedido?");
-    await userEvent.click(screen.getByRole("button", { name: "Enviar mensaje" }));
+    expect(
+      screen.getByText("Modo demostración: este formulario todavía no envía los datos a ninguna parte."),
+    ).toBeInTheDocument();
+    await fillValidMessage();
+
+    expect(await screen.findByText("Recibido. En modo demostración el mensaje no se envía a nadie.")).toBeInTheDocument();
+    expect(screen.queryByText(/Mensaje enviado/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Te responderemos/)).not.toBeInTheDocument();
+  });
+
+  it("sends the message, shows the success panel, tracks the topic and resets once messaging is connected", async () => {
+    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+    render(<ContactForm />);
+    expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
+    await fillValidMessage();
 
     expect(await screen.findByText("Mensaje enviado. Te responderemos lo antes posible.")).toBeInTheDocument();
     expect(analytics.track).toHaveBeenCalledWith({ name: "contact_message_sent", properties: { topic: "order" } });
@@ -111,5 +130,13 @@ describe("ContactPage", () => {
     expect(screen.getByText(/Envío estándar gratis a partir de 75,00\s€/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /@/ })).not.toBeInTheDocument();
     expect(screen.getByText("¿Hacéis pedidos para empresas o grupos?")).toBeInTheDocument();
+    expect(screen.queryByText(/Te responderemos por correo/)).not.toBeInTheDocument();
+  });
+
+  it("only promises an email reply to wholesale enquiries once messaging is connected", async () => {
+    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+    render(await ContactPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByText(/Te responderemos por correo/)).toBeInTheDocument();
+    expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
   });
 });

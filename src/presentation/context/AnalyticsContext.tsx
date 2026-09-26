@@ -1,6 +1,16 @@
 "use client";
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { CONSENT_VERSION, type ConsentDecision } from "@/application/dtos/Consent";
 import type { AnalyticsService } from "@/application/ports/AnalyticsService";
 import { getContainer } from "@/infrastructure/config";
@@ -18,6 +28,12 @@ export interface ConsentContextValue {
   isBannerOpen: boolean;
 }
 
+/**
+ * localStorage key of the stored consent decision (LocalStorageConsentRepository). Only used to recognise
+ * `storage` events from other tabs; the value itself is always read through the ConsentRepository.
+ */
+const CONSENT_STORAGE_KEY = "bugout.consent";
+
 const AnalyticsContext = createContext<AnalyticsService | null>(null);
 const ConsentContext = createContext<ConsentContextValue | null>(null);
 
@@ -30,17 +46,45 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [reopened, setReopened] = useState(false);
 
-  useEffect(() => {
+  /** Whether the service currently has consent, so decisions from other tabs only toggle it on real changes. */
+  const granted = useRef(false);
+
+  const applyConsent = useCallback(
+    (analytics: boolean) => {
+      if (granted.current === analytics) return;
+      granted.current = analytics;
+      service.setConsent(analytics);
+    },
+    [service],
+  );
+
+  // A layout effect runs before any child's passive effect, so events children track on mount
+  // (e.g. product_viewed on a full page load) already see a restored consent instead of being dropped.
+  useLayoutEffect(() => {
     const stored = repository.get();
     setDecision(stored);
     setReady(true);
-    if (stored?.analytics) service.setConsent(true);
-  }, [repository, service]);
+    if (stored?.analytics) applyConsent(true);
+  }, [repository, applyConsent]);
+
+  // Accepting or withdrawing consent in another tab applies here too.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== null && event.key !== CONSENT_STORAGE_KEY) return;
+      const stored = repository.get();
+      setDecision(stored);
+      setReopened(false);
+      applyConsent(stored?.analytics === true);
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [repository, applyConsent]);
 
   const decide = useCallback(
     (analytics: boolean) => {
       const next: ConsentDecision = { analytics, decidedAt: new Date().toISOString(), version: CONSENT_VERSION };
       repository.set(next);
+      granted.current = analytics;
       service.setConsent(analytics);
       setDecision(next);
       setReopened(false);

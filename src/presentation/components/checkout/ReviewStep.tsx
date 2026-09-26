@@ -43,7 +43,8 @@ function ReviewSection({
           <VisuallyHidden> {editLabel}</VisuallyHidden>
         </Button>
       </div>
-      <div className="mt-2 space-y-1 break-words text-sm text-muted">{children}</div>
+      {/* ph-no-capture: PostHog autocapture never records the customer data shown here. */}
+      <div className="ph-no-capture mt-2 space-y-1 break-words text-sm text-muted">{children}</div>
     </section>
   );
 }

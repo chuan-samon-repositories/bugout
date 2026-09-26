@@ -30,6 +30,15 @@ const mocks = vi.hoisted(() => {
     store,
     checkout: vi.fn(async (): Promise<boolean> => false),
     refresh: vi.fn(async (): Promise<void> => undefined),
+    /** Like CartContext.runExclusive: runs the task, then the cart is reloaded (see `afterExclusive`). */
+    runExclusive: vi.fn(async <T,>(task: () => Promise<T>): Promise<T> => {
+      try {
+        return await task();
+      } finally {
+        void Promise.resolve().then(() => mocks.afterExclusive());
+      }
+    }),
+    afterExclusive: vi.fn((): void => undefined),
     push: vi.fn(),
     analytics: { track: vi.fn(), identify: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() },
   };
@@ -62,6 +71,7 @@ vi.mock("@/presentation/context/CartContext", async () => {
         clearCart: vi.fn(),
         checkout: mocks.checkout,
         refresh: mocks.refresh,
+        runExclusive: mocks.runExclusive,
       };
     },
   };
@@ -104,6 +114,8 @@ async function fillShipping(user = userEvent.setup()) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.analytics.track.mockReset();
+  mocks.afterExclusive.mockReset();
   window.sessionStorage.clear();
   mocks.store.set({ cart: null, ready: false });
 });
@@ -211,7 +223,7 @@ describe("CheckoutFlow", () => {
       shippingMethod: "express",
     };
     const execute = vi.spyOn(getContainer().getPlaceOrderUseCase(), "execute").mockResolvedValue(confirmation);
-    mocks.refresh.mockImplementation(async () => setCart(new Cart("EUR")));
+    mocks.afterExclusive.mockImplementation(() => setCart(new Cart("EUR")));
 
     render(<CheckoutFlow provider="local" />);
     await fillContact();
@@ -230,7 +242,7 @@ describe("CheckoutFlow", () => {
         shippingAddress: expect.objectContaining({ postalCode: "28013", province: "Madrid", country: "ES" }),
       }),
     );
-    expect(mocks.refresh).toHaveBeenCalled();
+    expect(mocks.runExclusive).toHaveBeenCalledTimes(1);
     await waitFor(() => expect(mocks.store.snapshot.cart?.isEmpty()).toBe(true));
 
     expect(screen.getByText("BUG-7K2Q9XA1")).toBeInTheDocument();
@@ -238,8 +250,11 @@ describe("CheckoutFlow", () => {
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(/89,95\s€/);
     expect(screen.queryByText("Tu carrito está vacío")).not.toBeInTheDocument();
 
-    expect(mocks.analytics.identify).toHaveBeenCalledWith(expect.stringMatching(/^cust_[0-9a-f]{32}$/), { marketing_opt_in: false });
-    expect(JSON.stringify(mocks.analytics.identify.mock.calls)).not.toContain("ana@example.es");
+    expect(mocks.analytics.identify).not.toHaveBeenCalled();
+    expect(mocks.analytics.captureException).not.toHaveBeenCalled();
+    expect(screen.getByText("Ana@Example.es").closest(".ph-no-capture")).not.toBeNull();
+    const completed = mocks.analytics.track.mock.calls.filter(([event]) => event.name === "checkout_step_completed");
+    expect(completed.map(([event]) => event.properties.step_name)).toEqual(["contact", "shipping", "review"]);
     expect(mocks.analytics.track).toHaveBeenCalledWith({
       name: "order_completed",
       properties: {
@@ -254,6 +269,83 @@ describe("CheckoutFlow", () => {
       },
     });
     expect(window.sessionStorage.getItem(LAST_ORDER_STORAGE_KEY)).toContain("BUG-7K2Q9XA1");
+  });
+
+  it("shows the confirmation even when order analytics throws", async () => {
+    setCart(cartWith(60));
+    vi.spyOn(getContainer().getPlaceOrderUseCase(), "execute").mockResolvedValue({
+      orderNumber: "BUG-NOANALYT",
+      placedAt: "2026-09-26T10:00:00.000Z",
+      email: "ana@example.es",
+      lines: [{ productId: "mochila-72h", name: "Mochila 72H", quantity: 1, unitPriceMinor: 6000, subtotalMinor: 6000 }],
+      totals: { subtotal: eur(60), shipping: eur(4.95), tax: eur(11.27), total: eur(64.95) },
+      shippingMethod: "standard",
+    });
+    render(<CheckoutFlow provider="local" />);
+    await fillContact();
+    await fillShipping();
+    mocks.analytics.track.mockImplementation(() => {
+      throw new Error("analytics down");
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar pedido" }));
+
+    expect(await screen.findByRole("heading", { level: 1, name: "¡Gracias por tu pedido!" })).toBeInTheDocument();
+    expect(screen.getByText("BUG-NOANALYT")).toBeInTheDocument();
+    expect(mocks.analytics.captureException).toHaveBeenCalledWith(expect.any(Error), { area: "checkout", action: "track_order" });
+  });
+
+  it("tracks each step once per checkout, even after going back and resubmitting", async () => {
+    setCart(cartWith(60));
+    render(<CheckoutFlow provider="local" />);
+    const user = userEvent.setup();
+    await fillContact(user);
+    await user.click(screen.getByRole("button", { name: "Volver" }));
+    await screen.findByRole("heading", { level: 2, name: "Contacto" });
+    await user.click(screen.getByRole("button", { name: "Continuar con el envío" }));
+    await screen.findByRole("heading", { level: 2, name: "Envío" });
+    await fillShipping(user);
+    await user.click(screen.getByRole("button", { name: /Editar\s*datos de contacto/ }));
+    await user.click(await screen.findByRole("button", { name: "Continuar con el envío" }));
+    await screen.findByRole("heading", { level: 2, name: "Revisión" });
+
+    const completed = mocks.analytics.track.mock.calls.filter(([event]) => event.name === "checkout_step_completed");
+    expect(completed.map(([event]) => event.properties.step_name)).toEqual(["contact", "shipping"]);
+  });
+
+  it("offers only shippable provinces and preselects the one matching the postal code", async () => {
+    setCart(cartWith(60));
+    render(<CheckoutFlow provider="local" />);
+    await fillContact();
+
+    const province = screen.getByRole("combobox", { name: "Provincia" });
+    const options = within(province).getAllByRole("option").map((option) => option.textContent);
+    expect(options).toEqual(expect.arrayContaining(["Madrid", "Illes Balears", "A Coruña"]));
+    for (const excluded of ["Las Palmas", "Santa Cruz de Tenerife", "Ceuta", "Melilla"]) {
+      expect(options).not.toContain(excluded);
+    }
+
+    const postalCode = screen.getByRole("textbox", { name: "Código postal" });
+    await userEvent.type(postalCode, "08001");
+    expect(province).toHaveValue("Barcelona");
+    await userEvent.clear(postalCode);
+    await userEvent.type(postalCode, "28013");
+    expect(province).toHaveValue("Madrid");
+    expect(screen.getByRole("textbox", { name: "Código postal" }).closest(".ph-no-capture")).not.toBeNull();
+  });
+
+  it("explains a postal code that does not belong to the selected province", async () => {
+    setCart(cartWith(60));
+    render(<CheckoutFlow provider="local" />);
+    await fillContact();
+    await userEvent.type(screen.getByRole("textbox", { name: "Dirección" }), "Calle Mayor 1");
+    await userEvent.type(screen.getByRole("textbox", { name: "Localidad" }), "Madrid");
+    await userEvent.selectOptions(screen.getByRole("combobox", { name: "Provincia" }), "Sevilla");
+    await userEvent.type(screen.getByRole("textbox", { name: "Código postal" }), "28013");
+    await userEvent.click(screen.getByRole("button", { name: "Revisar el pedido" }));
+
+    expect(screen.getByRole("textbox", { name: "Código postal" })).toHaveAccessibleDescription(
+      "Este código postal no corresponde a la provincia seleccionada.",
+    );
   });
 
   it("returns to the step owning the first failing field when placing the order is rejected", async () => {

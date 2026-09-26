@@ -4,11 +4,21 @@ import { orderFieldErrors, validationMessage } from "./validationMessages";
 
 describe("validationMessage", () => {
   it("has Spanish copy for every validation code", () => {
-    const codes: ValidationCode[] = ["required", "invalidEmail", "invalidPhone", "invalidPostalCode", "tooShort", "tooLong"];
+    const codes: ValidationCode[] = [
+      "required",
+      "invalidEmail",
+      "invalidPhone",
+      "invalidPostalCode",
+      "unsupportedRegion",
+      "postalCodeMismatch",
+      "tooShort",
+      "tooLong",
+    ];
     for (const code of codes) {
       expect(validationMessage(code)).toMatch(/\.$/);
     }
     expect(validationMessage("required")).toBe("Este campo es obligatorio.");
+    expect(validationMessage("postalCodeMismatch")).toBe("Este código postal no corresponde a la provincia seleccionada.");
   });
 
   it("mentions the length limits when given", () => {

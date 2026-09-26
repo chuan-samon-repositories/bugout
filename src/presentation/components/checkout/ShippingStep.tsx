@@ -1,6 +1,7 @@
 "use client";
 
 import type { Ref } from "react";
+import { SHIPPABLE_PROVINCES } from "@/application/checkout";
 import type { CheckoutDetails, ShippingAddress } from "@/application/dtos/Order";
 import type { FieldErrors } from "@/application/errors";
 import type { PricingPolicy, ShippingMethodId } from "@/domain/entities/order/OrderPricing";
@@ -16,7 +17,6 @@ import {
 import { validationMessage } from "@/presentation/components/forms/validationMessages";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { checkoutFieldId, summaryItems } from "./checkoutFields";
-import { SPANISH_PROVINCES } from "./provinces";
 import { chargedShippingPrice, deliveryEstimate, shippingMethodLabel } from "./shippingCopy";
 import { StepForm } from "./StepForm";
 
@@ -34,7 +34,7 @@ export interface ShippingStepProps {
 }
 
 const copy = messages.checkout;
-const provinceOptions = SPANISH_PROVINCES.map((province) => ({ value: province, label: province }));
+const provinceOptions = SHIPPABLE_PROVINCES.map(({ name }) => ({ value: name, label: name }));
 const NOTES_MAX_LENGTH = 500;
 
 export function ShippingStep({

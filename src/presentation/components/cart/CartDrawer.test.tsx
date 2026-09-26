@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "@/app/Providers";
-import { resetContainer } from "@/infrastructure/config";
+import { getContainer, resetContainer } from "@/infrastructure/config";
 import { useCart } from "@/presentation/context/CartContext";
 import { CartDrawer } from "./CartDrawer";
 
@@ -47,6 +47,26 @@ describe("CartDrawer", () => {
     localStorage.clear();
     resetContainer();
     router.push.mockReset();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows a load error with a retry instead of an empty cart when the cart cannot be loaded", async () => {
+    vi.spyOn(getContainer().getAnalyticsService(), "captureException");
+    const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart").mockRejectedValueOnce(new Error("offline"));
+    storeCart([{ productId: "first-aid-pro", quantity: 2 }]);
+    const { user, dialog } = await openDrawer();
+
+    const alert = await within(dialog).findByRole("alert");
+    expect(alert).toHaveTextContent("No hemos podido cargar tu carrito.");
+    expect(within(dialog).queryByText("Tu carrito está vacío.")).toBeNull();
+
+    await user.click(within(alert).getByRole("button", { name: "Reintentar" }));
+    await waitFor(() => expect(within(dialog).getAllByRole("listitem")).toHaveLength(1));
+    expect(getCart).toHaveBeenCalledTimes(2);
+    expect(within(dialog).queryByRole("alert")).toBeNull();
   });
 
   it("shows an empty state with a link to the catalog", async () => {

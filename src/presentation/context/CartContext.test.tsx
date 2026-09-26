@@ -3,7 +3,7 @@ import { act, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "@/app/Providers";
 import type { Product } from "@/domain/entities/product/Product";
-import { BusinessRuleError } from "@/domain/errors";
+import { BusinessRuleError, ValidationError } from "@/domain/errors";
 import { getContainer, resetContainer } from "@/infrastructure/config";
 import { useCart } from "./CartContext";
 
@@ -52,7 +52,7 @@ describe("CartProvider", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
-  it("adds an item, opens the drawer, confirms with a toast and tracks the event", async () => {
+  it("adds an item, opens the drawer, confirms with a toast and tracks the event (but not cart_viewed)", async () => {
     const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
     const backpack = await product("24h-survival-backpack");
     const { result } = await renderCart();
@@ -78,7 +78,75 @@ describe("CartProvider", () => {
         currency: "EUR",
       }),
     });
-    expect(track).toHaveBeenCalledWith({ name: "cart_viewed", properties: { cart_value: 398, cart_item_count: 2, currency: "EUR" } });
+    expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ name: "cart_viewed" }));
+  });
+
+  it("tracks cart_viewed only when the visitor opens the drawer, once per opening", async () => {
+    const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    const { result } = await renderCart();
+
+    act(() => result.current.openCart());
+    act(() => result.current.openCart());
+    expect(result.current.isOpen).toBe(true);
+    const viewed = () => track.mock.calls.filter(([event]) => event.name === "cart_viewed");
+    expect(viewed()).toEqual([[{ name: "cart_viewed", properties: { cart_value: 89, cart_item_count: 1, currency: "EUR" } }]]);
+
+    act(() => result.current.closeCart());
+    act(() => result.current.openCart());
+    expect(viewed()).toHaveLength(2);
+  });
+
+  it("reports a failed load and recovers on refresh", async () => {
+    const container = getContainer();
+    vi.spyOn(container.getAnalyticsService(), "captureException");
+    const getCart = vi.spyOn(container.getManageCartUseCase(), "getCart").mockRejectedValueOnce(new Error("offline"));
+    const { result } = await renderCart();
+    expect(result.current.loadError).toBe(true);
+    expect(result.current.cart).toBeNull();
+
+    await act(() => result.current.refresh());
+    expect(getCart).toHaveBeenCalledTimes(2);
+    expect(result.current.loadError).toBe(false);
+    expect(result.current.cart?.isEmpty()).toBe(true);
+  });
+
+  it("runs an exclusive task inside the mutation queue and refreshes the cart afterwards", async () => {
+    const backpack = await product("24h-survival-backpack");
+    const { result } = await renderCart();
+    const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
+
+    let release: (value: string) => void = () => {};
+    const task = vi.fn(() => new Promise<string>((resolve) => (release = resolve)));
+    let exclusive: Promise<string> = Promise.resolve("");
+    let added: Promise<boolean> = Promise.resolve(false);
+    act(() => {
+      exclusive = result.current.runExclusive(task);
+      added = result.current.addItem(backpack, 1);
+    });
+    await waitFor(() => expect(task).toHaveBeenCalled());
+    expect(result.current.pending).toBe(true);
+    expect(result.current.itemCount).toBe(0);
+
+    // Simulates an order that empties the stored cart behind the provider's back.
+    await act(async () => {
+      release("BUG-1");
+      await expect(exclusive).resolves.toBe("BUG-1");
+      await added;
+    });
+    expect(getCart).toHaveBeenCalledTimes(1);
+    expect(result.current.itemCount).toBe(1);
+    expect(result.current.pending).toBe(false);
+  });
+
+  it("passes an exclusive task's failure through and still refreshes", async () => {
+    const { result } = await renderCart();
+    const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
+    await act(async () => {
+      await expect(result.current.runExclusive(() => Promise.reject(new Error("rejected")))).rejects.toThrow("rejected");
+    });
+    await waitFor(() => expect(getCart).toHaveBeenCalledTimes(1));
+    expect(result.current.pending).toBe(false);
   });
 
   it("shows a Spanish error and tracks the failure when a product is out of stock", async () => {
@@ -235,6 +303,44 @@ describe("CartProvider", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("No hemos podido iniciar el pago");
     expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("tells the visitor the cart is empty when checkout finds no items, without reporting an exception", async () => {
+    const captureException = vi.spyOn(getContainer().getAnalyticsService(), "captureException");
+    vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockRejectedValue(new ValidationError("Cart is empty"));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    const { result } = await renderCart();
+    localStorage.removeItem("bugout.cart");
+
+    let started = true;
+    await act(async () => {
+      started = await result.current.checkout();
+    });
+
+    expect(started).toBe(false);
+    expect(screen.getByRole("alert")).toHaveTextContent("Tu carrito está vacío. Añade algún producto para finalizar la compra.");
+    expect(screen.getByRole("alert")).not.toHaveTextContent("Cart is empty");
+    expect(captureException).not.toHaveBeenCalled();
+    expect(result.current.itemCount).toBe(0);
+    expect(router.push).not.toHaveBeenCalled();
+  });
+
+  it("ignores storage events for keys that are not the cart's", async () => {
+    const { result } = await renderCart();
+    const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
+
+    await act(async () => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "bugout.consent" }));
+      window.dispatchEvent(new StorageEvent("storage", { key: "bugout.something-else" }));
+      await new Promise((resolve) => setTimeout(resolve, 10));
+    });
+    expect(getCart).not.toHaveBeenCalled();
+
+    act(() => {
+      window.dispatchEvent(new StorageEvent("storage", { key: "bugout.shopify-cart-id" }));
+    });
+    await waitFor(() => expect(getCart).toHaveBeenCalledTimes(1));
+    expect(result.current.itemCount).toBe(0);
   });
 
   it("reloads when another tab changes the stored cart", async () => {

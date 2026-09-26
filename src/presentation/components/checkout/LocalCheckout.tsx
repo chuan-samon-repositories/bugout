@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { pseudonymousCustomerId } from "@/application/analytics/customerId";
-import { validateCheckoutDetails } from "@/application/checkout";
+import { provinceForPostalCode, validateCheckoutDetails } from "@/application/checkout";
 import type { CheckoutDetails, CustomerDetails, OrderConfirmation, ShippingAddress } from "@/application/dtos/Order";
 import { FormValidationError, type FieldErrors } from "@/application/errors";
 import type { Cart } from "@/domain/entities/cart/Cart";
@@ -11,6 +10,7 @@ import { Money } from "@/domain/value-objects/Money";
 import { getContainer } from "@/infrastructure/config";
 import { focusFirstInvalidField } from "@/presentation/components/forms/focusField";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
+import { useCart } from "@/presentation/context/CartContext";
 import { messages } from "@/presentation/i18n";
 import {
   CHECKOUT_STEPS,
@@ -31,8 +31,8 @@ import { ShippingStep } from "./ShippingStep";
 export interface LocalCheckoutProps {
   cart: Cart;
   policy: PricingPolicy;
-  /** Called with the order snapshot once the order has been placed. */
-  onOrderPlaced(confirmation: OrderConfirmation): Promise<void>;
+  /** Called with the order snapshot as soon as the order has been placed (the cart is refreshed separately). */
+  onOrderPlaced(confirmation: OrderConfirmation): void;
 }
 
 type FocusRequest = { kind: "heading" } | { kind: "fields"; ids: string[] };
@@ -42,6 +42,7 @@ const hasErrors = (errors: FieldErrors) => Object.keys(errors).length > 0;
 /** The in-app (demo) checkout: contact, shipping and review steps. No payment data is collected. */
 export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProps) {
   const analytics = useAnalytics();
+  const { runExclusive } = useCart();
   const [details, setDetails] = useState<CheckoutDetails>(() => emptyCheckoutDetails(policy));
   const [step, setStep] = useState<CheckoutStepId>("contact");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -50,6 +51,10 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
   const [placeError, setPlaceError] = useState<string | null>(null);
   const [focusRequest, setFocusRequest] = useState<FocusRequest | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
+  /** Steps already reported in this checkout, so going back and resubmitting a step does not count it twice. */
+  const trackedSteps = useRef(new Set<CheckoutStepId>());
+  /** The province last filled in from the postal code, so a corrected code can update it again. */
+  const autoProvince = useRef<string | null>(null);
 
   useEffect(() => {
     if (!focusRequest) return;
@@ -78,7 +83,9 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
     setFocusRequest({ kind: "fields", ids: firstInvalidIds(stepErrors, owner) });
   };
 
-  const trackStep = (stepId: CheckoutStepId) =>
+  const trackStep = (stepId: CheckoutStepId) => {
+    if (trackedSteps.current.has(stepId)) return;
+    trackedSteps.current.add(stepId);
     analytics.track({
       name: "checkout_step_completed",
       properties: {
@@ -89,6 +96,29 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
         currency: cart.currency,
       },
     });
+  };
+
+  const trackOrder = (confirmation: OrderConfirmation) => {
+    const { totals: placed } = confirmation;
+    trackStep("review");
+    analytics.track({
+      name: "order_completed",
+      properties: {
+        order_id: confirmation.orderNumber,
+        revenue: placed.total.amount,
+        shipping: placed.shipping.amount,
+        tax: placed.tax.amount,
+        currency: placed.total.currency,
+        item_count: confirmation.lines.reduce((count, line) => count + line.quantity, 0),
+        shipping_method: confirmation.shippingMethod,
+        products: confirmation.lines.map((line) => ({
+          product_id: line.productId,
+          quantity: line.quantity,
+          price: Money.fromMinor(line.unitPriceMinor, placed.total.currency).amount,
+        })),
+      },
+    });
+  };
 
   const submitStep = (stepId: FormStepId) => {
     const stepErrors = validateCheckoutDetails(details, stepId);
@@ -107,31 +137,12 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
     if (placing) return;
     setPlacing(true);
     setPlaceError(null);
+    let confirmation: OrderConfirmation;
     try {
-      const confirmation = await getContainer().getPlaceOrderUseCase().execute(details);
-      trackStep("review");
-      const customerId = await pseudonymousCustomerId(details.customer.email);
-      if (customerId) analytics.identify(customerId, { marketing_opt_in: details.marketingOptIn });
-      const { totals: placed } = confirmation;
-      analytics.track({
-        name: "order_completed",
-        properties: {
-          order_id: confirmation.orderNumber,
-          revenue: placed.total.amount,
-          shipping: placed.shipping.amount,
-          tax: placed.tax.amount,
-          currency: placed.total.currency,
-          item_count: confirmation.lines.reduce((count, line) => count + line.quantity, 0),
-          shipping_method: confirmation.shippingMethod,
-          products: confirmation.lines.map((line) => ({
-            product_id: line.productId,
-            quantity: line.quantity,
-            price: Money.fromMinor(line.unitPriceMinor, placed.total.currency).amount,
-          })),
-        },
-      });
-      await onOrderPlaced(confirmation);
+      // Inside the cart queue: drawer controls are disabled and no cart change can interleave with the order.
+      confirmation = await runExclusive(() => getContainer().getPlaceOrderUseCase().execute(details));
     } catch (error) {
+      setPlacing(false);
       if (error instanceof FormValidationError) {
         const owner = stepOwningFirstError(error.fieldErrors);
         const stepErrors = errorsForStep(error.fieldErrors, owner);
@@ -144,15 +155,31 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
       }
       analytics.captureException(error, { area: "checkout", action: "place_order" });
       setPlaceError(messages.checkout.review.placeError);
-    } finally {
-      setPlacing(false);
+      return;
+    }
+    // The order exists now: show the confirmation whatever happens to analytics. `placing` stays true so
+    // the button cannot submit twice while the confirmation replaces this form.
+    onOrderPlaced(confirmation);
+    try {
+      trackOrder(confirmation);
+    } catch (error) {
+      analytics.captureException(error, { area: "checkout", action: "track_order" });
     }
   };
 
   const updateCustomer = (patch: Partial<CustomerDetails>) =>
     setDetails((current) => ({ ...current, customer: { ...current.customer, ...patch } }));
   const updateAddress = (patch: Partial<ShippingAddress>) =>
-    setDetails((current) => ({ ...current, shippingAddress: { ...current.shippingAddress, ...patch } }));
+    setDetails((current) => {
+      const next = { ...current.shippingAddress, ...patch };
+      // A complete postal code fills in its province unless the visitor has chosen one themselves.
+      const suggested = patch.postalCode !== undefined ? provinceForPostalCode(next.postalCode) : null;
+      if (suggested && (!next.province.trim() || next.province === autoProvince.current)) {
+        next.province = suggested;
+        autoProvince.current = suggested;
+      }
+      return { ...current, shippingAddress: next };
+    });
 
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_22rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_24rem]">

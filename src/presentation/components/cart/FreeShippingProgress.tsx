@@ -15,7 +15,7 @@ export function FreeShippingProgress({ subtotal, policy }: FreeShippingProgressP
   if (!threshold || threshold.currency !== subtotal.currency || threshold.isZero()) return null;
 
   const rate = policy.shippingRates.find((candidate) => candidate.freeFrom?.equals(threshold));
-  const method = rate ? copy.shippingMethods[rate.id] : copy.shippingMethods.standard;
+  const method = messages.common.shippingMethods[rate?.id ?? "standard"].toLowerCase();
   const reached = subtotal.greaterThanOrEqual(threshold);
   const percent = reached ? 100 : Math.round((subtotal.minor / threshold.minor) * 100);
 

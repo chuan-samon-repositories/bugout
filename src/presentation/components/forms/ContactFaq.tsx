@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { PricingPolicy } from "@/domain/entities/order/OrderPricing";
+import { getContainer } from "@/infrastructure/config";
 import { ChevronDownIcon, cn, focusRing } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
@@ -33,6 +34,7 @@ function FaqItem({ question, children }: { question: string; children: ReactNode
 }
 
 export function ContactFaq({ policy }: { policy: PricingPolicy }) {
+  const simulated = getContainer().isMessagingSimulated();
   return (
     <section aria-labelledby="contact-faq-title">
       <h2 id="contact-faq-title" className="text-2xl font-bold tracking-tight text-ink">
@@ -65,7 +67,7 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
           </ul>
         </FaqItem>
         <FaqItem question={copy.wholesaleQuestion}>
-          <p>{copy.wholesaleAnswer(topics.wholesale)}</p>
+          <p>{copy.wholesaleAnswer(topics.wholesale, simulated)}</p>
         </FaqItem>
         <FaqItem question={copy.orderStatusQuestion}>
           <p>{copy.orderStatusAnswer(topics.order)}</p>

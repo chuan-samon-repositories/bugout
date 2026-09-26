@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import { getContainer } from "@/infrastructure/config";
-import { Button, ButtonLink, CartIcon, Drawer, Spinner } from "@/presentation/components/ui";
+import { AlertCircleIcon, Button, ButtonLink, CartIcon, Drawer, Spinner } from "@/presentation/components/ui";
 import { useCart } from "@/presentation/context/CartContext";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
@@ -14,7 +14,21 @@ const copy = messages.cart;
 
 /** Right-hand cart drawer wired to the cart context. */
 export function CartDrawer() {
-  const { cart, ready, pending, subtotal, isOpen, closeCart, setItemQuantity, removeItem, clearCart, checkout } = useCart();
+  const {
+    cart,
+    ready,
+    loadError,
+    pending,
+    subtotal,
+    isOpen,
+    closeCart,
+    setItemQuantity,
+    removeItem,
+    clearCart,
+    checkout,
+    refresh,
+  } = useCart();
+  const [retrying, setRetrying] = useState(false);
   const [checkingOut, setCheckingOut] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
   const policy = getContainer().getPricingPolicy();
@@ -35,6 +49,15 @@ export function CartDrawer() {
   const onClear = async () => {
     await clearCart();
     refocus();
+  };
+
+  const onRetry = async () => {
+    setRetrying(true);
+    try {
+      await refresh();
+    } finally {
+      setRetrying(false);
+    }
   };
 
   const onCheckout = async () => {
@@ -70,6 +93,14 @@ export function CartDrawer() {
         {!ready ? (
           <div className="flex justify-center py-12">
             <Spinner size="lg" className="text-navy" />
+          </div>
+        ) : loadError && !hasItems ? (
+          <div role="alert" className="flex flex-col items-center gap-3 py-12 text-center">
+            <AlertCircleIcon className="size-12 text-danger" />
+            <p className="text-lg font-semibold text-ink">{copy.loadError}</p>
+            <Button variant="secondary" onClick={() => void onRetry()} loading={retrying} className="mt-2">
+              {copy.retryLoad}
+            </Button>
           </div>
         ) : hasItems ? (
           <>

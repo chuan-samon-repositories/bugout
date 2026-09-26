@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { AnalyticsEvent } from "@/application/analytics/events";
 import type { Cart } from "@/domain/entities/cart/Cart";
 import type { Product } from "@/domain/entities/product/Product";
-import { BusinessRuleError, NotFoundError } from "@/domain/errors";
+import { BusinessRuleError, NotFoundError, ValidationError } from "@/domain/errors";
 import type { Money } from "@/domain/value-objects/Money";
 import { ProductId } from "@/domain/value-objects/ProductId";
 import { Quantity } from "@/domain/value-objects/Quantity";
@@ -20,11 +20,14 @@ export interface CartContextValue {
   /** Null until the stored cart has been restored on the client. */
   cart: Cart | null;
   ready: boolean;
+  /** True when the last load of the stored cart failed; `refresh()` retries. */
+  loadError: boolean;
   /** A cart mutation (or checkout) is in flight. */
   pending: boolean;
   itemCount: number;
   subtotal: Money | null;
   isOpen: boolean;
+  /** Opens the drawer at the visitor's request (tracks cart_viewed). */
   openCart(): void;
   closeCart(): void;
   /** Resolves true on success; shows a toast and opens the drawer, or shows an error toast. */
@@ -37,11 +40,17 @@ export interface CartContextValue {
   checkout(): Promise<boolean>;
   /** Reloads the cart from the repository (e.g. after an order is placed). */
   refresh(): Promise<void>;
+  /**
+   * Runs `task` inside the cart mutation queue (so `pending` is true and the drawer controls are disabled
+   * meanwhile), then reloads the cart. Resolves or rejects with the task's own result.
+   */
+  runExclusive<T>(task: () => Promise<T>): Promise<T>;
 }
 
 type FailureReason = Extract<AnalyticsEvent, { name: "add_to_cart_failed" }>["properties"]["reason"];
 
-const STORAGE_KEY_PREFIX = "bugout.";
+/** localStorage keys that hold the cart (local cart, Shopify cart id). Other tabs changing them trigger a reload. */
+const CART_STORAGE_KEYS: readonly string[] = ["bugout.cart", "bugout.shopify-cart-id"];
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -88,6 +97,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const [cart, setCartState] = useState<Cart | null>(null);
   const [ready, setReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const cartRef = useRef<Cart | null>(null);
@@ -111,7 +121,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const load = useCallback(async () => {
     try {
       setCart(await manageCart.getCart());
+      setLoadError(false);
     } catch (error) {
+      setLoadError(true);
       analytics.captureException(error, { area: "cart", action: "load" });
     } finally {
       setReady(true);
@@ -126,22 +138,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === null || event.key.startsWith(STORAGE_KEY_PREFIX)) void refresh();
+      if (event.key === null || CART_STORAGE_KEYS.includes(event.key)) void refresh();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
   }, [refresh]);
 
-  const openWith = useCallback(
-    (current: Cart | null) => {
-      if (!isOpenRef.current && current) analytics.track({ name: "cart_viewed", properties: cartProperties(current) });
-      isOpenRef.current = true;
-      setIsOpen(true);
-    },
-    [analytics],
-  );
+  const showDrawer = useCallback(() => {
+    isOpenRef.current = true;
+    setIsOpen(true);
+  }, []);
 
-  const openCart = useCallback(() => openWith(cartRef.current), [openWith]);
+  /** Only a visitor-initiated open counts as cart_viewed; the automatic open after addItem does not. */
+  const openCart = useCallback(() => {
+    const current = cartRef.current;
+    if (!isOpenRef.current && current) analytics.track({ name: "cart_viewed", properties: cartProperties(current) });
+    showDrawer();
+  }, [analytics, showDrawer]);
   const closeCart = useCallback(() => {
     isOpenRef.current = false;
     setIsOpen(false);
@@ -161,7 +174,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         try {
           const updated = await manageCart.addToCart(product.id, new Quantity(quantity));
           setCart(updated);
-          openWith(updated);
+          showDrawer();
           notify({
             tone: "success",
             title: messages.cart.added,
@@ -183,7 +196,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return false;
         }
       }, true),
-    [enqueue, manageCart, setCart, openWith, notify, analytics],
+    [enqueue, manageCart, setCart, showDrawer, notify, analytics],
   );
 
   /** After a failed change the stored cart may differ from what is shown (e.g. edited in another tab). */
@@ -271,18 +284,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
           }
           return true;
         } catch (error) {
+          if (error instanceof ValidationError) {
+            // The stored cart is empty (e.g. emptied in another tab): say so and show it.
+            notify({ tone: "error", message: messages.cart.checkoutEmpty });
+            await recover();
+            return false;
+          }
           notify({ tone: "error", message: messages.errors.checkoutUnavailable });
           analytics.captureException(error, { area: "cart", action: "checkout" });
           return false;
         }
       }, true),
-    [enqueue, createCheckout, analytics, closeCart, router, notify],
+    [enqueue, createCheckout, analytics, closeCart, router, notify, recover],
+  );
+
+  const runExclusive = useCallback(
+    <T,>(task: () => Promise<T>): Promise<T> => {
+      const run = enqueue(task, true);
+      // Queued right behind the task (before any later mutation) whatever its outcome, and counted as a
+      // mutation so `pending` stays true until the refreshed cart is shown. The caller resumes first.
+      void enqueue(load, true);
+      return run;
+    },
+    [enqueue, load],
   );
 
   const value = useMemo<CartContextValue>(
     () => ({
       cart,
       ready,
+      loadError,
       pending: pendingCount > 0,
       itemCount: cart?.itemCount() ?? 0,
       subtotal: ready && cart ? cart.totalAmount() : null,
@@ -295,8 +326,24 @@ export function CartProvider({ children }: { children: ReactNode }) {
       clearCart,
       checkout,
       refresh,
+      runExclusive,
     }),
-    [cart, ready, pendingCount, isOpen, openCart, closeCart, addItem, setItemQuantity, removeItem, clearCart, checkout, refresh],
+    [
+      cart,
+      ready,
+      loadError,
+      pendingCount,
+      isOpen,
+      openCart,
+      closeCart,
+      addItem,
+      setItemQuantity,
+      removeItem,
+      clearCart,
+      checkout,
+      refresh,
+      runExclusive,
+    ],
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

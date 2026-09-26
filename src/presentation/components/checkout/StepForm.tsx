@@ -30,7 +30,8 @@ export function StepForm({ title, headingRef, errors, onSubmit, children, action
         {title}
       </h2>
       <FormErrorSummary errors={errors} className={errors.length > 0 ? "mt-4" : undefined} />
-      <div className="mt-6 flex flex-col gap-5">{children}</div>
+      {/* ph-no-capture: PostHog autocapture never records what the customer types or selects here. */}
+      <div className="ph-no-capture mt-6 flex flex-col gap-5">{children}</div>
       <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">{actions}</div>
     </form>
   );

@@ -47,7 +47,8 @@ export function OrderConfirmationView({ confirmation, policy }: OrderConfirmatio
           <span className="min-w-0">{messages.checkout.review.demoNotice}</span>
         </p>
 
-        <dl className="mt-8 grid gap-4 rounded-xl border border-muted/30 p-5 text-sm sm:grid-cols-2">
+        {/* ph-no-capture: PostHog autocapture never records the customer's details. */}
+        <dl className="ph-no-capture mt-8 grid gap-4 rounded-xl border border-muted/30 p-5 text-sm sm:grid-cols-2">
           <div className="min-w-0">
             <dt className="text-muted">{copy.orderNumber}</dt>
             <dd className="mt-1 break-all font-mono text-base font-semibold text-ink">{confirmation.orderNumber}</dd>

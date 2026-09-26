@@ -37,7 +37,7 @@ function EmptyCheckout() {
  * the hosted-checkout hand-off (Shopify) or the local demo checkout and its confirmation.
  */
 export function CheckoutFlow({ provider }: CheckoutFlowProps) {
-  const { cart, ready, checkout, refresh } = useCart();
+  const { cart, ready, checkout } = useCart();
   const [policy] = useState(() => getContainer().getPricingPolicy());
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
   const [storageChecked, setStorageChecked] = useState(false);
@@ -54,18 +54,11 @@ export function CheckoutFlow({ provider }: CheckoutFlowProps) {
     setStorageChecked(true);
   }, [ready, storageChecked, confirmation, hasItems]);
 
-  const handleOrderPlaced = useCallback(
-    async (placed: OrderConfirmation) => {
-      saveLastOrder(placed);
-      setConfirmation(placed);
-      try {
-        await refresh();
-      } catch {
-        // The order is placed; a stale cart badge must not turn the confirmation into an error.
-      }
-    },
-    [refresh],
-  );
+  /** The cart itself is refreshed by `runExclusive` in LocalCheckout; this only switches to the confirmation. */
+  const handleOrderPlaced = useCallback((placed: OrderConfirmation) => {
+    saveLastOrder(placed);
+    setConfirmation(placed);
+  }, []);
 
   if (confirmation) {
     return <OrderConfirmationView confirmation={confirmation} policy={policy} />;

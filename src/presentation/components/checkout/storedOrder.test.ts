@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { OrderConfirmation } from "@/application/dtos/Order";
 import { Money } from "@/domain/value-objects/Money";
-import { SPANISH_PROVINCES } from "./provinces";
 import { parseStoredOrder, serializeOrder } from "./storedOrder";
 
 const eur = (minor: number) => Money.fromMinor(minor, "EUR");
@@ -30,16 +29,5 @@ describe("stored order", () => {
     const stored = JSON.parse(serializeOrder(confirmation));
     expect(parseStoredOrder(JSON.stringify({ ...stored, shippingMethod: "teleport" }))).toBeNull();
     expect(parseStoredOrder(JSON.stringify({ ...stored, totals: { ...stored.totals, total: { minor: -1, currency: "EUR" } } }))).toBeNull();
-  });
-});
-
-describe("SPANISH_PROVINCES", () => {
-  it("lists the 48 shippable provinces (peninsula and Balearics) once", () => {
-    expect(SPANISH_PROVINCES).toHaveLength(48);
-    expect(new Set(SPANISH_PROVINCES).size).toBe(48);
-    expect(SPANISH_PROVINCES).toEqual(expect.arrayContaining(["Illes Balears", "Madrid", "A Coruña"]));
-    for (const excluded of ["Ceuta", "Melilla", "Las Palmas", "Santa Cruz de Tenerife"]) {
-      expect(SPANISH_PROVINCES).not.toContain(excluded);
-    }
   });
 });

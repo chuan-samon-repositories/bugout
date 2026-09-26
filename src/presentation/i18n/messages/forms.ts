@@ -6,11 +6,14 @@ export const forms = {
     invalidPhone: 'Introduce un teléfono español de 9 cifras, por ejemplo 612 345 678.',
     invalidPostalCode: 'Introduce un código postal español de 5 cifras, por ejemplo 28013.',
     unsupportedRegion: 'Por ahora solo enviamos a la España peninsular y a las islas Baleares.',
+    postalCodeMismatch: 'Este código postal no corresponde a la provincia seleccionada.',
     tooShort: (min?: number) =>
       min ? `Escribe al menos ${min} caracteres.` : 'El texto es demasiado corto.',
     tooLong: (max?: number) =>
       max ? `Escribe como máximo ${max} caracteres.` : 'El texto es demasiado largo.',
   },
+  /** Shown next to forms whose submissions are only simulated (no mail/CRM backend connected). */
+  simulatedNotice: 'Modo demostración: este formulario todavía no envía los datos a ninguna parte.',
   errorSummary: {
     title: (count: number) =>
       count === 1 ? 'Revisa el siguiente campo:' : `Revisa los siguientes ${count} campos:`,
@@ -20,6 +23,7 @@ export const forms = {
     emailPlaceholder: 'tu@correo.es',
     submit: 'Suscribirme',
     success: '¡Gracias! Te hemos apuntado a la lista.',
+    simulatedSuccess: 'Recibido. En modo demostración no guardamos tu correo.',
     privacyPrefix: 'Solo usaremos tu correo para enviarte novedades de Bugout. Más información en la',
     privacyLink: 'política de privacidad',
   },
@@ -50,6 +54,8 @@ export const forms = {
     submit: 'Enviar mensaje',
     successTitle: 'Mensaje enviado',
     successText: 'Mensaje enviado. Te responderemos lo antes posible.',
+    simulatedSuccessTitle: 'Gracias por escribirnos',
+    simulatedSuccessText: 'Recibido. En modo demostración el mensaje no se envía a nadie.',
     sendAnother: 'Enviar otro mensaje',
     help: {
       title: 'Antes de escribirnos',
@@ -73,8 +79,10 @@ export const forms = {
       shippingRate: (label: string, estimate: string, price: string) => `${label}: ${estimate}, ${price}.`,
       freeFrom: (threshold: string) => `gratis a partir de ${threshold}`,
       wholesaleQuestion: '¿Hacéis pedidos para empresas o grupos?',
-      wholesaleAnswer: (topic: string) =>
-        `Sí. Usa el formulario de esta página con el tema «${topic}» y cuéntanos qué necesitas y cuántas unidades. Te responderemos por correo.`,
+      wholesaleAnswer: (topic: string, simulated: boolean) =>
+        simulated
+          ? `Sí. Cuando el formulario de esta página esté conectado, podrás usarlo con el tema «${topic}» para contarnos qué necesitas y cuántas unidades.`
+          : `Sí. Usa el formulario de esta página con el tema «${topic}» y cuéntanos qué necesitas y cuántas unidades. Te responderemos por correo.`,
       orderStatusQuestion: '¿Cómo consulto el estado de mi pedido?',
       orderStatusAnswer: (topic: string) =>
         `Escríbenos con el tema «${topic}» e indica el número de pedido que aparece en la confirmación y el correo con el que compraste.`,

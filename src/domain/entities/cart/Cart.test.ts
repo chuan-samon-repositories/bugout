@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Cart, MAX_QUANTITY_PER_ITEM } from './Cart';
-import { buildProduct } from '../../testing/buildProduct';
-import { ProductId } from '../../value-objects/ProductId';
-import { Quantity } from '../../value-objects/Quantity';
-import { BusinessRuleError, NotFoundError } from '../../errors';
+import { buildProduct } from '@/domain/testing/buildProduct';
+import { ProductId } from '@/domain/value-objects/ProductId';
+import { Quantity } from '@/domain/value-objects/Quantity';
+import { BusinessRuleError, NotFoundError } from '@/domain/errors';
 
 const qty = (value: number) => new Quantity(value);
 
@@ -162,10 +162,19 @@ describe('Cart', () => {
     items.push(items[0]);
     expect(cart.getItems()).toHaveLength(1);
 
+  });
+
+  it('replaces an item instead of changing it when its quantity changes', () => {
+    const cart = new Cart('EUR');
+    const product = buildProduct();
+    cart.addItem(product, qty(2));
     const [item] = cart.getItems();
-    const changed = item.withQuantity(qty(50));
-    expect(changed).not.toBe(item);
-    expect(cart.quantityOf(product.id)).toBe(2);
+
+    cart.setQuantity(product.id, qty(5));
+
+    expect(item.quantity.value).toBe(2);
+    expect(cart.getItems()[0]).not.toBe(item);
+    expect(cart.quantityOf(product.id)).toBe(5);
   });
 
   it('keeps insertion order of lines', () => {

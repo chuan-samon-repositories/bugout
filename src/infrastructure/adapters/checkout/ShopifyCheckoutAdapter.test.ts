@@ -1,10 +1,19 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ShopifyCheckoutAdapter } from './ShopifyCheckoutAdapter';
-import { LocalCheckoutAdapter } from './LocalCheckoutAdapter';
-import { ShopifyCartIdStore, SHOPIFY_CART_ID_KEY } from '../shopify/ShopifyCartIdStore';
-import { mapShopifyProduct } from '../shopify/productMapping';
-import { MemoryStorage } from '../../testing/MemoryStorage';
-import { cartNode, mutationResult, productNode, queuedFetch, sentRequest, testClient, variantGid, variantNode } from '../../testing/shopifyFixtures';
+import { LocalCheckoutAdapter } from '@/infrastructure/adapters/checkout/LocalCheckoutAdapter';
+import { ShopifyCartIdStore, SHOPIFY_CART_ID_KEY } from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
+import { mapShopifyProduct } from '@/infrastructure/adapters/shopify/productMapping';
+import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
+import {
+  cartNode,
+  mutationResult,
+  productNode,
+  queuedFetch,
+  sentRequest,
+  testClient,
+  variantGid,
+  variantNode,
+} from '@/infrastructure/testing/shopifyFixtures';
 import { Cart } from '@/domain/entities/cart/Cart';
 import { Quantity } from '@/domain/value-objects/Quantity';
 
@@ -21,8 +30,32 @@ describe('ShopifyCheckoutAdapter', () => {
     storage = new MemoryStorage();
   });
 
-  const adapterWith = (fetch: ReturnType<typeof queuedFetch>) =>
-    new ShopifyCheckoutAdapter(testClient(fetch), new ShopifyCartIdStore(storage));
+  const adapterWith = (fetch: ReturnType<typeof queuedFetch>, cartIds = new ShopifyCartIdStore(storage)) =>
+    new ShopifyCheckoutAdapter(testClient(fetch), cartIds);
+
+  it('uses the checkout URL remembered for the stored cart without querying Shopify', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const cartIds = new ShopifyCartIdStore(storage);
+    cartIds.rememberCheckoutUrl('cart-1', 'https://shop.test/checkouts/remembered');
+    const fetch = queuedFetch();
+    await expect(adapterWith(fetch, cartIds).getCheckoutUrl(cartWithOneItem())).resolves.toBe(
+      'https://shop.test/checkouts/remembered',
+    );
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('queries Shopify when the remembered URL belongs to another cart, then remembers the answer', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-2');
+    const cartIds = new ShopifyCartIdStore(storage);
+    cartIds.rememberCheckoutUrl('cart-1', 'https://shop.test/checkouts/cart-1');
+    const fetch = queuedFetch({ data: { cart: { checkoutUrl: 'https://shop.test/checkouts/cart-2' } } });
+    const adapter = adapterWith(fetch, cartIds);
+    await expect(adapter.getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-2');
+    expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-2' });
+
+    await expect(adapter.getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-2');
+    expect(fetch).toHaveBeenCalledOnce();
+  });
 
   it('returns the checkout URL of the stored cart', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');

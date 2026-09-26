@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { isValidSpanishPhone, validateCheckoutDetails } from './validateCheckoutDetails';
-import { buildCheckoutDetails } from '../testing/checkoutDetails';
-import { provinceForPostalCode } from './provinces';
+import { buildCheckoutDetails } from '@/application/testing/checkoutDetails';
+import { provinceForPostalCode } from '@/application/checkout/provinces';
 
 const addressFor = (postalCode: string) => ({ postalCode, province: provinceForPostalCode(postalCode) ?? 'Madrid' });
 

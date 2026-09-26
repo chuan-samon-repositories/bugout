@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ManageCartUseCase } from './ManageCartUseCase';
-import { InMemoryCartRepository, InMemoryProductRepository } from '../testing/fakes';
+import { InMemoryCartRepository, InMemoryProductRepository } from '@/application/testing/fakes';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { BusinessRuleError, NotFoundError } from '@/domain/errors';
 import { ProductId } from '@/domain/value-objects/ProductId';

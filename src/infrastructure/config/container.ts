@@ -3,6 +3,7 @@ import { AnalyticsService } from '@/application/ports/AnalyticsService';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { CheckoutService } from '@/application/ports/CheckoutService';
 import { ConsentRepository } from '@/application/ports/ConsentRepository';
+import { OrderConfirmationStore } from '@/application/ports/OrderConfirmationStore';
 import { ProductRepository } from '@/application/ports/ProductRepository';
 import { CreateCheckoutUseCase } from '@/application/use-cases/CreateCheckoutUseCase';
 import { GetProductBySlugUseCase } from '@/application/use-cases/GetProductBySlugUseCase';
@@ -12,22 +13,43 @@ import { PlaceOrderUseCase } from '@/application/use-cases/PlaceOrderUseCase';
 import { SendContactMessageUseCase } from '@/application/use-cases/SendContactMessageUseCase';
 import { SubscribeNewsletterUseCase } from '@/application/use-cases/SubscribeNewsletterUseCase';
 import { PricingPolicy } from '@/domain/entities/order/OrderPricing';
-import { NoopAnalyticsAdapter } from '../adapters/analytics/NoopAnalyticsAdapter';
-import { PostHogAnalyticsAdapter } from '../adapters/analytics/PostHogAnalyticsAdapter';
-import { LocalStorageCartAdapter } from '../adapters/cart/LocalStorageCartAdapter';
-import { ShopifyCartAdapter } from '../adapters/cart/ShopifyCartAdapter';
-import { LocalCheckoutAdapter } from '../adapters/checkout/LocalCheckoutAdapter';
-import { ShopifyCheckoutAdapter } from '../adapters/checkout/ShopifyCheckoutAdapter';
-import { LocalStorageConsentRepository } from '../adapters/consent/LocalStorageConsentRepository';
-import { LocalContactAdapter } from '../adapters/contact/LocalContactAdapter';
-import { LocalNewsletterAdapter } from '../adapters/newsletter/LocalNewsletterAdapter';
-import { LocalOrderGateway } from '../adapters/order/LocalOrderGateway';
-import { JsonProductAdapter } from '../adapters/product/JsonProductAdapter';
-import { ShopifyProductAdapter } from '../adapters/product/ShopifyProductAdapter';
-import { ShopifyCartIdStore } from '../adapters/shopify/ShopifyCartIdStore';
-import { ShopifyClient } from '../adapters/shopify/ShopifyClient';
-import { AppConfig, readConfigFromEnv } from './appConfig';
-import { storePricingPolicy } from './pricingPolicy';
+import { NoopAnalyticsAdapter } from '@/infrastructure/adapters/analytics/NoopAnalyticsAdapter';
+import { PostHogAnalyticsAdapter } from '@/infrastructure/adapters/analytics/PostHogAnalyticsAdapter';
+import { CART_STORAGE_KEY, LocalStorageCartAdapter } from '@/infrastructure/adapters/cart/LocalStorageCartAdapter';
+import { ShopifyCartAdapter } from '@/infrastructure/adapters/cart/ShopifyCartAdapter';
+import { LocalCheckoutAdapter } from '@/infrastructure/adapters/checkout/LocalCheckoutAdapter';
+import { ShopifyCheckoutAdapter } from '@/infrastructure/adapters/checkout/ShopifyCheckoutAdapter';
+import {
+  CONSENT_STORAGE_KEY,
+  LocalStorageConsentRepository,
+} from '@/infrastructure/adapters/consent/LocalStorageConsentRepository';
+import { LocalContactAdapter } from '@/infrastructure/adapters/contact/LocalContactAdapter';
+import { LocalNewsletterAdapter } from '@/infrastructure/adapters/newsletter/LocalNewsletterAdapter';
+import { LocalOrderGateway } from '@/infrastructure/adapters/order/LocalOrderGateway';
+import { SessionStorageOrderConfirmationStore } from '@/infrastructure/adapters/order/SessionStorageOrderConfirmationStore';
+import { JsonProductAdapter } from '@/infrastructure/adapters/product/JsonProductAdapter';
+import { ShopifyProductAdapter } from '@/infrastructure/adapters/product/ShopifyProductAdapter';
+import {
+  SHOPIFY_CART_ID_KEY,
+  SHOPIFY_CART_REVISION_KEY,
+  ShopifyCartIdStore,
+} from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
+import { ShopifyClient } from '@/infrastructure/adapters/shopify/ShopifyClient';
+import { AppConfig, readConfigFromEnv } from '@/infrastructure/config/appConfig';
+import { storePricingPolicy } from '@/infrastructure/config/pricingPolicy';
+
+/** localStorage keys whose `storage` events other tabs must react to. */
+export interface SyncedStorageKeys {
+  /** Reload the cart when any of these change: local cart, Shopify cart id, Shopify cart revision. */
+  cart: readonly string[];
+  /** Re-apply the stored consent decision when this changes. */
+  consent: string;
+}
+
+const SYNCED_STORAGE_KEYS: SyncedStorageKeys = Object.freeze({
+  cart: Object.freeze([CART_STORAGE_KEY, SHOPIFY_CART_ID_KEY, SHOPIFY_CART_REVISION_KEY]),
+  consent: CONSENT_STORAGE_KEY,
+});
 
 /**
  * Wires adapters to ports for the configured provider. Every adapter and use case is
@@ -110,6 +132,19 @@ export class AppContainer {
 
   getConsentRepository(): ConsentRepository {
     return this.once('consent', () => new LocalStorageConsentRepository());
+  }
+
+  /** The last placed order for this browser session (sessionStorage), for the confirmation screen. */
+  getOrderConfirmationStore(): OrderConfirmationStore {
+    return this.once('orderConfirmation', () => new SessionStorageOrderConfirmationStore());
+  }
+
+  /**
+   * The storage keys whose `storage` events other tabs must react to. The cart keys
+   * cover both providers, so a tab reloads its cart for whichever one is in use.
+   */
+  getSyncedStorageKeys(): SyncedStorageKeys {
+    return SYNCED_STORAGE_KEYS;
   }
 
   private productRepository(): ProductRepository {

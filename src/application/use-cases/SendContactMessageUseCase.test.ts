@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CONTACT_MESSAGE_MAX_LENGTH, SendContactMessageUseCase } from './SendContactMessageUseCase';
-import { ContactMessage } from '../dtos/Contact';
-import { FormValidationError } from '../errors';
+import { ContactMessage } from '@/application/dtos/Contact';
+import { FormValidationError } from '@/application/errors';
 
 const valid: ContactMessage = {
   name: 'Ana García',

@@ -1,4 +1,4 @@
-import { ShopifyConfig } from '../../config/ShopifyConfig';
+import { ShopifyConfig } from '@/infrastructure/config/ShopifyConfig';
 
 export const DEFAULT_SHOPIFY_API_VERSION = '2026-07';
 

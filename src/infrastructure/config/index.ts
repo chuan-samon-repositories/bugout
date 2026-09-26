@@ -1,4 +1,5 @@
 export { AppContainer, createContainer, getContainer, resetContainer } from './container';
+export type { SyncedStorageKeys } from './container';
 export { ConfigurationError, parseConfig, readConfigFromEnv } from './appConfig';
 export type { AppConfig, PostHogConfig, RawEnv } from './appConfig';
 export type { ShopifyConfig } from './ShopifyConfig';

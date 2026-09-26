@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createContainer, getContainer, resetContainer } from './container';
-import { AppConfig } from './appConfig';
-import { NoopAnalyticsAdapter } from '../adapters/analytics/NoopAnalyticsAdapter';
-import { PostHogAnalyticsAdapter } from '../adapters/analytics/PostHogAnalyticsAdapter';
-import { storePricingPolicy } from './pricingPolicy';
-import { jsonResponse } from '../testing/shopifyFixtures';
+import { AppConfig } from '@/infrastructure/config/appConfig';
+import { NoopAnalyticsAdapter } from '@/infrastructure/adapters/analytics/NoopAnalyticsAdapter';
+import { PostHogAnalyticsAdapter } from '@/infrastructure/adapters/analytics/PostHogAnalyticsAdapter';
+import { SessionStorageOrderConfirmationStore } from '@/infrastructure/adapters/order/SessionStorageOrderConfirmationStore';
+import { storePricingPolicy } from '@/infrastructure/config/pricingPolicy';
+import { cartNode, jsonResponse } from '@/infrastructure/testing/shopifyFixtures';
 import { buildCheckoutDetails } from '@/application/testing/checkoutDetails';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { Quantity } from '@/domain/value-objects/Quantity';
@@ -109,6 +110,36 @@ describe('AppContainer', () => {
     vi.stubGlobal('fetch', fetch);
     await expect(createContainer(shopify).getGetProductsUseCase().execute()).resolves.toEqual([]);
     expect(fetch).toHaveBeenCalledWith('https://bugout-test.myshopify.com/api/2026-07/graphql.json', expect.any(Object));
+  });
+
+  it('lists the storage keys other tabs must react to', () => {
+    const keys = createContainer(local).getSyncedStorageKeys();
+    expect(keys).toEqual({
+      cart: ['bugout.cart', 'bugout.shopify-cart-id', 'bugout.shopify-cart-rev'],
+      consent: 'bugout.consent',
+    });
+    expect(createContainer(shopify).getSyncedStorageKeys()).toEqual(keys);
+  });
+
+  it('keeps the last order in a session-scoped store', () => {
+    const container = createContainer(local);
+    expect(container.getOrderConfirmationStore()).toBeInstanceOf(SessionStorageOrderConfirmationStore);
+    expect(container.getOrderConfirmationStore()).toBe(container.getOrderConfirmationStore());
+    // No browser storage in node.
+    expect(container.getOrderConfirmationStore().load()).toBeNull();
+  });
+
+  it('starts the Shopify checkout with the checkout URL of the cart it just loaded', async () => {
+    const data = stubLocalStorage();
+    data.set('bugout.shopify-cart-id', 'cart-1');
+    const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+    const fetch = vi.fn().mockResolvedValue(jsonResponse({ data: { cart: remote } }));
+    vi.stubGlobal('fetch', fetch);
+    await expect(createContainer(shopify).getCreateCheckoutUseCase().execute()).resolves.toEqual({
+      url: remote.checkoutUrl,
+      type: 'hosted',
+    });
+    expect(fetch).toHaveBeenCalledOnce();
   });
 
   it('uses PostHog only when a key is configured', () => {

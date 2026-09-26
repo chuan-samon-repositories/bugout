@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { CART_STORAGE_KEY, LEGACY_CART_STORAGE_KEY, LocalStorageCartAdapter } from './LocalStorageCartAdapter';
-import { MemoryStorage } from '../../testing/MemoryStorage';
+import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
 import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { Cart } from '@/domain/entities/cart/Cart';

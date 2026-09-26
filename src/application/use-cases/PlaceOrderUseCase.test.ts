@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlaceOrderUseCase } from './PlaceOrderUseCase';
-import { InMemoryCartRepository } from '../testing/fakes';
-import { buildCheckoutDetails } from '../testing/checkoutDetails';
-import { FormValidationError } from '../errors';
-import { OrderConfirmation, OrderRequest } from '../dtos/Order';
-import { OrderGateway } from '../ports/OrderGateway';
+import { InMemoryCartRepository } from '@/application/testing/fakes';
+import { buildCheckoutDetails } from '@/application/testing/checkoutDetails';
+import { FormValidationError } from '@/application/errors';
+import { OrderConfirmation, OrderRequest } from '@/application/dtos/Order';
+import { OrderGateway } from '@/application/ports/OrderGateway';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { testPricingPolicy } from '@/domain/testing/testPricingPolicy';
 import { ShippingMethodId } from '@/domain/entities/order/OrderPricing';

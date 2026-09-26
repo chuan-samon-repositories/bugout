@@ -3,8 +3,8 @@ import { Product } from '@/domain/entities/product/Product';
 import { NotFoundError } from '@/domain/errors';
 import { CurrencyCode } from '@/domain/value-objects/Money';
 import { ProductId } from '@/domain/value-objects/ProductId';
-import catalog from '../../data/products.json';
-import { parseCatalog } from './parseCatalog';
+import catalog from '@/infrastructure/data/products.json';
+import { parseCatalog } from '@/infrastructure/adapters/product/parseCatalog';
 
 export interface JsonProductAdapterOptions {
   /** Store currency the catalog prices are expressed in. */

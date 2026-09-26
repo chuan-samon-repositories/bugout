@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { Product } from './Product';
-import { buildProduct } from '../../testing/buildProduct';
-import { Money } from '../../value-objects/Money';
-import { ValidationError } from '../../errors';
+import { buildProduct } from '@/domain/testing/buildProduct';
+import { Money } from '@/domain/value-objects/Money';
+import { ValidationError } from '@/domain/errors';
 
 describe('Product', () => {
   it('accepts kebab-case slugs', () => {

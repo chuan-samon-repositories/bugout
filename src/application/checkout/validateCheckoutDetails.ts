@@ -1,7 +1,7 @@
-import { CheckoutDetails } from '../dtos/Order';
-import { FieldErrors } from '../errors';
-import { isBlank, isValidEmail } from '../validation';
-import { provinceForPostalCode } from './provinces';
+import { CheckoutDetails } from '@/application/dtos/Order';
+import { FieldErrors } from '@/application/errors';
+import { isBlank, isValidEmail } from '@/application/validation';
+import { provinceForPostalCode } from '@/application/checkout/provinces';
 
 export type CheckoutStep = 'contact' | 'shipping' | 'all';
 

@@ -1,6 +1,6 @@
 import { OrderConfirmation, OrderRequest } from '@/application/dtos/Order';
 import { OrderGateway } from '@/application/ports/OrderGateway';
-import { delay } from '../delay';
+import { delay } from '@/infrastructure/adapters/delay';
 
 const ORDER_NUMBER_ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 const ORDER_NUMBER_LENGTH = 8;

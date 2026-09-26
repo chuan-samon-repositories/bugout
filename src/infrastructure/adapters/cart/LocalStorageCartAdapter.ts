@@ -3,7 +3,7 @@ import { ProductRepository } from '@/application/ports/ProductRepository';
 import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
 import { CurrencyCode } from '@/domain/value-objects/Money';
 import { Quantity } from '@/domain/value-objects/Quantity';
-import { KeyValueStorage, browserStorage } from '../storage';
+import { KeyValueStorage, browserStorage } from '@/infrastructure/adapters/storage';
 
 export const CART_STORAGE_KEY = 'bugout.cart';
 /** Key and format written by the first version of the store: `{ items: [{ product: { id, ... }, quantity }] }`. */

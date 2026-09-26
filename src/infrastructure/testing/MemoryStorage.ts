@@ -1,4 +1,4 @@
-import { KeyValueStorage } from '../adapters/storage';
+import { KeyValueStorage } from '@/infrastructure/adapters/storage';
 
 /** In-memory Storage fake for adapter tests. */
 export class MemoryStorage implements KeyValueStorage {

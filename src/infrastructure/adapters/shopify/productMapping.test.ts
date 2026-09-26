@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapShopifyProduct, slugifyCategory } from './productMapping';
-import { productNode, variantGid, variantNode } from '../../testing/shopifyFixtures';
+import { productNode, variantGid, variantNode } from '@/infrastructure/testing/shopifyFixtures';
 
 const metafield = (value: unknown) => ({ value: typeof value === 'string' ? value : JSON.stringify(value) });
 

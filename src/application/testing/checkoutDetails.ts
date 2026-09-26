@@ -1,4 +1,4 @@
-import { CheckoutDetails } from '../dtos/Order';
+import { CheckoutDetails } from '@/application/dtos/Order';
 
 /** Test helper: a complete, valid set of checkout details. */
 export function buildCheckoutDetails(overrides: {

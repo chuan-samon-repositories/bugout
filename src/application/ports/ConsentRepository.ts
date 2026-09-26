@@ -1,4 +1,4 @@
-import { ConsentDecision } from '../dtos/Consent';
+import { ConsentDecision } from '@/application/dtos/Consent';
 
 /** Stores the visitor's cookie/analytics consent decision. */
 export interface ConsentRepository {

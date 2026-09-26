@@ -1,6 +1,6 @@
-import { ValidationError } from '../../errors';
-import { Money, discountPercentage } from '../../value-objects/Money';
-import { ProductId } from '../../value-objects/ProductId';
+import { ValidationError } from '@/domain/errors';
+import { Money, discountPercentage } from '@/domain/value-objects/Money';
+import { ProductId } from '@/domain/value-objects/ProductId';
 
 export interface ProductImage {
   url: string;

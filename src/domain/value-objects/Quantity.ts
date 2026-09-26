@@ -1,4 +1,4 @@
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 /**
  * Value object representing a quantity of items.
@@ -12,9 +12,5 @@ export class Quantity {
     if (!Number.isInteger(value)) {
       throw new ValidationError("Quantity must be an integer");
     }
-  }
-
-  add(other: Quantity): Quantity {
-    return new Quantity(this.value + other.value);
   }
 }

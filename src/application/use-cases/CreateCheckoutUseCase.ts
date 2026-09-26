@@ -1,7 +1,7 @@
 import { ValidationError } from '@/domain/errors';
-import { CheckoutSession, CommerceProvider } from '../dtos/Checkout';
-import { CartRepository } from '../ports/CartRepository';
-import { CheckoutService } from '../ports/CheckoutService';
+import { CheckoutSession, CommerceProvider } from '@/application/dtos/Checkout';
+import { CartRepository } from '@/application/ports/CartRepository';
+import { CheckoutService } from '@/application/ports/CheckoutService';
 
 /** An absolute https:// URL with a host (hosted checkout). */
 function isHostedUrl(url: string): boolean {

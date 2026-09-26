@@ -39,12 +39,24 @@ describe('JsonProductAdapter with the bundled catalog', () => {
       const product = byId.get(id)!;
       return [product.price.amount, product.originalPrice?.amount ?? null, product.badge, product.featured];
     };
-    expect(summary('24h-survival-backpack')).toEqual([199, 249, 'BESTSELLER', true]);
+    expect(summary('24h-survival-backpack')).toEqual([199, 249, null, true]);
     expect(summary('72h-survival-backpack')).toEqual([299, 399, 'PREMIUM', true]);
     expect(summary('custom-survival-kit')).toEqual([149, 199, 'SALE', false]);
     expect(summary('emergency-food-pack')).toEqual([49, null, null, false]);
     expect(summary('water-purification-kit')).toEqual([39, null, null, false]);
     expect(summary('first-aid-pro')).toEqual([89, 119, 'SALE', false]);
+  });
+
+  it('labels warranties honestly: the statutory guarantee is not a feature', async () => {
+    const warranties = (await adapter.findAll()).flatMap((product) =>
+      (product.details?.specifications ?? [])
+        .filter((spec) => /garant/i.test(spec.label))
+        .map((spec) => [product.slug, spec.label, spec.value]),
+    );
+    expect(warranties).toEqual([
+      ['24h-survival-backpack', 'Garantía legal', '3 años'],
+      ['72h-survival-backpack', 'Garantía comercial', '5 años'],
+    ]);
   });
 
   it('only shows the backpack photo on survival kits', async () => {

@@ -1,5 +1,5 @@
 import { Product } from '@/domain/entities/product/Product';
-import { FilterCriteria, SortOption } from '../dtos/FilterCriteria';
+import { FilterCriteria, SortOption } from '@/application/dtos/FilterCriteria';
 
 type Comparator = (a: Product, b: Product) => number;
 

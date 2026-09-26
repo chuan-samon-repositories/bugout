@@ -5,11 +5,15 @@ import {
   CART_CREATE_MUTATION,
   CartMutationPayload,
   toLineInputs,
-} from '../shopify/cartGraphql';
-import { ShopifyCartIdStore } from '../shopify/ShopifyCartIdStore';
-import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '../shopify/ShopifyClient';
+} from '@/infrastructure/adapters/shopify/cartGraphql';
+import { ShopifyCartIdStore } from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
+import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '@/infrastructure/adapters/shopify/ShopifyClient';
 
-/** Hosted Shopify checkout for the visitor's Shopify cart. */
+/**
+ * Hosted Shopify checkout for the visitor's Shopify cart. Uses the checkout URL the
+ * cart adapter remembered for the stored cart id (checkout loads the cart first), and
+ * only queries Shopify when none is known for that id.
+ */
 export class ShopifyCheckoutAdapter implements CheckoutService {
   constructor(
     private readonly client: ShopifyClient,
@@ -19,12 +23,17 @@ export class ShopifyCheckoutAdapter implements CheckoutService {
   async getCheckoutUrl(cart: Cart): Promise<string> {
     const cartId = this.cartIds.get();
     if (cartId) {
+      const known = this.cartIds.checkoutUrl();
+      if (known) return known;
       const { cart: remote } = await this.client.request<{ cart: { checkoutUrl: string } | null }>(
         CART_CHECKOUT_URL_QUERY,
         { id: cartId },
         { noStore: true },
       );
-      if (remote) return remote.checkoutUrl;
+      if (remote) {
+        this.cartIds.rememberCheckoutUrl(cartId, remote.checkoutUrl);
+        return remote.checkoutUrl;
+      }
       this.cartIds.clear();
     }
     return this.createCart(cart);
@@ -37,6 +46,8 @@ export class ShopifyCheckoutAdapter implements CheckoutService {
     assertNoUserErrors('cartCreate', cartCreate?.userErrors);
     if (!cartCreate?.cart) throw new ShopifyApiError('cartCreate returned no cart');
     this.cartIds.set(cartCreate.cart.id);
+    this.cartIds.rememberCheckoutUrl(cartCreate.cart.id, cartCreate.cart.checkoutUrl);
+    this.cartIds.markChanged();
     return cartCreate.cart.checkoutUrl;
   }
 }

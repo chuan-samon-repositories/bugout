@@ -6,12 +6,12 @@ import {
   freeShippingThreshold,
   shippingCost,
 } from './OrderPricing';
-import { Cart } from '../cart/Cart';
-import { buildProduct } from '../../testing/buildProduct';
-import { testPricingPolicy } from '../../testing/testPricingPolicy';
-import { Money } from '../../value-objects/Money';
-import { Quantity } from '../../value-objects/Quantity';
-import { NotFoundError } from '../../errors';
+import { Cart } from '@/domain/entities/cart/Cart';
+import { buildProduct } from '@/domain/testing/buildProduct';
+import { testPricingPolicy } from '@/domain/testing/testPricingPolicy';
+import { Money } from '@/domain/value-objects/Money';
+import { Quantity } from '@/domain/value-objects/Quantity';
+import { NotFoundError } from '@/domain/errors';
 
 const eur = (major: number) => Money.fromMajor(major, 'EUR');
 

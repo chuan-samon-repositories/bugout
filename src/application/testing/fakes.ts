@@ -3,8 +3,8 @@ import { Product } from '@/domain/entities/product/Product';
 import { NotFoundError } from '@/domain/errors';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { Quantity } from '@/domain/value-objects/Quantity';
-import { CartRepository } from '../ports/CartRepository';
-import { ProductRepository } from '../ports/ProductRepository';
+import { CartRepository } from '@/application/ports/CartRepository';
+import { ProductRepository } from '@/application/ports/ProductRepository';
 
 export class InMemoryProductRepository implements ProductRepository {
   constructor(public products: Product[] = []) {}

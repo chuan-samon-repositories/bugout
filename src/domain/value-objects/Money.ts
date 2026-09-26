@@ -1,4 +1,4 @@
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 /** ISO 4217 currency code, e.g. "EUR". */
 export type CurrencyCode = string;

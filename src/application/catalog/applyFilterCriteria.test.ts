@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { applyFilterCriteria } from './applyFilterCriteria';
-import { FilterCriteria, SORT_OPTIONS } from '../dtos/FilterCriteria';
+import { FilterCriteria, SORT_OPTIONS } from '@/application/dtos/FilterCriteria';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { Product } from '@/domain/entities/product/Product';
 

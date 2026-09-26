@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { SHIPPABLE_PROVINCES, provinceForPostalCode } from './provinces';
-import { NON_SHIPPABLE_POSTAL_PREFIXES } from './validateCheckoutDetails';
+import { NON_SHIPPABLE_POSTAL_PREFIXES } from '@/application/checkout/validateCheckoutDetails';
 
 describe('SHIPPABLE_PROVINCES', () => {
   it('lists 48 provinces, each with exactly one distinct two-digit prefix', () => {

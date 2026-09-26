@@ -1,6 +1,6 @@
 import { CONSENT_VERSION, ConsentDecision } from '@/application/dtos/Consent';
 import { ConsentRepository } from '@/application/ports/ConsentRepository';
-import { KeyValueStorage, browserStorage } from '../storage';
+import { KeyValueStorage, browserStorage } from '@/infrastructure/adapters/storage';
 
 export const CONSENT_STORAGE_KEY = 'bugout.consent';
 

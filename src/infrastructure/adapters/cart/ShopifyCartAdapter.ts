@@ -12,10 +12,10 @@ import {
   CartMutationPayload,
   ShopifyCartNode,
   toLineInputs,
-} from '../shopify/cartGraphql';
-import { mapShopifyProduct } from '../shopify/productMapping';
-import { ShopifyCartIdStore } from '../shopify/ShopifyCartIdStore';
-import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '../shopify/ShopifyClient';
+} from '@/infrastructure/adapters/shopify/cartGraphql';
+import { mapShopifyProduct } from '@/infrastructure/adapters/shopify/productMapping';
+import { ShopifyCartIdStore } from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
+import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '@/infrastructure/adapters/shopify/ShopifyClient';
 
 interface RemoteLine {
   lineId: string;
@@ -89,10 +89,15 @@ function diff(cart: Cart, remote: RemoteSnapshot) {
 
 /**
  * Cart stored in Shopify. The cart id lives in localStorage; save() diffs the aggregate
- * against the last known remote lines and sends only the line mutations needed.
+ * against the last known remote lines and sends only the line mutations needed. After
+ * a save that changed the remote cart it bumps SHOPIFY_CART_REVISION_KEY so other tabs
+ * reload, and every loaded or mutated cart's checkout URL is remembered in the id store
+ * so checkout needs no extra round trip.
  */
 export class ShopifyCartAdapter implements CartRepository {
   private snapshot: RemoteSnapshot | null = null;
+  /** Successful remote mutations so far; save() compares it to know whether to bump the revision. */
+  private mutations = 0;
 
   constructor(
     private readonly client: ShopifyClient,
@@ -106,6 +111,21 @@ export class ShopifyCartAdapter implements CartRepository {
   }
 
   async save(cart: Cart): Promise<void> {
+    const before = this.mutations;
+    try {
+      await this.sync(cart);
+    } finally {
+      // Also after a partial failure: the mutations that did succeed changed the remote cart.
+      if (this.mutations !== before) this.cartIds.markChanged();
+    }
+  }
+
+  async clear(): Promise<void> {
+    this.cartIds.clear();
+    this.snapshot = null;
+  }
+
+  private async sync(cart: Cart): Promise<void> {
     const remote = await this.currentSnapshot();
     if (!remote) {
       if (cart.isEmpty()) return;
@@ -119,11 +139,6 @@ export class ShopifyCartAdapter implements CartRepository {
     if (remove.length > 0) await this.mutate('cartLinesRemove', CART_LINES_REMOVE_MUTATION, { cartId, lineIds: remove });
     if (update.length > 0) await this.mutate('cartLinesUpdate', CART_LINES_UPDATE_MUTATION, { cartId, lines: update });
     if (add.length > 0) await this.mutate('cartLinesAdd', CART_LINES_ADD_MUTATION, { cartId, lines: add });
-  }
-
-  async clear(): Promise<void> {
-    this.cartIds.clear();
-    this.snapshot = null;
   }
 
   private async fetchRemote(): Promise<ShopifyCartNode | null> {
@@ -141,7 +156,7 @@ export class ShopifyCartAdapter implements CartRepository {
       await this.clear();
       return null;
     }
-    this.snapshot = toSnapshot(cart);
+    this.remember(cart);
     return cart;
   }
 
@@ -161,7 +176,13 @@ export class ShopifyCartAdapter implements CartRepository {
     const payload = data[operation];
     assertNoUserErrors(operation, payload?.userErrors);
     if (!payload?.cart) throw new ShopifyApiError(`${operation} returned no cart`);
-    this.snapshot = toSnapshot(payload.cart);
+    this.mutations += 1;
+    this.remember(payload.cart);
     return payload.cart;
+  }
+
+  private remember(cart: ShopifyCartNode): void {
+    this.snapshot = toSnapshot(cart);
+    this.cartIds.rememberCheckoutUrl(cart.id, cart.checkoutUrl);
   }
 }

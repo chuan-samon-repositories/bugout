@@ -3,6 +3,7 @@ import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vite
 import type { PostHog as PostHogInstance } from 'posthog-js';
 import { PostHogAnalyticsAdapter } from './PostHogAnalyticsAdapter';
 import { AnalyticsEvent } from '@/application/analytics/events';
+import { fakePostHogNetwork } from '@/infrastructure/testing/fakePostHogNetwork';
 
 /**
  * Runs the adapter against the real posthog-js SDK. Only the network is faked
@@ -18,38 +19,10 @@ const event: AnalyticsEvent = { name: 'cart_viewed', properties: { cart_value: 1
 
 let requests: string[] = [];
 
-/**
- * Replaces every transport the SDK can use with a recorder. Must run before
- * posthog-js is imported, because the SDK keeps its own reference to fetch.
- */
-function fakeNetwork(): void {
-  const fetch = async (url: string | URL) => {
-    requests.push(String(url));
-    return new Response('{}', { status: 200, headers: { 'Content-Type': 'application/json' } });
-  };
-  class RecordingXMLHttpRequest {
-    open(_method: string, url: string) {
-      requests.push(url);
-    }
-    send() {}
-    setRequestHeader() {}
-    addEventListener() {}
-  }
-  const sendBeacon = (url: string) => {
-    requests.push(url);
-    return true;
-  };
-  for (const target of [globalThis, window] as Array<Record<string, unknown>>) {
-    Object.defineProperty(target, 'fetch', { configurable: true, writable: true, value: fetch });
-    Object.defineProperty(target, 'XMLHttpRequest', { configurable: true, writable: true, value: RecordingXMLHttpRequest });
-  }
-  Object.defineProperty(window.navigator, 'sendBeacon', { configurable: true, value: sendBeacon });
-}
-
 let PostHog: new () => PostHogInstance;
 
 beforeAll(async () => {
-  fakeNetwork();
+  fakePostHogNetwork((url) => requests.push(url));
   ({ PostHog } = await import('posthog-js'));
 });
 
@@ -81,16 +54,25 @@ const postHogState = () => ({
   sessionStorage: Object.keys(window.sessionStorage),
 });
 
-/** A page load: a fresh SDK instance (the module singleton can only be initialised once) and a fresh adapter. */
+/**
+ * A page load: a fresh SDK instance (the module singleton can only be initialised once)
+ * and a fresh adapter. `captured` lists every event name the SDK captured on this page.
+ */
 function pageLoad() {
   const instances: PostHogInstance[] = [];
+  const captured: string[] = [];
   const loader = vi.fn(async () => {
     const instance = new PostHog();
+    const capture = instance.capture.bind(instance);
+    instance.capture = ((name, ...rest) => {
+      captured.push(name);
+      return capture(name, ...rest);
+    }) as PostHogInstance['capture'];
     instances.push(instance);
     return instance;
   });
   const adapter = new PostHogAnalyticsAdapter({ apiKey: API_KEY, apiHost: API_HOST }, loader);
-  return { adapter, loader, sdk: () => instances[0] };
+  return { adapter, loader, captured, sdk: () => instances[0] };
 }
 
 describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
@@ -119,7 +101,7 @@ describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
 
   it('captures and sends events once the visitor accepts', async () => {
     const { adapter, sdk } = pageLoad();
-    adapter.setConsent(true);
+    adapter.setConsent(true, 'visitor');
     await adapter.whenIdle();
     expect(sdk().is_capturing()).toBe(true);
     expect(sdk().has_opted_in_capturing()).toBe(true);
@@ -129,15 +111,36 @@ describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
     expect(requests.some((url) => url.startsWith(`${API_HOST}/e/`))).toBe(true);
   });
 
+  it('sends $opt_in once for a visitor accept and never for restored decisions on later page loads', async () => {
+    const first = pageLoad();
+    first.adapter.setConsent(true, 'visitor');
+    await first.adapter.whenIdle();
+    expect(first.captured.filter((name) => name === '$opt_in')).toHaveLength(1);
+    await flush();
+
+    for (let load = 0; load < 3; load++) {
+      const reload = pageLoad();
+      reload.adapter.setConsent(true, 'restored');
+      await reload.adapter.whenIdle();
+      reload.adapter.track(event);
+      // Synced again from another tab: still no announcement.
+      reload.adapter.setConsent(true, 'restored');
+      expect(reload.sdk().is_capturing()).toBe(true);
+      expect(reload.captured).not.toContain('$opt_in');
+      expect(reload.captured).toContain('cart_viewed');
+      await flush();
+    }
+  });
+
   it('stays opted out after rejection: nothing is captured or sent and only the opt-out record remains', async () => {
     const { adapter, sdk } = pageLoad();
-    adapter.setConsent(true);
+    adapter.setConsent(true, 'visitor');
     await adapter.whenIdle();
     adapter.track(event);
     await flush();
     expect(window.localStorage.getItem(OPT_OUT_KEY)).toBe('1');
 
-    adapter.setConsent(false);
+    adapter.setConsent(false, 'visitor');
     const posthog = sdk();
     expect(posthog.has_opted_out_capturing()).toBe(true);
     expect(posthog.is_capturing()).toBe(false);
@@ -164,7 +167,7 @@ describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
     window.sessionStorage.setItem(`ph_${API_KEY}_window_id`, 'w');
 
     const { adapter, loader } = pageLoad();
-    adapter.setConsent(false);
+    adapter.setConsent(false, 'visitor');
 
     expect(loader).not.toHaveBeenCalled();
     // A stale opt-in ("1") is withdrawn consent too, so it goes; an opt-out ("0") would stay.
@@ -173,15 +176,15 @@ describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
 
   it('does not start capturing again after a reload with the rejection restored or no decision', async () => {
     const first = pageLoad();
-    first.adapter.setConsent(true);
+    first.adapter.setConsent(true, 'visitor');
     await first.adapter.whenIdle();
-    first.adapter.setConsent(false);
+    first.adapter.setConsent(false, 'visitor');
     await flush();
 
     for (const restoreRejection of [true, false]) {
       requests = [];
       const reload = pageLoad();
-      if (restoreRejection) reload.adapter.setConsent(false);
+      if (restoreRejection) reload.adapter.setConsent(false, 'restored');
       reload.adapter.track(event);
       await reload.adapter.whenIdle();
       await flush();
@@ -198,10 +201,10 @@ describe('PostHogAnalyticsAdapter with the real posthog-js SDK', () => {
 
   it('captures again when the visitor accepts after withdrawing', async () => {
     const { adapter, sdk } = pageLoad();
-    adapter.setConsent(true);
+    adapter.setConsent(true, 'visitor');
     await adapter.whenIdle();
-    adapter.setConsent(false);
-    adapter.setConsent(true);
+    adapter.setConsent(false, 'visitor');
+    adapter.setConsent(true, 'visitor');
     expect(sdk().is_capturing()).toBe(true);
 
     requests = [];

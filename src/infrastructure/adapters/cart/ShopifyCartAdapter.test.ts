@@ -2,10 +2,15 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { ManageCartUseCase } from '@/application/use-cases/ManageCartUseCase';
 import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { ShopifyCartAdapter } from './ShopifyCartAdapter';
-import { ShopifyCartIdStore, SHOPIFY_CART_ID_KEY } from '../shopify/ShopifyCartIdStore';
-import { STOREFRONT_CONTEXT, ShopifyApiError } from '../shopify/ShopifyClient';
-import { mapShopifyProduct } from '../shopify/productMapping';
-import { MemoryStorage } from '../../testing/MemoryStorage';
+import { ShopifyCheckoutAdapter } from '@/infrastructure/adapters/checkout/ShopifyCheckoutAdapter';
+import {
+  SHOPIFY_CART_ID_KEY,
+  SHOPIFY_CART_REVISION_KEY,
+  ShopifyCartIdStore,
+} from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
+import { STOREFRONT_CONTEXT, ShopifyApiError } from '@/infrastructure/adapters/shopify/ShopifyClient';
+import { mapShopifyProduct } from '@/infrastructure/adapters/shopify/productMapping';
+import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
 import {
   cartNode,
   mutationResult,
@@ -15,7 +20,7 @@ import {
   testClient,
   variantGid,
   variantNode,
-} from '../../testing/shopifyFixtures';
+} from '@/infrastructure/testing/shopifyFixtures';
 import { Cart } from '@/domain/entities/cart/Cart';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { Quantity } from '@/domain/value-objects/Quantity';
@@ -251,6 +256,78 @@ describe('ShopifyCartAdapter', () => {
       expect(request.init.cache).toBe('no-store');
       expect(request.init.next).toBeUndefined();
     }
+  });
+
+  it('bumps the cart revision after each save that changed the remote cart, for other tabs', async () => {
+    const created = cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+    const updated = cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 2 }]);
+    const fetch = queuedFetch(mutationResult('cartCreate', created), mutationResult('cartLinesUpdate', updated));
+    const adapter = adapterWith(fetch);
+    const cart = new Cart('EUR');
+    cart.addItem(product(1), new Quantity(1));
+
+    await adapter.save(cart);
+    const first = storage.getItem(SHOPIFY_CART_REVISION_KEY);
+    expect(first).not.toBeNull();
+
+    cart.addItem(product(1), new Quantity(1));
+    await adapter.save(cart);
+    const second = storage.getItem(SHOPIFY_CART_REVISION_KEY);
+    expect(second).not.toBeNull();
+    expect(second).not.toBe(first);
+
+    // Nothing to send: no new revision.
+    await adapter.save(cart);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(storage.getItem(SHOPIFY_CART_REVISION_KEY)).toBe(second);
+  });
+
+  it('does not bump the revision for a load or a failed save, but does after a partial one', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const remote = cartNode('cart-1', [
+      { lineId: 'l1', variant: 1, quantity: 1 },
+      { lineId: 'l2', variant: 2, quantity: 1 },
+    ]);
+    const fetch = queuedFetch(
+      { data: { cart: remote } },
+      mutationResult('cartLinesRemove', null, [{ message: 'Cart is locked' }]),
+      mutationResult('cartLinesRemove', cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }])),
+      mutationResult('cartLinesUpdate', null, [{ message: 'Too many' }]),
+    );
+    const adapter = adapterWith(fetch);
+    const cart = await adapter.load();
+    expect(storage.getItem(SHOPIFY_CART_REVISION_KEY)).toBeNull();
+
+    cart.deleteItem(pid(2));
+    await expect(adapter.save(cart)).rejects.toThrow('Cart is locked');
+    expect(storage.getItem(SHOPIFY_CART_REVISION_KEY)).toBeNull();
+
+    cart.setQuantity(pid(1), new Quantity(3));
+    await expect(adapter.save(cart)).rejects.toThrow('Too many');
+    // The removal went through before the update failed.
+    expect(storage.getItem(SHOPIFY_CART_REVISION_KEY)).not.toBeNull();
+  });
+
+  it('remembers the checkout URL of the loaded cart so checkout needs no extra request', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 2 }]);
+    const fetch = queuedFetch({ data: { cart: remote } });
+    const cartIds = new ShopifyCartIdStore(storage);
+    const client = testClient(fetch);
+    const cart = await new ShopifyCartAdapter(client, cartIds, 'EUR').load();
+
+    await expect(new ShopifyCheckoutAdapter(client, cartIds).getCheckoutUrl(cart)).resolves.toBe(remote.checkoutUrl);
+    expect(fetch).toHaveBeenCalledOnce();
+  });
+
+  it('remembers the checkout URL of a cart it just created', async () => {
+    const created = cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+    const fetch = queuedFetch(mutationResult('cartCreate', created));
+    const cartIds = new ShopifyCartIdStore(storage);
+    const cart = new Cart('EUR');
+    cart.addItem(product(1), new Quantity(1));
+    await new ShopifyCartAdapter(testClient(fetch), cartIds, 'EUR').save(cart);
+    expect(cartIds.checkoutUrl()).toBe(created.checkoutUrl);
   });
 
   it('clear forgets the cart id', async () => {

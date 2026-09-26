@@ -1,6 +1,6 @@
-import { Product, ProductProps } from '../entities/product/Product';
-import { Money } from '../value-objects/Money';
-import { ProductId } from '../value-objects/ProductId';
+import { Product, ProductProps } from '@/domain/entities/product/Product';
+import { Money } from '@/domain/value-objects/Money';
+import { ProductId } from '@/domain/value-objects/ProductId';
 
 export interface ProductOverrides extends Partial<Omit<ProductProps, 'id' | 'price' | 'originalPrice'>> {
   id?: string;

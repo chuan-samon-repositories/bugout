@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Money, discountPercentage } from './Money';
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 describe('Money', () => {
   it('stores integer minor units', () => {

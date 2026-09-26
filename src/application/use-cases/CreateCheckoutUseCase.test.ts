@@ -3,9 +3,9 @@ import { ValidationError } from '@/domain/errors';
 import { Quantity } from '@/domain/value-objects/Quantity';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { CreateCheckoutUseCase } from './CreateCheckoutUseCase';
-import { InMemoryCartRepository } from '../testing/fakes';
-import { CheckoutService } from '../ports/CheckoutService';
-import { CommerceProvider } from '../dtos/Checkout';
+import { InMemoryCartRepository } from '@/application/testing/fakes';
+import { CheckoutService } from '@/application/ports/CheckoutService';
+import { CommerceProvider } from '@/application/dtos/Checkout';
 
 function service(url: string): CheckoutService {
   return { getCheckoutUrl: vi.fn().mockResolvedValue(url) };

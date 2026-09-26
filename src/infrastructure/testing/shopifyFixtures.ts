@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
-import { ShopifyClient, FetchLike } from '../adapters/shopify/ShopifyClient';
-import { ShopifyProductNode, ShopifyProductWithVariants, ShopifyVariantNode } from '../adapters/shopify/productMapping';
-import { ShopifyCartNode } from '../adapters/shopify/cartGraphql';
+import { ShopifyClient, FetchLike } from '@/infrastructure/adapters/shopify/ShopifyClient';
+import { ShopifyProductNode, ShopifyProductWithVariants, ShopifyVariantNode } from '@/infrastructure/adapters/shopify/productMapping';
+import { ShopifyCartNode } from '@/infrastructure/adapters/shopify/cartGraphql';
 
 export const variantGid = (n: number) => `gid://shopify/ProductVariant/${n}`;
 

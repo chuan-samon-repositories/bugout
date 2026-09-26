@@ -1,4 +1,4 @@
-import { Cart } from '../../domain/entities/cart/Cart';
+import { Cart } from '@/domain/entities/cart/Cart';
 
 /**
  * Starts checkout for a cart. Returns either an in-app route (local demo

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { CONSENT_STORAGE_KEY, LocalStorageConsentRepository } from './LocalStorageConsentRepository';
-import { MemoryStorage } from '../../testing/MemoryStorage';
+import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
 import { CONSENT_VERSION, ConsentDecision } from '@/application/dtos/Consent';
 
 const decision: ConsentDecision = { analytics: true, decidedAt: '2026-09-01T10:00:00.000Z', version: CONSENT_VERSION };

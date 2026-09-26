@@ -1,6 +1,6 @@
-import { FormValidationError } from '../errors';
-import { NewsletterService } from '../ports/NewsletterService';
-import { isBlank, isValidEmail } from '../validation';
+import { FormValidationError } from '@/application/errors';
+import { NewsletterService } from '@/application/ports/NewsletterService';
+import { isBlank, isValidEmail } from '@/application/validation';
 
 export class SubscribeNewsletterUseCase {
   constructor(private readonly newsletterService: NewsletterService) {}

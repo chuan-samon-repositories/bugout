@@ -1,5 +1,5 @@
 import { CommerceProvider } from '@/application/dtos/Checkout';
-import { ShopifyConfig } from './ShopifyConfig';
+import { ShopifyConfig } from '@/infrastructure/config/ShopifyConfig';
 
 export interface PostHogConfig {
   apiKey: string;

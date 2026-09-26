@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { LocalNewsletterAdapter } from './newsletter/LocalNewsletterAdapter';
-import { LocalContactAdapter } from './contact/LocalContactAdapter';
+import { LocalNewsletterAdapter } from '@/infrastructure/adapters/newsletter/LocalNewsletterAdapter';
+import { LocalContactAdapter } from '@/infrastructure/adapters/contact/LocalContactAdapter';
 
 describe('simulated local services', () => {
   afterEach(() => {

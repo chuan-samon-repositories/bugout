@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Quantity } from './Quantity';
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 describe('Quantity', () => {
   it('accepts positive integers', () => {
@@ -31,9 +31,5 @@ describe('Quantity', () => {
     );
     expect(() => new Quantity(Number.NaN)).toThrow(ValidationError);
     expect(() => new Quantity(Number.POSITIVE_INFINITY)).toThrow(ValidationError);
-  });
-
-  it('adds quantities', () => {
-    expect(new Quantity(2).add(new Quantity(3)).value).toBe(5);
   });
 });

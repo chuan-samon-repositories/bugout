@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ShopifyProductAdapter } from './ShopifyProductAdapter';
 import { NotFoundError } from '@/domain/errors';
 import { ProductId } from '@/domain/value-objects/ProductId';
-import { CATALOG_REVALIDATE_SECONDS, STOREFRONT_CONTEXT, ShopifyApiError } from '../shopify/ShopifyClient';
+import { CATALOG_REVALIDATE_SECONDS, STOREFRONT_CONTEXT, ShopifyApiError } from '@/infrastructure/adapters/shopify/ShopifyClient';
 import {
   productNode,
   productWithVariants,
@@ -11,7 +11,7 @@ import {
   testClient,
   variantGid,
   variantNode,
-} from '../../testing/shopifyFixtures';
+} from '@/infrastructure/testing/shopifyFixtures';
 
 const page = (nodes: unknown[], endCursor: string | null, hasNextPage: boolean) => ({
   data: { products: { pageInfo: { hasNextPage, endCursor }, nodes } },

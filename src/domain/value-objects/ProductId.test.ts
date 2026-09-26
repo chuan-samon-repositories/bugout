@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { ProductId } from './ProductId';
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 describe('ProductId', () => {
   it('rejects empty and whitespace-only strings', () => {

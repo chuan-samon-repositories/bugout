@@ -1,7 +1,7 @@
-import { ContactMessage, ContactTopic } from '../dtos/Contact';
-import { FieldErrors, FormValidationError } from '../errors';
-import { ContactService } from '../ports/ContactService';
-import { isBlank, isValidEmail } from '../validation';
+import { ContactMessage, ContactTopic } from '@/application/dtos/Contact';
+import { FieldErrors, FormValidationError } from '@/application/errors';
+import { ContactService } from '@/application/ports/ContactService';
+import { isBlank, isValidEmail } from '@/application/validation';
 
 export const CONTACT_MESSAGE_MIN_LENGTH = 10;
 export const CONTACT_MESSAGE_MAX_LENGTH = 2000;

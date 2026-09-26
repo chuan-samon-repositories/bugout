@@ -1,8 +1,15 @@
-import { NotFoundError } from '../../errors';
-import { CurrencyCode, Money } from '../../value-objects/Money';
-import { Cart } from '../cart/Cart';
+import { Cart } from '@/domain/entities/cart/Cart';
+import { NotFoundError } from '@/domain/errors';
+import { CurrencyCode, Money } from '@/domain/value-objects/Money';
 
 export type ShippingMethodId = 'standard' | 'express' | 'overnight';
+
+/** Every shipping method id, for validating ids read from outside (storage, forms, URLs). */
+export const SHIPPING_METHOD_IDS: readonly ShippingMethodId[] = ['standard', 'express', 'overnight'];
+
+export function isShippingMethodId(value: unknown): value is ShippingMethodId {
+  return typeof value === 'string' && (SHIPPING_METHOD_IDS as readonly string[]).includes(value);
+}
 
 export interface ShippingRate {
   id: ShippingMethodId;

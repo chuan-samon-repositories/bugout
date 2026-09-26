@@ -8,7 +8,7 @@
     "originalPrice": 249,
     "category": "survival-kits",
     "inStock": true,
-    "badge": "BESTSELLER",
+    "badge": null,
     "featured": true,
     "rating": null,
     "images": [
@@ -30,7 +30,7 @@
         { "label": "Capacidad", "value": "35 l" },
         { "label": "Material", "value": "Nailon ripstop 600D" },
         { "label": "Resistente al agua", "value": "Sí" },
-        { "label": "Garantía", "value": "3 años" }
+        { "label": "Garantía legal", "value": "3 años" }
       ],
       "contents": [
         { "item": "Barritas energéticas de emergencia", "quantity": "6 × 400 kcal" },
@@ -75,7 +75,7 @@
         { "label": "Capacidad", "value": "65 l" },
         { "label": "Material", "value": "Cordura 1000D" },
         { "label": "Resistente al agua", "value": "IPX6" },
-        { "label": "Garantía", "value": "5 años" }
+        { "label": "Garantía comercial", "value": "5 años" }
       ],
       "contents": [
         { "item": "Raciones de comida de emergencia", "quantity": "9 comidas" },

@@ -1,5 +1,5 @@
 import { NewsletterService } from '@/application/ports/NewsletterService';
-import { delay } from '../delay';
+import { delay } from '@/infrastructure/adapters/delay';
 
 /**
  * Placeholder until a mail/CRM backend is connected: resolves after a short

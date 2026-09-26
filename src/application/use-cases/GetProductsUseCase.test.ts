@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { GetProductsUseCase } from './GetProductsUseCase';
-import { GetProductBySlugUseCase } from './GetProductBySlugUseCase';
-import { InMemoryProductRepository } from '../testing/fakes';
+import { GetProductBySlugUseCase } from '@/application/use-cases/GetProductBySlugUseCase';
+import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { buildProduct } from '@/domain/testing/buildProduct';
 import { NotFoundError } from '@/domain/errors';
 

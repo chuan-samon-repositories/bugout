@@ -4,8 +4,8 @@ import {
   ShopifyProductNode,
   ShopifyVariantNode,
   VARIANT_FIELDS_FRAGMENT,
-} from './productMapping';
-import { STOREFRONT_CONTEXT, ShopifyUserError } from './ShopifyClient';
+} from '@/infrastructure/adapters/shopify/productMapping';
+import { STOREFRONT_CONTEXT, ShopifyUserError } from '@/infrastructure/adapters/shopify/ShopifyClient';
 
 const CART_FIELDS_FRAGMENT = /* GraphQL */ `
   fragment CartFields on Cart {

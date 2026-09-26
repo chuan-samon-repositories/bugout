@@ -9,3 +9,12 @@ export function browserStorage(): KeyValueStorage | null {
     return null;
   }
 }
+
+/** `window.sessionStorage`, or null on the server or when the browser blocks storage access. */
+export function browserSessionStorage(): KeyValueStorage | null {
+  try {
+    return typeof window === 'undefined' ? null : window.sessionStorage;
+  } catch {
+    return null;
+  }
+}

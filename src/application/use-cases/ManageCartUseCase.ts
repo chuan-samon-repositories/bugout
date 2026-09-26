@@ -1,8 +1,8 @@
 import { Cart } from '@/domain/entities/cart/Cart';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { Quantity } from '@/domain/value-objects/Quantity';
-import { CartRepository } from '../ports/CartRepository';
-import { ProductRepository } from '../ports/ProductRepository';
+import { CartRepository } from '@/application/ports/CartRepository';
+import { ProductRepository } from '@/application/ports/ProductRepository';
 
 /** Cart operations. Each one loads the cart, applies the change through the aggregate, persists it and resolves to the updated Cart. */
 export class ManageCartUseCase {

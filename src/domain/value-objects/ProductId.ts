@@ -1,4 +1,4 @@
-import { ValidationError } from '../errors';
+import { ValidationError } from '@/domain/errors';
 
 /**
  * Value object representing a unique product identifier.

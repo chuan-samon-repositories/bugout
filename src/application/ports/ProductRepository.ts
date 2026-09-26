@@ -1,5 +1,5 @@
-import { Product } from '../../domain/entities/product/Product';
-import { ProductId } from '../../domain/value-objects/ProductId';
+import { Product } from '@/domain/entities/product/Product';
+import { ProductId } from '@/domain/value-objects/ProductId';
 
 /**
  * Read access to the product catalog. Implemented by the JSON catalog

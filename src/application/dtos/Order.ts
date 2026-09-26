@@ -1,4 +1,4 @@
-import { OrderTotals, ShippingMethodId } from '../../domain/entities/order/OrderPricing';
+import { OrderTotals, ShippingMethodId } from '@/domain/entities/order/OrderPricing';
 
 export interface CustomerDetails {
   email: string;

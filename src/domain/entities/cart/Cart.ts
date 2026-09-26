@@ -1,9 +1,9 @@
-import { BusinessRuleError, NotFoundError } from '../../errors';
-import { CurrencyCode, Money } from '../../value-objects/Money';
-import { ProductId } from '../../value-objects/ProductId';
-import { Quantity } from '../../value-objects/Quantity';
-import { CartItem } from './CartItem';
-import { Product } from '../product/Product';
+import { BusinessRuleError, NotFoundError } from '@/domain/errors';
+import { CurrencyCode, Money } from '@/domain/value-objects/Money';
+import { ProductId } from '@/domain/value-objects/ProductId';
+import { Quantity } from '@/domain/value-objects/Quantity';
+import { CartItem } from '@/domain/entities/cart/CartItem';
+import { Product } from '@/domain/entities/product/Product';
 
 export const MAX_QUANTITY_PER_ITEM = 99;
 

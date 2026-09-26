@@ -1,4 +1,4 @@
-import { OrderConfirmation, OrderRequest } from '../dtos/Order';
+import { OrderConfirmation, OrderRequest } from '@/application/dtos/Order';
 
 /**
  * Places an order with the in-app checkout. Only used by the local provider;

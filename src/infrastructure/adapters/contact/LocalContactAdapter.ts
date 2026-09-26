@@ -1,5 +1,5 @@
 import { ContactService } from '@/application/ports/ContactService';
-import { delay } from '../delay';
+import { delay } from '@/infrastructure/adapters/delay';
 
 /**
  * Placeholder until a support inbox/helpdesk backend is connected: resolves after

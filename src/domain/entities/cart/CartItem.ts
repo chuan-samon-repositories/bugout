@@ -1,20 +1,16 @@
-import { Money } from '../../value-objects/Money';
-import { Quantity } from '../../value-objects/Quantity';
-import { Product } from '../product/Product';
+import { Product } from '@/domain/entities/product/Product';
+import { Money } from '@/domain/value-objects/Money';
+import { Quantity } from '@/domain/value-objects/Quantity';
 
 /**
- * Immutable product-quantity pair inside a Cart.
- * Quantity changes go through the Cart aggregate, which returns new items.
+ * Immutable product-quantity line inside a Cart. Items are never changed in place:
+ * the Cart aggregate replaces an item with a new one whenever its quantity changes.
  */
 export class CartItem {
   constructor(
     public readonly product: Product,
     public readonly quantity: Quantity,
   ) {}
-
-  withQuantity(quantity: Quantity): CartItem {
-    return new CartItem(this.product, quantity);
-  }
 
   subtotal(): Money {
     return this.product.price.multiply(this.quantity.value);

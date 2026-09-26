@@ -1,11 +1,11 @@
 import { Cart } from '@/domain/entities/cart/Cart';
 import { PricingPolicy, calculateOrderTotals } from '@/domain/entities/order/OrderPricing';
 import { ValidationError } from '@/domain/errors';
-import { validateCheckoutDetails } from '../checkout/validateCheckoutDetails';
-import { CheckoutDetails, OrderConfirmation, OrderLine } from '../dtos/Order';
-import { FormValidationError } from '../errors';
-import { CartRepository } from '../ports/CartRepository';
-import { OrderGateway } from '../ports/OrderGateway';
+import { validateCheckoutDetails } from '@/application/checkout/validateCheckoutDetails';
+import { CheckoutDetails, OrderConfirmation, OrderLine } from '@/application/dtos/Order';
+import { FormValidationError } from '@/application/errors';
+import { CartRepository } from '@/application/ports/CartRepository';
+import { OrderGateway } from '@/application/ports/OrderGateway';
 
 function normalize(details: CheckoutDetails): CheckoutDetails {
   const { customer, shippingAddress } = details;

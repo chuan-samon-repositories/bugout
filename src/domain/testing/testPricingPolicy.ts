@@ -1,5 +1,5 @@
-import { PricingPolicy } from '../entities/order/OrderPricing';
-import { Money } from '../value-objects/Money';
+import { PricingPolicy } from '@/domain/entities/order/OrderPricing';
+import { Money } from '@/domain/value-objects/Money';
 
 const eur = (major: number) => Money.fromMajor(major, 'EUR');
 

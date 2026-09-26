@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_SHOPIFY_API_VERSION, ShopifyApiError, ShopifyClient, assertNoUserErrors } from './ShopifyClient';
-import { CART_CREATE_MUTATION, CART_QUERY } from './cartGraphql';
-import { jsonResponse, queuedFetch, sentRequest } from '../../testing/shopifyFixtures';
+import { CART_CREATE_MUTATION, CART_QUERY } from '@/infrastructure/adapters/shopify/cartGraphql';
+import { jsonResponse, queuedFetch, sentRequest } from '@/infrastructure/testing/shopifyFixtures';
 
 describe('ShopifyClient', () => {
   it('posts the query to the Storefront endpoint with the access token', async () => {

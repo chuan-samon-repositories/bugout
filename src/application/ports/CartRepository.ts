@@ -1,4 +1,4 @@
-import { Cart } from '../../domain/entities/cart/Cart';
+import { Cart } from '@/domain/entities/cart/Cart';
 
 /**
  * Persistence for the shopper's cart. Implementations must return a fresh

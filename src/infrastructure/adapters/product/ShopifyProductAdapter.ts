@@ -9,8 +9,8 @@ import {
   ShopifyVariantNode,
   VARIANT_FIELDS_FRAGMENT,
   mapShopifyProduct,
-} from '../shopify/productMapping';
-import { STOREFRONT_CONTEXT, ShopifyClient } from '../shopify/ShopifyClient';
+} from '@/infrastructure/adapters/shopify/productMapping';
+import { STOREFRONT_CONTEXT, ShopifyClient } from '@/infrastructure/adapters/shopify/ShopifyClient';
 
 const PAGE_SIZE = 100;
 const VARIANT_GID_PREFIX = 'gid://shopify/ProductVariant/';

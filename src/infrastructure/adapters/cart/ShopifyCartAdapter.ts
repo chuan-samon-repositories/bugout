@@ -1,177 +1,150 @@
-import { Cart } from '../../../domain/entities/cart/Cart';
-import { CartRepository } from '../../../application/ports/CartRepository';
-import { Product } from '../../../domain/entities/product/Product';
-import { ProductId } from '../../../domain/value-objects/ProductId';
-import { Money } from '../../../domain/value-objects/Money';
-import { Quantity } from '../../../domain/value-objects/Quantity';
-import { ShopifyConfig } from '../../config/ShopifyConfig';
+import { CartRepository } from '@/application/ports/CartRepository';
+import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
+import { CurrencyCode } from '@/domain/value-objects/Money';
+import { ProductId } from '@/domain/value-objects/ProductId';
+import { Quantity } from '@/domain/value-objects/Quantity';
+import {
+  CART_CREATE_MUTATION,
+  CART_LINES_ADD_MUTATION,
+  CART_LINES_REMOVE_MUTATION,
+  CART_LINES_UPDATE_MUTATION,
+  CART_QUERY,
+  CartMutationPayload,
+  ShopifyCartNode,
+  toLineInputs,
+} from '../shopify/cartGraphql';
+import { mapShopifyProduct } from '../shopify/productMapping';
+import { ShopifyCartIdStore } from '../shopify/ShopifyCartIdStore';
+import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '../shopify/ShopifyClient';
 
-// ---------------------------------------------------------------------------
-// Shopify Storefront API types
-// ---------------------------------------------------------------------------
-
-interface ShopifyCartLine {
+interface RemoteLine {
+  lineId: string;
   quantity: number;
-  merchandise: {
-    id: string;
-    price: { amount: string };
-    compareAtPrice: { amount: string } | null;
-    availableForSale: boolean;
-    product: {
-      title: string;
-      description: string;
-      productType: string;
-      badge: { value: string } | null;
-    };
-  };
 }
 
-interface ShopifyCart {
-  id: string;
-  checkoutUrl: string;
-  lines: { edges: Array<{ node: ShopifyCartLine }> };
+/** What Shopify holds for the current cart id, used to turn aggregate changes into line mutations. */
+interface RemoteSnapshot {
+  cartId: string;
+  lines: Map<string, RemoteLine>;
+  /** Extra lines for a merchandise id already in `lines` (merged into one on the next save). */
+  duplicateLineIds: string[];
 }
 
-// ---------------------------------------------------------------------------
-// GraphQL operations
-// ---------------------------------------------------------------------------
+function toSnapshot(cart: ShopifyCartNode): RemoteSnapshot {
+  const lines = new Map<string, RemoteLine>();
+  const duplicateLineIds: string[] = [];
+  for (const line of cart.lines.nodes) {
+    if (lines.has(line.merchandise.id)) duplicateLineIds.push(line.id);
+    else lines.set(line.merchandise.id, { lineId: line.id, quantity: line.quantity });
+  }
+  return { cartId: cart.id, lines, duplicateLineIds };
+}
 
-const CART_CREATE = `
-  mutation CartCreate($lines: [CartLineInput!]!) {
-    cartCreate(input: { lines: $lines }) {
-      cart {
-        id
-        checkoutUrl
-        lines(first: 250) {
-          edges {
-            node {
-              quantity
-              merchandise {
-                ... on ProductVariant {
-                  id
-                  price { amount }
-                  compareAtPrice { amount }
-                  availableForSale
-                  product {
-                    title description productType
-                    badge: metafield(namespace: "custom", key: "badge") { value }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      userErrors { field message }
+/** Lines that can't be represented (unavailable, wrong currency, invalid data) are left out of the aggregate. */
+function toCart(remote: ShopifyCartNode, currency: CurrencyCode): Cart {
+  const cart = new Cart(currency);
+  for (const line of remote.lines.nodes) {
+    try {
+      const product = mapShopifyProduct(line.merchandise.product, line.merchandise);
+      const room = MAX_QUANTITY_PER_ITEM - cart.quantityOf(product.id);
+      cart.addItem(product, new Quantity(Math.min(line.quantity, room)));
+    } catch {
+      // Skipped; the next save removes the line from Shopify so both sides agree.
     }
   }
-`;
+  return cart;
+}
 
-const CART_QUERY = `
-  query GetCart($cartId: ID!) {
-    cart(id: $cartId) {
-      id
-      checkoutUrl
-      lines(first: 250) {
-        edges {
-          node {
-            quantity
-            merchandise {
-              ... on ProductVariant {
-                id
-                price { amount }
-                compareAtPrice { amount }
-                availableForSale
-                product {
-                  title description productType
-                  badge: metafield(namespace: "custom", key: "badge") { value }
-                }
-              }
-            }
-          }
-        }
-      }
+function diff(cart: Cart, remote: RemoteSnapshot) {
+  const add: Array<{ merchandiseId: string; quantity: number }> = [];
+  const update: Array<{ id: string; quantity: number }> = [];
+  const remove = [...remote.duplicateLineIds];
+
+  for (const item of cart.getItems()) {
+    const merchandiseId = item.product.id.value;
+    const line = remote.lines.get(merchandiseId);
+    if (!line) add.push({ merchandiseId, quantity: item.quantity.value });
+    else if (line.quantity !== item.quantity.value) {
+      update.push({ id: line.lineId, quantity: item.quantity.value });
     }
   }
-`;
+  for (const [merchandiseId, line] of remote.lines) {
+    if (cart.quantityOf(new ProductId(merchandiseId)) === 0) remove.push(line.lineId);
+  }
+  return { add, update, remove };
+}
 
-// ---------------------------------------------------------------------------
-// Adapter
-// ---------------------------------------------------------------------------
-
-// NOTE: save() always calls cartCreate to keep this skeleton simple.
-// In production, use cartLinesAdd/cartLinesUpdate/cartLinesRemove with stored
-// Shopify CartLine IDs to avoid creating a new cart on every mutation.
-
+/**
+ * Cart stored in Shopify. The cart id lives in localStorage; save() diffs the aggregate
+ * against the last known remote lines and sends only the line mutations needed.
+ */
 export class ShopifyCartAdapter implements CartRepository {
-  private readonly endpoint: string;
-  private readonly headers: HeadersInit;
-  private readonly cartIdKey = 'shopify-cart-id';
+  private snapshot: RemoteSnapshot | null = null;
 
-  constructor(config: ShopifyConfig) {
-    const version = config.apiVersion ?? '2024-01';
-    this.endpoint = `https://${config.storeDomain}/api/${version}/graphql.json`;
-    this.headers = {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': config.storefrontAccessToken,
-    };
+  constructor(
+    private readonly client: ShopifyClient,
+    private readonly cartIds: ShopifyCartIdStore,
+    private readonly currency: CurrencyCode,
+  ) {}
+
+  async load(): Promise<Cart> {
+    const remote = await this.fetchRemote();
+    return remote ? toCart(remote, this.currency) : new Cart(this.currency);
   }
 
   async save(cart: Cart): Promise<void> {
-    const lines = cart.getItems().map((item) => ({
-      merchandiseId: item.product.id.value, // Shopify variant GID
-      quantity: item.quantity.value,
-    }));
-    const { data } = await this.graphql<{ cartCreate: { cart: ShopifyCart } }>(
-      CART_CREATE,
-      { lines },
-    );
-    localStorage.setItem(this.cartIdKey, data.cartCreate.cart.id);
-  }
-
-  async load(): Promise<Cart> {
-    const cartId = localStorage.getItem(this.cartIdKey);
-    if (!cartId) return new Cart();
-    const { data } = await this.graphql<{ cart: ShopifyCart | null }>(CART_QUERY, { cartId });
-    if (!data.cart) {
-      localStorage.removeItem(this.cartIdKey);
-      return new Cart();
+    const remote = await this.currentSnapshot();
+    if (!remote) {
+      if (cart.isEmpty()) return;
+      const created = await this.mutate('cartCreate', CART_CREATE_MUTATION, { lines: toLineInputs(cart) });
+      this.cartIds.set(created.id);
+      return;
     }
-    return this.mapToCart(data.cart);
+
+    const { add, update, remove } = diff(cart, remote);
+    const cartId = remote.cartId;
+    if (remove.length > 0) await this.mutate('cartLinesRemove', CART_LINES_REMOVE_MUTATION, { cartId, lineIds: remove });
+    if (update.length > 0) await this.mutate('cartLinesUpdate', CART_LINES_UPDATE_MUTATION, { cartId, lines: update });
+    if (add.length > 0) await this.mutate('cartLinesAdd', CART_LINES_ADD_MUTATION, { cartId, lines: add });
   }
 
   async clear(): Promise<void> {
-    localStorage.removeItem(this.cartIdKey);
+    this.cartIds.clear();
+    this.snapshot = null;
   }
 
-  private async graphql<T>(query: string, variables: Record<string, unknown>): Promise<{ data: T }> {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
-    return response.json();
-  }
-
-  private mapToCart(shopifyCart: ShopifyCart): Cart {
-    const cart = new Cart();
-    for (const { node } of shopifyCart.lines.edges) {
-      const { merchandise } = node;
-      const product = new Product(
-        new ProductId(merchandise.id),
-        merchandise.product.title,
-        new Money(parseFloat(merchandise.price.amount)),
-        merchandise.compareAtPrice ? new Money(parseFloat(merchandise.compareAtPrice.amount)) : null,
-        0,
-        0,
-        merchandise.product.description,
-        merchandise.product.productType.toLowerCase().replace(/\s+/g, '-'),
-        merchandise.availableForSale,
-        merchandise.product.badge?.value ?? null,
-      );
-      cart.addItem(product, new Quantity(node.quantity));
+  private async fetchRemote(): Promise<ShopifyCartNode | null> {
+    const cartId = this.cartIds.get();
+    if (!cartId) {
+      this.snapshot = null;
+      return null;
     }
+    const { cart } = await this.client.request<{ cart: ShopifyCartNode | null }>(CART_QUERY, { id: cartId });
+    if (!cart) {
+      await this.clear();
+      return null;
+    }
+    this.snapshot = toSnapshot(cart);
     return cart;
+  }
+
+  /** The remembered remote lines for the stored cart id, refetched if they belong to another cart. */
+  private async currentSnapshot(): Promise<RemoteSnapshot | null> {
+    const cartId = this.cartIds.get();
+    if (cartId && this.snapshot?.cartId === cartId) return this.snapshot;
+    return (await this.fetchRemote()) ? this.snapshot : null;
+  }
+
+  private async mutate(
+    operation: 'cartCreate' | 'cartLinesAdd' | 'cartLinesUpdate' | 'cartLinesRemove',
+    mutation: string,
+    variables: Record<string, unknown>,
+  ): Promise<ShopifyCartNode> {
+    const data = await this.client.request<Record<string, CartMutationPayload>>(mutation, variables);
+    const payload = data[operation];
+    assertNoUserErrors(operation, payload?.userErrors);
+    if (!payload?.cart) throw new ShopifyApiError(`${operation} returned no cart`);
+    this.snapshot = toSnapshot(payload.cart);
+    return payload.cart;
   }
 }

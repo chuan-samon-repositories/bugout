@@ -1,94 +1,120 @@
-import { Cart } from "../../../domain/entities/cart/Cart";
-import { Product } from "../../../domain/entities/product/Product";
-import { CartRepository } from "../../../application/ports/CartRepository";
-import { Money } from "../../../domain/value-objects/Money";
-import { ProductId } from "../../../domain/value-objects/ProductId";
-import { Quantity } from "../../../domain/value-objects/Quantity";
-import { CartDTO } from "@/domain/entities/cart/CartDTO";
+import { CartRepository } from '@/application/ports/CartRepository';
+import { ProductRepository } from '@/application/ports/ProductRepository';
+import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
+import { CurrencyCode } from '@/domain/value-objects/Money';
+import { Quantity } from '@/domain/value-objects/Quantity';
+import { KeyValueStorage, browserStorage } from '../storage';
+
+export const CART_STORAGE_KEY = 'bugout.cart';
+/** Key and format written by the first version of the store: `{ items: [{ product: { id, ... }, quantity }] }`. */
+export const LEGACY_CART_STORAGE_KEY = 'shopping-cart';
+
+interface StoredLine {
+  productId: string;
+  quantity: number;
+}
+
+interface StoredCart {
+  version: 2;
+  items: StoredLine[];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function toLine(productId: unknown, quantity: unknown): StoredLine | null {
+  if (typeof productId !== 'string' || productId.trim() === '') return null;
+  if (typeof quantity !== 'number' || !Number.isFinite(quantity) || quantity < 1) return null;
+  return { productId, quantity: Math.min(Math.floor(quantity), MAX_QUANTITY_PER_ITEM) };
+}
+
+function parseJson(raw: string): unknown {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function parseItems(data: unknown, readLine: (item: Record<string, unknown>) => StoredLine | null): StoredLine[] {
+  if (!isRecord(data) || !Array.isArray(data.items)) return [];
+  return data.items.flatMap((item) => (isRecord(item) ? (readLine(item) ?? []) : []));
+}
+
+const readV2Line = (item: Record<string, unknown>) => toLine(item.productId, item.quantity);
+const readLegacyLine = (item: Record<string, unknown>) =>
+  isRecord(item.product) ? toLine(item.product.id, item.quantity) : null;
 
 /**
- * LocalStorageCartAdapter implements CartRepository using browser localStorage.
- * Handles serialization and deserialization of Cart entities to/from JSON.
+ * Cart persisted in localStorage as product ids and quantities only. Products are
+ * re-read from the catalog on load, so stored prices or stock can never be trusted.
  */
 export class LocalStorageCartAdapter implements CartRepository {
-  private readonly storageKey = "shopping-cart";
-
-  async save(cart: Cart): Promise<void> {
-    const serialized = this.serializeCart(cart);
-    localStorage.setItem(this.storageKey, JSON.stringify(serialized));
-  }
+  constructor(
+    private readonly productRepository: ProductRepository,
+    private readonly currency: CurrencyCode,
+    private readonly storage?: KeyValueStorage | null,
+    private readonly key: string = CART_STORAGE_KEY,
+  ) {}
 
   async load(): Promise<Cart> {
-    const data = localStorage.getItem(this.storageKey);
-    if (!data) {
-      return new Cart();
-    }
-
+    const cart = new Cart(this.currency);
+    const storage = this.resolveStorage();
+    if (!storage) return cart;
     try {
-      const parsed = JSON.parse(data);
-      return this.deserializeCart(parsed);
+      const lines = this.readLines(storage);
+      if (lines.length === 0) return cart;
+      const products = new Map((await this.productRepository.findAll()).map((product) => [product.id.value, product]));
+      for (const line of lines) {
+        const product = products.get(line.productId);
+        if (!product) continue;
+        try {
+          cart.addItem(product, new Quantity(Math.min(line.quantity, MAX_QUANTITY_PER_ITEM - cart.quantityOf(product.id))));
+        } catch {
+          // Out of stock, wrong currency or already at the limit: drop the line.
+        }
+      }
+      return cart;
     } catch (error) {
-      console.error("Failed to parse cart data:", error);
-      return new Cart();
+      console.warn('[cart] Could not restore the saved cart', error);
+      return new Cart(this.currency);
     }
+  }
+
+  async save(cart: Cart): Promise<void> {
+    this.resolveStorage()?.setItem(this.key, JSON.stringify(this.serialize(cart)));
   }
 
   async clear(): Promise<void> {
-    localStorage.removeItem(this.storageKey);
+    this.resolveStorage()?.removeItem(this.key);
   }
 
-  private serializeCart(cart: Cart): CartDTO {
+  private serialize(cart: Cart): StoredCart {
     return {
-      items: cart.getItems().map((item) => ({
-        product: {
-          id: item.product.id.value,
-          name: item.product.name,
-          price: item.product.price.amount,
-          originalPrice: item.product.originalPrice?.amount ?? null,
-          rating: item.product.rating,
-          reviews: item.product.reviews,
-          description: item.product.description,
-          category: item.product.category,
-          inStock: item.product.inStock,
-          badge: item.product.badge,
-        },
-        quantity: item.quantity.value,
-      })),
+      version: 2,
+      items: cart.getItems().map((item) => ({ productId: item.product.id.value, quantity: item.quantity.value })),
     };
   }
 
-  private deserializeCart(data: CartDTO): Cart {
-    const cart = new Cart();
-
-    if (!data.items || !Array.isArray(data.items)) {
-      return cart;
+  /** Reads the current format, migrating (and deleting) the legacy one when that is all there is. */
+  private readLines(storage: KeyValueStorage): StoredLine[] {
+    const current = storage.getItem(this.key);
+    const legacy = storage.getItem(LEGACY_CART_STORAGE_KEY);
+    if (legacy !== null) storage.removeItem(LEGACY_CART_STORAGE_KEY);
+    if (current !== null) {
+      const data = parseJson(current);
+      return isRecord(data) && data.version === 2 ? parseItems(data, readV2Line) : [];
     }
+    if (legacy === null) return [];
 
-    for (const item of data.items) {
-      try {
-        const product = new Product(
-          new ProductId(item.product.id),
-          item.product.name,
-          new Money(item.product.price),
-          item.product.originalPrice !== null
-            ? new Money(item.product.originalPrice)
-            : null,
-          item.product.rating,
-          item.product.reviews,
-          item.product.description,
-          item.product.category,
-          item.product.inStock,
-          item.product.badge,
-        );
+    const migrated = parseItems(parseJson(legacy), readLegacyLine);
+    const stored: StoredCart = { version: 2, items: migrated };
+    storage.setItem(this.key, JSON.stringify(stored));
+    return migrated;
+  }
 
-        const quantity = new Quantity(item.quantity);
-        cart.addItem(product, quantity);
-      } catch (error) {
-        // Skip invalid items but continue processing others
-        console.error("Failed to deserialize cart item:", error);
-      }
-    }
-
-    return cart;
+  private resolveStorage(): KeyValueStorage | null {
+    return this.storage === undefined ? browserStorage() : this.storage;
   }
 }

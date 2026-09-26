@@ -31,7 +31,8 @@ export class Money {
   /** Builds Money from a major-unit amount (e.g. 19.99 or "19.99" from Shopify's MoneyV2). */
   static fromMajor(amount: number | string, currency: CurrencyCode): Money {
     const value = typeof amount === 'string' ? Number(amount) : amount;
-    if (!Number.isFinite(value)) {
+    // Number('') and Number('  ') are 0, so blank strings must be rejected explicitly.
+    if (!Number.isFinite(value) || (typeof amount === 'string' && amount.trim() === '')) {
       throw new ValidationError(`Invalid money amount: ${amount}`);
     }
     return Money.fromMinor(Math.round(value * MINOR_UNITS_PER_MAJOR), currency);

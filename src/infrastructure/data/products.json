@@ -1,0 +1,241 @@
+[
+  {
+    "id": "24h-survival-backpack",
+    "slug": "24h-survival-backpack",
+    "name": "Mochila de supervivencia 24H",
+    "description": "Kit de supervivencia esencial para las primeras 24 horas de una emergencia. Compacto y ligero.",
+    "price": 199,
+    "originalPrice": 249,
+    "category": "survival-kits",
+    "inStock": true,
+    "badge": "BESTSELLER",
+    "featured": true,
+    "rating": { "average": 4.9, "count": 1247 },
+    "images": [
+      { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 24H", "width": 1024, "height": 1536 }
+    ],
+    "details": {
+      "longDescription": "Pensada para las primeras 24 horas de cualquier emergencia, esta mochila compacta y ligera reúne todo lo imprescindible para superar el primer día, el más crítico.",
+      "features": [
+        "Diseño ligero y fácil de transportar",
+        "Comida y agua para 24 horas",
+        "Material de refugio de emergencia",
+        "Primeros auxilios básicos",
+        "Herramientas para hacer fuego",
+        "Dispositivos de comunicación de emergencia"
+      ],
+      "specifications": [
+        { "label": "Peso", "value": "3,2 kg" },
+        { "label": "Dimensiones", "value": "45 × 30 × 15 cm" },
+        { "label": "Capacidad", "value": "35 l" },
+        { "label": "Material", "value": "Nailon ripstop 600D" },
+        { "label": "Resistente al agua", "value": "Sí" },
+        { "label": "Garantía", "value": "3 años" }
+      ],
+      "contents": [
+        { "item": "Barritas energéticas de emergencia", "quantity": "6 × 400 kcal" },
+        { "item": "Pastillas potabilizadoras", "quantity": "20 pastillas" },
+        { "item": "Manta térmica de emergencia", "quantity": "2" },
+        { "item": "Botiquín de primeros auxilios", "quantity": "1 completo" },
+        { "item": "Multiherramienta", "quantity": "1" },
+        { "item": "Kit para encender fuego", "quantity": "1" },
+        { "item": "Silbato de emergencia", "quantity": "1" },
+        { "item": "Linterna", "quantity": "1 LED" }
+      ]
+    }
+  },
+  {
+    "id": "72h-survival-backpack",
+    "slug": "72h-survival-backpack",
+    "name": "Mochila de supervivencia 72H",
+    "description": "La solución completa para 3 días, pensada para quien se toma en serio la preparación ante emergencias.",
+    "price": 299,
+    "originalPrice": 399,
+    "category": "survival-kits",
+    "inStock": true,
+    "badge": "PREMIUM",
+    "featured": true,
+    "rating": { "average": 5.0, "count": 2156 },
+    "images": [
+      { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 72H", "width": 1024, "height": 1536 }
+    ],
+    "details": {
+      "longDescription": "Una solución de supervivencia completa para 3 días. Este kit integral contiene todo lo necesario para que una persona resista 72 horas en cualquier situación de emergencia.",
+      "features": [
+        "Solución completa para 72 horas",
+        "Equipamiento de calidad profesional",
+        "Reserva ampliada de comida y agua",
+        "Sistemas avanzados de refugio y abrigo",
+        "Material sanitario completo",
+        "Comunicación y señalización de emergencia"
+      ],
+      "specifications": [
+        { "label": "Peso", "value": "6,8 kg" },
+        { "label": "Dimensiones", "value": "55 × 35 × 20 cm" },
+        { "label": "Capacidad", "value": "65 l" },
+        { "label": "Material", "value": "Cordura 1000D" },
+        { "label": "Resistente al agua", "value": "IPX6" },
+        { "label": "Garantía", "value": "5 años" }
+      ],
+      "contents": [
+        { "item": "Raciones de comida de emergencia", "quantity": "9 comidas" },
+        { "item": "Sistema de potabilización de agua", "quantity": "1 completo" },
+        { "item": "Refugio de emergencia", "quantity": "1 tienda" },
+        { "item": "Botiquín sanitario", "quantity": "1 avanzado" },
+        { "item": "Juego de multiherramientas", "quantity": "3 herramientas" },
+        { "item": "Kit para encender fuego", "quantity": "1 avanzado" },
+        { "item": "Radio de emergencia", "quantity": "1 solar" },
+        { "item": "Equipo para dormir", "quantity": "1 completo" }
+      ]
+    }
+  },
+  {
+    "id": "custom-survival-kit",
+    "slug": "custom-survival-kit",
+    "name": "Kit de supervivencia personalizable",
+    "description": "Una base modular con lo esencial para que completes tu kit con los artículos que mejor se adapten a ti.",
+    "price": 149,
+    "originalPrice": 199,
+    "category": "survival-kits",
+    "inStock": true,
+    "badge": "SALE",
+    "featured": false,
+    "rating": { "average": 4.7, "count": 856 },
+    "images": [
+      { "url": "/images/products/backpack.png", "alt": "Kit de supervivencia personalizable", "width": 1024, "height": 1536 }
+    ],
+    "details": {
+      "longDescription": "Parte de una mochila modular con los elementos básicos de señalización, luz y abrigo, y amplíala con nuestros accesorios de comida, agua y primeros auxilios según tu entorno y el tamaño de tu familia.",
+      "features": [
+        "Mochila con compartimentos modulares",
+        "Incluye lo básico para luz, abrigo y señalización",
+        "Espacio para añadir comida, agua y botiquín",
+        "Compatible con todos nuestros accesorios"
+      ],
+      "specifications": [
+        { "label": "Capacidad", "value": "30 l" },
+        { "label": "Peso (con la base)", "value": "1,6 kg" },
+        { "label": "Compartimentos", "value": "6 modulares" },
+        { "label": "Material", "value": "Nailon ripstop 600D" },
+        { "label": "Resistente al agua", "value": "Sí" }
+      ],
+      "contents": [
+        { "item": "Mochila modular", "quantity": "1 (30 l)" },
+        { "item": "Manta térmica de emergencia", "quantity": "2" },
+        { "item": "Linterna", "quantity": "1 LED" },
+        { "item": "Silbato de emergencia", "quantity": "1" },
+        { "item": "Cuerda de paracord", "quantity": "15 m" },
+        { "item": "Bolsas estancas", "quantity": "3" }
+      ]
+    }
+  },
+  {
+    "id": "emergency-food-pack",
+    "slug": "emergency-food-pack",
+    "name": "Pack de comida de emergencia",
+    "description": "Reserva de comida de emergencia para 72 horas, con 2400 kcal al día.",
+    "price": 49,
+    "originalPrice": null,
+    "category": "accessories",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": { "average": 4.8, "count": 432 },
+    "images": [],
+    "details": {
+      "longDescription": "Raciones listas para comer que cubren 3 días a razón de 2400 kcal diarias para una persona. No necesitan cocción ni agua y se conservan durante años en su envase.",
+      "features": [
+        "3 días × 2400 kcal para una persona",
+        "Listas para comer, sin cocinar ni añadir agua",
+        "Raciones individuales envasadas al vacío",
+        "Larga conservación a temperatura ambiente"
+      ],
+      "specifications": [
+        { "label": "Duración", "value": "72 horas (1 persona)" },
+        { "label": "Aporte energético", "value": "2400 kcal/día (7200 kcal en total)" },
+        { "label": "Peso", "value": "1,5 kg" },
+        { "label": "Consumo preferente", "value": "5 años desde la fabricación" },
+        { "label": "Conservación", "value": "Lugar fresco y seco" }
+      ],
+      "contents": [
+        { "item": "Barritas energéticas de 400 kcal", "quantity": "18 (6 al día)" }
+      ]
+    }
+  },
+  {
+    "id": "water-purification-kit",
+    "slug": "water-purification-kit",
+    "name": "Kit de potabilización de agua",
+    "description": "Sistema completo de filtrado y potabilización de agua para situaciones de emergencia.",
+    "price": 39,
+    "originalPrice": null,
+    "category": "accessories",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": { "average": 4.6, "count": 328 },
+    "images": [],
+    "details": {
+      "longDescription": "Combina un filtro portátil de fibra hueca con pastillas potabilizadoras para obtener agua apta para el consumo a partir de ríos, fuentes o depósitos cuando falla el suministro.",
+      "features": [
+        "Filtro portátil y pastillas para una doble protección",
+        "Para agua de ríos, fuentes y depósitos",
+        "Ligero y compacto",
+        "Bolsa plegable para recoger y filtrar agua"
+      ],
+      "specifications": [
+        { "label": "Filtro", "value": "Fibra hueca de 0,1 µm" },
+        { "label": "Vida útil del filtro", "value": "Hasta 1000 l" },
+        { "label": "Pastillas", "value": "1 pastilla por litro" },
+        { "label": "Peso", "value": "250 g" }
+      ],
+      "contents": [
+        { "item": "Filtro de agua portátil", "quantity": "1" },
+        { "item": "Pastillas potabilizadoras", "quantity": "50 pastillas" },
+        { "item": "Bolsa plegable para agua", "quantity": "1 (2 l)" },
+        { "item": "Prefiltro de tela", "quantity": "1" }
+      ]
+    }
+  },
+  {
+    "id": "first-aid-pro",
+    "slug": "first-aid-pro",
+    "name": "Botiquín de primeros auxilios Pro",
+    "description": "Material sanitario de calidad profesional para prestar primeros auxilios en una emergencia.",
+    "price": 89,
+    "originalPrice": 119,
+    "category": "accessories",
+    "inStock": true,
+    "badge": "SALE",
+    "featured": false,
+    "rating": { "average": 4.9, "count": 674 },
+    "images": [],
+    "details": {
+      "longDescription": "Un botiquín completo y ordenado por compartimentos para atender heridas, quemaduras, torceduras y hemorragias hasta recibir asistencia médica.",
+      "features": [
+        "Compartimentos etiquetados para encontrarlo todo rápido",
+        "Material para heridas, quemaduras y torceduras",
+        "Estuche resistente al agua con anclaje MOLLE",
+        "Guía rápida de primeros auxilios en español"
+      ],
+      "specifications": [
+        { "label": "Piezas", "value": "120" },
+        { "label": "Dimensiones", "value": "24 × 17 × 9 cm" },
+        { "label": "Peso", "value": "900 g" },
+        { "label": "Estuche", "value": "Nailon 600D resistente al agua" }
+      ],
+      "contents": [
+        { "item": "Tiritas de varios tamaños", "quantity": "40" },
+        { "item": "Gasas estériles", "quantity": "10" },
+        { "item": "Vendas elásticas", "quantity": "3" },
+        { "item": "Esparadrapo", "quantity": "1 rollo" },
+        { "item": "Toallitas antisépticas", "quantity": "20" },
+        { "item": "Tijeras y pinzas", "quantity": "1 de cada" },
+        { "item": "Guantes de nitrilo", "quantity": "2 pares" },
+        { "item": "Manta térmica de emergencia", "quantity": "1" },
+        { "item": "Torniquete", "quantity": "1" },
+        { "item": "Guía de primeros auxilios", "quantity": "1" }
+      ]
+    }
+  }
+]

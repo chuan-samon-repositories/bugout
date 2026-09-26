@@ -1,0 +1,16 @@
+import { PricingPolicy } from '../entities/order/OrderPricing';
+import { Money } from '../value-objects/Money';
+
+const eur = (major: number) => Money.fromMajor(major, 'EUR');
+
+/** Test helper mirroring the store policy: 21% IVA included, standard shipping free from 75 €. */
+export const testPricingPolicy: PricingPolicy = {
+  currency: 'EUR',
+  taxRate: 0.21,
+  pricesIncludeTax: true,
+  shippingRates: [
+    { id: 'standard', price: eur(4.95), freeFrom: eur(75), deliveryDays: { min: 3, max: 5 } },
+    { id: 'express', price: eur(9.95), freeFrom: null, deliveryDays: { min: 1, max: 2 } },
+    { id: 'overnight', price: eur(14.95), freeFrom: null, deliveryDays: { min: 1, max: 1 } },
+  ],
+};

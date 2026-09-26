@@ -1,169 +1,108 @@
-import { ProductRepository } from '../../../application/ports/ProductRepository';
-import { Product } from '../../../domain/entities/product/Product';
-import { ProductId } from '../../../domain/value-objects/ProductId';
-import { Money } from '../../../domain/value-objects/Money';
-import { NotFoundError } from '../../../domain/errors';
-import { ShopifyConfig } from '../../config/ShopifyConfig';
+import { ProductRepository } from '@/application/ports/ProductRepository';
+import { Product } from '@/domain/entities/product/Product';
+import { NotFoundError } from '@/domain/errors';
+import { ProductId } from '@/domain/value-objects/ProductId';
+import {
+  PRODUCT_FIELDS_FRAGMENT,
+  ShopifyProductNode,
+  ShopifyProductWithVariants,
+  ShopifyVariantNode,
+  VARIANT_FIELDS_FRAGMENT,
+  mapShopifyProduct,
+} from '../shopify/productMapping';
+import { ShopifyClient } from '../shopify/ShopifyClient';
 
-// ---------------------------------------------------------------------------
-// Shopify Storefront API types
-// ---------------------------------------------------------------------------
+const PAGE_SIZE = 100;
+const VARIANT_GID_PREFIX = 'gid://shopify/ProductVariant/';
 
-interface ShopifyVariantNode {
-  id: string;
-  price: { amount: string };
-  compareAtPrice: { amount: string } | null;
-  availableForSale: boolean;
-}
-
-interface ShopifyProductNode {
-  id: string;
-  title: string;
-  description: string;
-  productType: string;
-  variants: { edges: Array<{ node: ShopifyVariantNode }> };
-  // Ratings/reviews are not native to Shopify — extend via metafields if needed.
-  // e.g. metafield(namespace: "custom", key: "badge") { value }
-  badge: { value: string } | null;
-}
-
-// ---------------------------------------------------------------------------
-// GraphQL queries
-// ---------------------------------------------------------------------------
-
-const PRODUCTS_QUERY = `
-  query GetProducts($first: Int!) {
-    products(first: $first) {
-      edges {
-        node {
-          id
-          title
-          description
-          productType
-          variants(first: 1) {
-            edges {
-              node {
-                id
-                price { amount }
-                compareAtPrice { amount }
-                availableForSale
-              }
-            }
-          }
-          badge: metafield(namespace: "custom", key: "badge") { value }
-        }
+const PRODUCTS_QUERY = /* GraphQL */ `
+  query Products($first: Int!, $after: String) {
+    products(first: $first, after: $after) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        ...ProductFields
+        variants(first: 1) { nodes { ...VariantFields } }
       }
     }
   }
+  ${PRODUCT_FIELDS_FRAGMENT}
+  ${VARIANT_FIELDS_FRAGMENT}
 `;
 
-const PRODUCT_BY_VARIANT_QUERY = `
-  query GetProductByVariant($id: ID!) {
+const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
+  query ProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      ...ProductFields
+      variants(first: 1) { nodes { ...VariantFields } }
+    }
+  }
+  ${PRODUCT_FIELDS_FRAGMENT}
+  ${VARIANT_FIELDS_FRAGMENT}
+`;
+
+const VARIANT_BY_ID_QUERY = /* GraphQL */ `
+  query VariantById($id: ID!) {
     node(id: $id) {
       ... on ProductVariant {
-        id
-        price { amount }
-        compareAtPrice { amount }
-        availableForSale
-        product {
-          id
-          title
-          description
-          productType
-          badge: metafield(namespace: "custom", key: "badge") { value }
-        }
+        ...VariantFields
+        product { ...ProductFields }
       }
     }
   }
+  ${PRODUCT_FIELDS_FRAGMENT}
+  ${VARIANT_FIELDS_FRAGMENT}
 `;
 
-// ---------------------------------------------------------------------------
-// Adapter
-// ---------------------------------------------------------------------------
+interface ProductsPage {
+  products: {
+    pageInfo: { hasNextPage: boolean; endCursor: string | null };
+    nodes: ShopifyProductWithVariants[];
+  };
+}
 
+/** Maps a product with its first variant; products without variants cannot be sold and map to null. */
+function mapWithFirstVariant(node: ShopifyProductWithVariants): Product | null {
+  const [variant] = node.variants.nodes;
+  return variant ? mapShopifyProduct(node, variant) : null;
+}
+
+/** Catalog from the Shopify Storefront API. Product ids are variant GIDs (the cart merchandise id). */
 export class ShopifyProductAdapter implements ProductRepository {
-  private readonly endpoint: string;
-  private readonly headers: HeadersInit;
-
-  constructor(config: ShopifyConfig) {
-    const version = config.apiVersion ?? '2024-01';
-    this.endpoint = `https://${config.storeDomain}/api/${version}/graphql.json`;
-    this.headers = {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': config.storefrontAccessToken,
-    };
-  }
+  constructor(private readonly client: ShopifyClient) {}
 
   async findAll(): Promise<Product[]> {
-    const { data } = await this.graphql<{
-      products: { edges: Array<{ node: ShopifyProductNode }> };
-    }>(PRODUCTS_QUERY, { first: 250 });
-    return data.products.edges.map(({ node }) => this.mapToProduct(node));
+    const products: Product[] = [];
+    let after: string | null = null;
+    do {
+      const page: ProductsPage = await this.client.request<ProductsPage>(PRODUCTS_QUERY, { first: PAGE_SIZE, after });
+      for (const node of page.products.nodes) {
+        const product = mapWithFirstVariant(node);
+        if (product) products.push(product);
+      }
+      const { hasNextPage, endCursor } = page.products.pageInfo;
+      after = hasNextPage ? endCursor : null;
+    } while (after);
+    return products;
   }
 
   async findById(id: ProductId): Promise<Product> {
-    // ProductId.value holds the Shopify variant GID: "gid://shopify/ProductVariant/12345"
-    const { data } = await this.graphql<{ node: ShopifyVariantNode & { product: Omit<ShopifyProductNode, 'variants'> } | null }>(
-      PRODUCT_BY_VARIANT_QUERY,
-      { id: id.value },
-    );
-    if (!data.node) throw new NotFoundError(`Product ${id.value} not found`);
-
-    const variant = data.node;
-    const product = variant.product;
-    return new Product(
-      new ProductId(variant.id),
-      product.title,
-      new Money(parseFloat(variant.price.amount)),
-      variant.compareAtPrice ? new Money(parseFloat(variant.compareAtPrice.amount)) : null,
-      0,
-      0,
-      product.description,
-      product.productType.toLowerCase().replace(/\s+/g, '-'),
-      variant.availableForSale,
-      product.badge?.value ?? null,
-    );
-  }
-
-  async findByCategory(category: string): Promise<Product[]> {
-    const products = await this.findAll();
-    return products.filter((p) => p.category === category);
-  }
-
-  async search(query: string): Promise<Product[]> {
-    const products = await this.findAll();
-    const lower = query.toLowerCase();
-    return products.filter(
-      (p) => p.name.toLowerCase().includes(lower) || p.description.toLowerCase().includes(lower),
-    );
-  }
-
-  private async graphql<T>(query: string, variables: Record<string, unknown>): Promise<{ data: T }> {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ query, variables }),
-    });
-    if (!response.ok) {
-      throw new Error(`Shopify API error: ${response.status} ${response.statusText}`);
+    if (!id.value.startsWith(VARIANT_GID_PREFIX)) {
+      throw new NotFoundError(`Product ${id.value} not found`);
     }
-    return response.json();
+    const { node } = await this.client.request<{
+      node: (Partial<ShopifyVariantNode> & { product?: ShopifyProductNode }) | null;
+    }>(VARIANT_BY_ID_QUERY, { id: id.value });
+    if (!node?.product) throw new NotFoundError(`Product ${id.value} not found`);
+    return mapShopifyProduct(node.product, node as ShopifyVariantNode);
   }
 
-  private mapToProduct(node: ShopifyProductNode): Product {
-    const variant = node.variants.edges[0]?.node;
-    if (!variant) throw new Error(`Product ${node.id} has no variants`);
-    return new Product(
-      new ProductId(variant.id), // variant GID is the stable cart line identifier
-      node.title,
-      new Money(parseFloat(variant.price.amount)),
-      variant.compareAtPrice ? new Money(parseFloat(variant.compareAtPrice.amount)) : null,
-      0, // rating — extend via Shopify metafields (e.g. namespace: "reviews", key: "rating")
-      0, // reviews
-      node.description,
-      node.productType.toLowerCase().replace(/\s+/g, '-'),
-      variant.availableForSale,
-      node.badge?.value ?? null,
+  async findBySlug(slug: string): Promise<Product> {
+    const { product } = await this.client.request<{ product: ShopifyProductWithVariants | null }>(
+      PRODUCT_BY_HANDLE_QUERY,
+      { handle: slug },
     );
+    const mapped = product ? mapWithFirstVariant(product) : null;
+    if (!mapped) throw new NotFoundError(`Product with slug ${slug} not found`);
+    return mapped;
   }
 }

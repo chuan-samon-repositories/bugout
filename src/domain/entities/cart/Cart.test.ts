@@ -1,318 +1,188 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
-import { Cart } from './Cart';
-import { Product } from '../product/Product';
-import { Money } from '../../value-objects/Money';
+import { Cart, MAX_QUANTITY_PER_ITEM } from './Cart';
+import { buildProduct } from '../../testing/buildProduct';
 import { ProductId } from '../../value-objects/ProductId';
 import { Quantity } from '../../value-objects/Quantity';
 import { BusinessRuleError, NotFoundError } from '../../errors';
 
-/**
- * Property-Based Tests for Cart Business Rules Enforcement
- * 
- * **Validates: Requirements 1.3, 7.4, 7.5**
- * 
- * Feature: hexagonal-architecture-refactor, Property 2: Cart Business Rules Enforcement
- * For any cart and any operation (add item, remove item), when the operation would violate 
- * business rules (exceed maximum quantity limit, add out-of-stock items, invalid quantities), 
- * the cart SHALL throw a BusinessRuleError and maintain its previous valid state.
- */
+const qty = (value: number) => new Quantity(value);
 
-// Helper function to create a valid test product
-function createTestProduct(overrides: Partial<{
-  id: string;
-  name: string;
-  price: number;
-  inStock: boolean;
-}> = {}): Product {
-  return new Product(
-    new ProductId(overrides.id || 'test-product-1'),
-    overrides.name || 'Test Product',
-    new Money(overrides.price || 100),
-    null,
-    4.5,
-    100,
-    'Test description',
-    'test-category',
-    overrides.inStock !== undefined ? overrides.inStock : true,
-    null
-  );
+function expectRule(action: () => void, code: BusinessRuleError['code']): void {
+  try {
+    action();
+  } catch (error) {
+    expect(error).toBeInstanceOf(BusinessRuleError);
+    expect((error as BusinessRuleError).code).toBe(code);
+    return;
+  }
+  throw new Error(`Expected BusinessRuleError ${code}`);
 }
 
-describe('Property 2: Cart Business Rules Enforcement', () => {
-  test('Cart rejects adding items that would exceed maximum quantity limit (99)', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 99 }), // Initial quantity
-        fc.integer({ min: 1, max: 100 }), // Additional quantity that would exceed limit
-        (initialQty, additionalQty) => {
-          // Only test cases where total would exceed 99
-          fc.pre(initialQty + additionalQty > 99);
-          
-          const cart = new Cart();
-          const product = createTestProduct();
-          
-          // Add initial quantity
-          cart.addItem(product, new Quantity(initialQty));
-          
-          // Capture state before invalid operation
-          const itemCountBefore = cart.itemCount();
-          const totalBefore = cart.totalAmount().amount;
-          
-          // Attempt to add more items that would exceed limit
-          expect(() => {
-            cart.addItem(product, new Quantity(additionalQty));
-          }).toThrow(BusinessRuleError);
-          
-          // Verify cart state is unchanged
-          expect(cart.itemCount()).toBe(itemCountBefore);
-          expect(cart.totalAmount().amount).toBe(totalBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  test('Cart maintains valid state when adding items within quantity limit', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 1, max: 50 }), // Initial quantity
-        fc.integer({ min: 1, max: 49 }), // Additional quantity
-        (initialQty, additionalQty) => {
-          // Only test cases where total is within limit
-          fc.pre(initialQty + additionalQty <= 99);
-          
-          const cart = new Cart();
-          const product = createTestProduct();
-          
-          // Add initial quantity
-          cart.addItem(product, new Quantity(initialQty));
-          
-          // Add more items within limit
-          cart.addItem(product, new Quantity(additionalQty));
-          
-          // Verify cart state is correct
-          expect(cart.itemCount()).toBe(initialQty + additionalQty);
-          expect(cart.totalAmount().amount).toBe((initialQty + additionalQty) * product.price.amount);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  test('Cart throws NotFoundError when removing non-existent product', () => {
-    fc.assert(
-      fc.property(
-        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), // Product ID to add
-        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), // Different product ID to remove
-        (addId, removeId) => {
-          // Ensure IDs are different
-          fc.pre(addId !== removeId);
-          
-          const cart = new Cart();
-          const product = createTestProduct({ id: addId });
-          
-          // Add one product
-          cart.addItem(product, new Quantity(1));
-          
-          // Capture state before invalid operation
-          const itemCountBefore = cart.itemCount();
-          const totalBefore = cart.totalAmount().amount;
-          
-          // Attempt to remove a different product
-          expect(() => {
-            cart.removeItem(new ProductId(removeId));
-          }).toThrow(NotFoundError);
-          
-          // Verify cart state is unchanged
-          expect(cart.itemCount()).toBe(itemCountBefore);
-          expect(cart.totalAmount().amount).toBe(totalBefore);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  test('Cart correctly decrements quantity when removing items', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 2, max: 99 }), // Initial quantity (at least 2)
-        (initialQty) => {
-          const cart = new Cart();
-          const product = createTestProduct();
-          
-          // Add items
-          cart.addItem(product, new Quantity(initialQty));
-          
-          // Remove one item
-          cart.removeItem(product.id);
-          
-          // Verify quantity decreased by 1
-          expect(cart.itemCount()).toBe(initialQty - 1);
-          expect(cart.totalAmount().amount).toBe((initialQty - 1) * product.price.amount);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  test('Cart removes item completely when quantity reaches zero', () => {
-    const cart = new Cart();
-    const product = createTestProduct();
-    
-    // Add one item
-    cart.addItem(product, new Quantity(1));
-    expect(cart.itemCount()).toBe(1);
-    
-    // Remove the item
-    cart.removeItem(product.id);
-    
-    // Verify cart is empty
+describe('Cart', () => {
+  it('starts empty', () => {
+    const cart = new Cart('EUR');
+    expect(cart.isEmpty()).toBe(true);
     expect(cart.itemCount()).toBe(0);
-    expect(cart.getItems().length).toBe(0);
-    expect(cart.totalAmount().amount).toBe(0);
+    expect(cart.totalAmount().minor).toBe(0);
+    expect(cart.totalAmount().currency).toBe('EUR');
   });
 
-  test('Cart total amount equals sum of all item subtotals', () => {
+  it('enforces the per-item limit on the first add', () => {
     fc.assert(
-      fc.property(
-        fc.array(
-          fc.record({
-            id: fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
-            price: fc.double({ min: 0.01, max: 10000, noNaN: true }),
-            quantity: fc.integer({ min: 1, max: 99 })
-          }),
-          { minLength: 1, maxLength: 10 }
-        ).map(items => {
-          // Ensure unique IDs
-          const uniqueItems = new Map();
-          items.forEach(item => {
-            if (!uniqueItems.has(item.id)) {
-              uniqueItems.set(item.id, item);
-            }
-          });
-          return Array.from(uniqueItems.values());
-        }),
-        (items) => {
-          const cart = new Cart();
-          let expectedTotal = 0;
-          let expectedCount = 0;
-          
-          // Add all items to cart
-          items.forEach(({ id, price, quantity }) => {
-            const product = createTestProduct({ id, price });
-            cart.addItem(product, new Quantity(quantity));
-            expectedTotal += price * quantity;
-            expectedCount += quantity;
-          });
-          
-          // Verify totals match
-          expect(cart.totalAmount().amount).toBeCloseTo(expectedTotal, 2);
-          expect(cart.itemCount()).toBe(expectedCount);
+      fc.property(fc.integer({ min: 1, max: 500 }), (quantity) => {
+        const cart = new Cart('EUR');
+        const product = buildProduct();
+        if (quantity > MAX_QUANTITY_PER_ITEM) {
+          expectRule(() => cart.addItem(product, qty(quantity)), 'MAX_QUANTITY_EXCEEDED');
+          expect(cart.isEmpty()).toBe(true);
+        } else {
+          cart.addItem(product, qty(quantity));
+          expect(cart.quantityOf(product.id)).toBe(quantity);
         }
-      ),
-      { numRuns: 100 }
+      }),
     );
   });
 
-  test('Cart clear operation removes all items', () => {
+  it('enforces the per-item limit when merging into an existing line', () => {
     fc.assert(
       fc.property(
-        fc.array(
-          fc.record({
-            id: fc.string({ minLength: 1 }).filter(s => s.trim().length > 0),
-            quantity: fc.integer({ min: 1, max: 10 })
-          }),
-          { minLength: 1, maxLength: 5 }
-        ).map(items => {
-          // Ensure unique IDs
-          const uniqueItems = new Map();
-          items.forEach(item => {
-            if (!uniqueItems.has(item.id)) {
-              uniqueItems.set(item.id, item);
-            }
-          });
-          return Array.from(uniqueItems.values());
-        }),
-        (items) => {
-          const cart = new Cart();
-          
-          // Add items to cart
-          items.forEach(({ id, quantity }) => {
-            const product = createTestProduct({ id });
-            cart.addItem(product, new Quantity(quantity));
-          });
-          
-          // Verify cart has items
-          expect(cart.itemCount()).toBeGreaterThan(0);
-          
-          // Clear cart
-          cart.clear();
-          
-          // Verify cart is empty
-          expect(cart.itemCount()).toBe(0);
-          expect(cart.getItems().length).toBe(0);
-          expect(cart.totalAmount().amount).toBe(0);
-        }
+        fc.integer({ min: 1, max: MAX_QUANTITY_PER_ITEM }),
+        fc.integer({ min: 1, max: MAX_QUANTITY_PER_ITEM }),
+        (first, second) => {
+          const cart = new Cart('EUR');
+          const product = buildProduct();
+          cart.addItem(product, qty(first));
+          if (first + second > MAX_QUANTITY_PER_ITEM) {
+            expectRule(() => cart.addItem(product, qty(second)), 'MAX_QUANTITY_EXCEEDED');
+            expect(cart.quantityOf(product.id)).toBe(first);
+          } else {
+            cart.addItem(product, qty(second));
+            expect(cart.quantityOf(product.id)).toBe(first + second);
+          }
+          expect(cart.getItems()).toHaveLength(1);
+        },
       ),
-      { numRuns: 100 }
     );
   });
 
-  test('Cart maintains state consistency across multiple operations', () => {
+  it('enforces the per-item limit on setQuantity', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 1, max: 500 }), (quantity) => {
+        const cart = new Cart('EUR');
+        const product = buildProduct();
+        cart.addItem(product, qty(5));
+        if (quantity > MAX_QUANTITY_PER_ITEM) {
+          expectRule(() => cart.setQuantity(product.id, qty(quantity)), 'MAX_QUANTITY_EXCEEDED');
+          expect(cart.quantityOf(product.id)).toBe(5);
+        } else {
+          cart.setQuantity(product.id, qty(quantity));
+          expect(cart.quantityOf(product.id)).toBe(quantity);
+        }
+      }),
+    );
+  });
+
+  it('throws NotFoundError when setting the quantity of a missing product', () => {
+    expect(() => new Cart('EUR').setQuantity(new ProductId('missing'), qty(1))).toThrow(NotFoundError);
+  });
+
+  it('rejects out-of-stock products', () => {
+    const cart = new Cart('EUR');
+    expectRule(() => cart.addItem(buildProduct({ inStock: false }), qty(1)), 'OUT_OF_STOCK');
+    expect(cart.isEmpty()).toBe(true);
+  });
+
+  it('rejects products priced in another currency', () => {
+    const cart = new Cart('EUR');
+    expectRule(() => cart.addItem(buildProduct({ currency: 'USD' }), qty(1)), 'CURRENCY_MISMATCH');
+    expect(cart.isEmpty()).toBe(true);
+  });
+
+  it('computes exact totals and item counts', () => {
     fc.assert(
       fc.property(
         fc.array(
-          fc.record({
-            operation: fc.constantFrom('add', 'remove'),
-            productId: fc.constantFrom('prod-1', 'prod-2', 'prod-3'),
-            quantity: fc.integer({ min: 1, max: 10 })
-          }),
-          { minLength: 5, maxLength: 20 }
+          fc.record({ cents: fc.integer({ min: 1, max: 100_000 }), quantity: fc.integer({ min: 1, max: 99 }) }),
+          { maxLength: 20 },
         ),
-        (operations) => {
-          const cart = new Cart();
-          const products = new Map([
-            ['prod-1', createTestProduct({ id: 'prod-1', price: 100 })],
-            ['prod-2', createTestProduct({ id: 'prod-2', price: 200 })],
-            ['prod-3', createTestProduct({ id: 'prod-3', price: 300 })]
-          ]);
-          
-          // Execute operations
-          operations.forEach(({ operation, productId, quantity }) => {
-            try {
-              if (operation === 'add') {
-                const product = products.get(productId)!;
-                cart.addItem(product, new Quantity(quantity));
-              } else {
-                cart.removeItem(new ProductId(productId));
-              }
-            } catch (error) {
-              console.log("Unexpected error", error)
-              // Ignore expected errors (NotFoundError, BusinessRuleError)
-              // These are valid business rule enforcements
-            }
+        (lines) => {
+          const cart = new Cart('EUR');
+          lines.forEach((line, index) => {
+            cart.addItem(buildProduct({ id: `p-${index}`, price: line.cents / 100 }), qty(line.quantity));
           });
-          
-          // Verify cart invariants hold
-          const items = cart.getItems();
-          const calculatedTotal = items.reduce((sum, item) => 
-            sum + (item.product.price.amount * item.quantity.value), 0
-          );
-          const calculatedCount = items.reduce((sum, item) => 
-            sum + item.quantity.value, 0
-          );
-          
-          expect(cart.totalAmount().amount).toBeCloseTo(calculatedTotal, 2);
-          expect(cart.itemCount()).toBe(calculatedCount);
-          
-          // Verify no item exceeds max quantity
-          items.forEach(item => {
-            expect(item.quantity.value).toBeLessThanOrEqual(99);
-          });
-        }
+          const expectedTotal = lines.reduce((sum, line) => sum + line.cents * line.quantity, 0);
+          const expectedCount = lines.reduce((sum, line) => sum + line.quantity, 0);
+          expect(cart.totalAmount().minor).toBe(expectedTotal);
+          expect(cart.itemCount()).toBe(expectedCount);
+        },
       ),
-      { numRuns: 100 }
     );
+  });
+
+  it('adds 0.10 € and 0.20 € to exactly 0.30 €', () => {
+    const cart = new Cart('EUR');
+    cart.addItem(buildProduct({ id: 'a', price: 0.1 }), qty(1));
+    cart.addItem(buildProduct({ id: 'b', price: 0.2 }), qty(1));
+    expect(cart.totalAmount().minor).toBe(30);
+  });
+
+  it('replaces the stored product with the latest one on add', () => {
+    const cart = new Cart('EUR');
+    cart.addItem(buildProduct({ price: 100 }), qty(1));
+    cart.addItem(buildProduct({ price: 80 }), qty(1));
+    expect(cart.totalAmount().minor).toBe(16000);
+  });
+
+  it('removeItem removes one unit and drops the line at zero', () => {
+    const cart = new Cart('EUR');
+    const product = buildProduct();
+    cart.addItem(product, qty(2));
+    cart.removeItem(product.id);
+    expect(cart.quantityOf(product.id)).toBe(1);
+    cart.removeItem(product.id);
+    expect(cart.quantityOf(product.id)).toBe(0);
+    expect(cart.isEmpty()).toBe(true);
+    expect(() => cart.removeItem(product.id)).toThrow(NotFoundError);
+  });
+
+  it('deleteItem removes the whole line', () => {
+    const cart = new Cart('EUR');
+    const keep = buildProduct({ id: 'keep' });
+    const drop = buildProduct({ id: 'drop' });
+    cart.addItem(keep, qty(1));
+    cart.addItem(drop, qty(7));
+    cart.deleteItem(drop.id);
+    expect(cart.getItems().map((item) => item.product.id.value)).toEqual(['keep']);
+    expect(() => cart.deleteItem(drop.id)).toThrow(NotFoundError);
+  });
+
+  it('clear empties the cart', () => {
+    const cart = new Cart('EUR');
+    cart.addItem(buildProduct(), qty(3));
+    cart.clear();
+    expect(cart.isEmpty()).toBe(true);
+  });
+
+  it('does not let getItems() be used to mutate the cart', () => {
+    const cart = new Cart('EUR');
+    const product = buildProduct();
+    cart.addItem(product, qty(2));
+
+    const items = cart.getItems() as unknown as unknown[];
+    items.pop();
+    items.push(items[0]);
+    expect(cart.getItems()).toHaveLength(1);
+
+    const [item] = cart.getItems();
+    const changed = item.withQuantity(qty(50));
+    expect(changed).not.toBe(item);
+    expect(cart.quantityOf(product.id)).toBe(2);
+  });
+
+  it('keeps insertion order of lines', () => {
+    const cart = new Cart('EUR');
+    ['c', 'a', 'b'].forEach((id) => cart.addItem(buildProduct({ id }), qty(1)));
+    expect(cart.getItems().map((item) => item.product.id.value)).toEqual(['c', 'a', 'b']);
   });
 });

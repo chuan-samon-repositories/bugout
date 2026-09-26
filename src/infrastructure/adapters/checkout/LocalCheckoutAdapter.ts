@@ -1,9 +1,10 @@
-import { Cart } from '../../../domain/entities/cart/Cart';
-import { CheckoutService } from '../../../application/ports/CheckoutService';
+import { CheckoutService } from '@/application/ports/CheckoutService';
 
+export const LOCAL_CHECKOUT_PATH = '/checkout';
+
+/** In-app demo checkout (no payment). */
 export class LocalCheckoutAdapter implements CheckoutService {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  async getCheckoutUrl(_cart: Cart): Promise<string> {
-    return '/checkout';
+  async getCheckoutUrl(): Promise<string> {
+    return LOCAL_CHECKOUT_PATH;
   }
 }

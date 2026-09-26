@@ -1,48 +1,32 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { ProductId } from './ProductId';
 import { ValidationError } from '../errors';
 
-/**
- * Property-Based Tests for ProductId Value Object Validation
- * 
- * **Validates: Requirements 1.2, 1.5, 9.2**
- * 
- * Feature: hexagonal-architecture-refactor, Property 1: Domain Entity Validation
- * ProductId value object SHALL throw ValidationError when constructed with empty or whitespace-only strings.
- */
-
-describe('Property 1: Domain Entity Validation - ProductId', () => {
-  test('ProductId rejects empty strings', () => {
-    expect(() => {
-      new ProductId('');
-    }).toThrow(ValidationError);
-  });
-
-  test('ProductId rejects whitespace-only strings', () => {
+describe('ProductId', () => {
+  it('rejects empty and whitespace-only strings', () => {
+    expect(() => new ProductId('')).toThrow(ValidationError);
     fc.assert(
-      fc.property(
-        fc.stringMatching(/^\s+$/), // Generate whitespace-only strings
-        (whitespaceString) => {
-          expect(() => {
-            new ProductId(whitespaceString);
-          }).toThrow(ValidationError);
-        }
-      ),
-      { numRuns: 100 }
+      fc.property(fc.stringMatching(/^\s+$/), (blank) => {
+        expect(() => new ProductId(blank)).toThrow(ValidationError);
+      }),
     );
   });
 
-  test('ProductId accepts non-empty strings', () => {
+  it('accepts any non-blank string, including Shopify GIDs', () => {
+    expect(new ProductId('gid://shopify/ProductVariant/1').value).toBe('gid://shopify/ProductVariant/1');
     fc.assert(
       fc.property(
-        fc.string({ minLength: 1 }).filter(s => s.trim().length > 0), // Generate valid non-empty strings
-        (validId) => {
-          const productId = new ProductId(validId);
-          expect(productId.value).toBe(validId);
-        }
+        fc.string({ minLength: 1 }).filter((s) => s.trim().length > 0),
+        (value) => {
+          expect(new ProductId(value).value).toBe(value);
+        },
       ),
-      { numRuns: 100 }
     );
+  });
+
+  it('compares by value', () => {
+    expect(new ProductId('a').equals(new ProductId('a'))).toBe(true);
+    expect(new ProductId('a').equals(new ProductId('b'))).toBe(false);
   });
 });

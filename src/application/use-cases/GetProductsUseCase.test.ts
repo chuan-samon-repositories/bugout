@@ -1,100 +1,33 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { GetProductsUseCase } from './GetProductsUseCase';
-import { ProductRepository } from '../ports/ProductRepository';
-import { Product } from '../../domain/entities/product/Product';
-import { ProductId } from '../../domain/value-objects/ProductId';
-import { Money } from '../../domain/value-objects/Money';
+import { GetProductBySlugUseCase } from './GetProductBySlugUseCase';
+import { InMemoryProductRepository } from '../testing/fakes';
+import { buildProduct } from '@/domain/testing/buildProduct';
+import { NotFoundError } from '@/domain/errors';
 
 describe('GetProductsUseCase', () => {
-  test('execute returns all products from repository', async () => {
-    // Arrange
-    const mockProducts: Product[] = [
-      new Product(
-        new ProductId('test-1'),
-        'Test Product 1',
-        new Money(100),
-        null,
-        4.5,
-        10,
-        'Test description 1',
-        'test-category',
-        true,
-        null
-      ),
-      new Product(
-        new ProductId('test-2'),
-        'Test Product 2',
-        new Money(200),
-        new Money(250),
-        4.0,
-        20,
-        'Test description 2',
-        'test-category',
-        true,
-        'BESTSELLER'
-      ),
-    ];
-
-    const mockRepository: ProductRepository = {
-      findAll: async () => mockProducts,
-      findById: async () => mockProducts[0],
-      findByCategory: async () => mockProducts,
-      search: async () => mockProducts,
-    };
-
-    const useCase = new GetProductsUseCase(mockRepository);
-
-    // Act
-    const result = await useCase.execute();
-
-    // Assert
-    expect(result).toEqual(mockProducts);
-    expect(result).toHaveLength(2);
-    expect(result[0].id.value).toBe('test-1');
-    expect(result[1].id.value).toBe('test-2');
+  it('returns every product from the repository', async () => {
+    const products = [buildProduct({ id: 'a' }), buildProduct({ id: 'b' })];
+    const result = await new GetProductsUseCase(new InMemoryProductRepository(products)).execute();
+    expect(result.map((product) => product.id.value)).toEqual(['a', 'b']);
   });
 
-  test('execute propagates repository errors', async () => {
-    // Arrange
-    const mockRepository: ProductRepository = {
-      findAll: async () => {
-        throw new Error('Repository error');
-      },
-      findById: async () => {
-        throw new Error('Not implemented');
-      },
-      findByCategory: async () => {
-        throw new Error('Not implemented');
-      },
-      search: async () => {
-        throw new Error('Not implemented');
-      },
-    };
+  it('propagates repository failures', async () => {
+    const repository = new InMemoryProductRepository();
+    repository.findAll = () => Promise.reject(new Error('offline'));
+    await expect(new GetProductsUseCase(repository).execute()).rejects.toThrow('offline');
+  });
+});
 
-    const useCase = new GetProductsUseCase(mockRepository);
+describe('GetProductBySlugUseCase', () => {
+  const repository = new InMemoryProductRepository([buildProduct({ id: 'kit', slug: 'mochila-72h' })]);
 
-    // Act & Assert
-    await expect(useCase.execute()).rejects.toThrow('Repository error');
+  it('finds a product by slug', async () => {
+    const product = await new GetProductBySlugUseCase(repository).execute('mochila-72h');
+    expect(product.id.value).toBe('kit');
   });
 
-  test('execute returns empty array when no products exist', async () => {
-    // Arrange
-    const mockRepository: ProductRepository = {
-      findAll: async () => [],
-      findById: async () => {
-        throw new Error('Not implemented');
-      },
-      findByCategory: async () => [],
-      search: async () => [],
-    };
-
-    const useCase = new GetProductsUseCase(mockRepository);
-
-    // Act
-    const result = await useCase.execute();
-
-    // Assert
-    expect(result).toEqual([]);
-    expect(result).toHaveLength(0);
+  it('propagates NotFoundError', async () => {
+    await expect(new GetProductBySlugUseCase(repository).execute('missing')).rejects.toBeInstanceOf(NotFoundError);
   });
 });

@@ -1,72 +1,41 @@
-import { Cart } from '../../../domain/entities/cart/Cart';
-import { CheckoutService } from '../../../application/ports/CheckoutService';
-import { ShopifyConfig } from '../../config/ShopifyConfig';
+import { CheckoutService } from '@/application/ports/CheckoutService';
+import { Cart } from '@/domain/entities/cart/Cart';
+import {
+  CART_CHECKOUT_URL_QUERY,
+  CART_CREATE_MUTATION,
+  CartMutationPayload,
+  toLineInputs,
+} from '../shopify/cartGraphql';
+import { ShopifyCartIdStore } from '../shopify/ShopifyCartIdStore';
+import { ShopifyApiError, ShopifyClient, assertNoUserErrors } from '../shopify/ShopifyClient';
 
-const CART_CREATE = `
-  mutation CartCreate($lines: [CartLineInput!]!) {
-    cartCreate(input: { lines: $lines }) {
-      cart { id checkoutUrl }
-      userErrors { field message }
-    }
-  }
-`;
-
-const CART_CHECKOUT_URL = `
-  query GetCartCheckoutUrl($cartId: ID!) {
-    cart(id: $cartId) { checkoutUrl }
-  }
-`;
-
+/** Hosted Shopify checkout for the visitor's Shopify cart. */
 export class ShopifyCheckoutAdapter implements CheckoutService {
-  private readonly endpoint: string;
-  private readonly headers: HeadersInit;
-  private readonly cartIdKey = 'shopify-cart-id';
-
-  constructor(config: ShopifyConfig) {
-    const version = config.apiVersion ?? '2024-01';
-    this.endpoint = `https://${config.storeDomain}/api/${version}/graphql.json`;
-    this.headers = {
-      'Content-Type': 'application/json',
-      'X-Shopify-Storefront-Access-Token': config.storefrontAccessToken,
-    };
-  }
+  constructor(
+    private readonly client: ShopifyClient,
+    private readonly cartIds: ShopifyCartIdStore,
+  ) {}
 
   async getCheckoutUrl(cart: Cart): Promise<string> {
-    const cartId = localStorage.getItem(this.cartIdKey);
+    const cartId = this.cartIds.get();
     if (cartId) {
-      return this.fetchCheckoutUrl(cartId);
+      const { cart: remote } = await this.client.request<{ cart: { checkoutUrl: string } | null }>(
+        CART_CHECKOUT_URL_QUERY,
+        { id: cartId },
+      );
+      if (remote) return remote.checkoutUrl;
+      this.cartIds.clear();
     }
-    return this.createCartAndGetUrl(cart);
+    return this.createCart(cart);
   }
 
-  private async fetchCheckoutUrl(cartId: string): Promise<string> {
-    const { data } = await this.graphql<{ cart: { checkoutUrl: string } | null }>(
-      CART_CHECKOUT_URL,
-      { cartId },
-    );
-    if (!data.cart) throw new Error('Shopify cart expired — please add items again');
-    return data.cart.checkoutUrl;
-  }
-
-  private async createCartAndGetUrl(cart: Cart): Promise<string> {
-    const lines = cart.getItems().map((item) => ({
-      merchandiseId: item.product.id.value,
-      quantity: item.quantity.value,
-    }));
-    const { data } = await this.graphql<{
-      cartCreate: { cart: { id: string; checkoutUrl: string } };
-    }>(CART_CREATE, { lines });
-    localStorage.setItem(this.cartIdKey, data.cartCreate.cart.id);
-    return data.cartCreate.cart.checkoutUrl;
-  }
-
-  private async graphql<T>(query: string, variables: Record<string, unknown>): Promise<{ data: T }> {
-    const response = await fetch(this.endpoint, {
-      method: 'POST',
-      headers: this.headers,
-      body: JSON.stringify({ query, variables }),
+  private async createCart(cart: Cart): Promise<string> {
+    const { cartCreate } = await this.client.request<{ cartCreate: CartMutationPayload }>(CART_CREATE_MUTATION, {
+      lines: toLineInputs(cart),
     });
-    if (!response.ok) throw new Error(`Shopify API error: ${response.status}`);
-    return response.json();
+    assertNoUserErrors('cartCreate', cartCreate?.userErrors);
+    if (!cartCreate?.cart) throw new ShopifyApiError('cartCreate returned no cart');
+    this.cartIds.set(cartCreate.cart.id);
+    return cartCreate.cart.checkoutUrl;
   }
 }

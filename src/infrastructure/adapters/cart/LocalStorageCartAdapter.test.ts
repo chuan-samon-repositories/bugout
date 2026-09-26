@@ -1,231 +1,183 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LocalStorageCartAdapter } from './LocalStorageCartAdapter';
-import { Cart } from '../../../domain/entities/cart/Cart';
-import { Product } from '../../../domain/entities/product/Product';
-import { Money } from '../../../domain/value-objects/Money';
-import { ProductId } from '../../../domain/value-objects/ProductId';
-import { Quantity } from '../../../domain/value-objects/Quantity';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CART_STORAGE_KEY, LEGACY_CART_STORAGE_KEY, LocalStorageCartAdapter } from './LocalStorageCartAdapter';
+import { MemoryStorage } from '../../testing/MemoryStorage';
+import { InMemoryProductRepository } from '@/application/testing/fakes';
+import { buildProduct } from '@/domain/testing/buildProduct';
+import { Cart } from '@/domain/entities/cart/Cart';
+import { ProductId } from '@/domain/value-objects/ProductId';
+import { Quantity } from '@/domain/value-objects/Quantity';
+
+const id = (value: string) => new ProductId(value);
 
 describe('LocalStorageCartAdapter', () => {
+  let storage: MemoryStorage;
+  let catalog: InMemoryProductRepository;
   let adapter: LocalStorageCartAdapter;
-  let mockLocalStorage: { [key: string]: string };
 
   beforeEach(() => {
-    // Mock localStorage
-    mockLocalStorage = {};
-    
-    global.localStorage = {
-      getItem: vi.fn((key: string) => mockLocalStorage[key] || null),
-      setItem: vi.fn((key: string, value: string) => {
-        mockLocalStorage[key] = value;
-      }),
-      removeItem: vi.fn((key: string) => {
-        delete mockLocalStorage[key];
-      }),
-      clear: vi.fn(() => {
-        mockLocalStorage = {};
-      }),
-      length: 0,
-      key: vi.fn(() => null),
-    } as Storage;
-
-    adapter = new LocalStorageCartAdapter();
+    storage = new MemoryStorage();
+    catalog = new InMemoryProductRepository([
+      buildProduct({ id: 'kit', price: 199 }),
+      buildProduct({ id: 'food', price: 49 }),
+      buildProduct({ id: 'sold-out', inStock: false }),
+    ]);
+    adapter = new LocalStorageCartAdapter(catalog, 'EUR', storage);
   });
 
-  describe('save and load', () => {
-    it('should save and load a cart with items', async () => {
-      // Create a cart with items
-      const cart = new Cart();
-      const product = new Product(
-        new ProductId('test-product'),
-        'Test Product',
-        new Money(100),
-        null,
-        4.5,
-        10,
-        'A test product',
-        'test-category',
-        true,
-        null
-      );
-      
-      cart.addItem(product, new Quantity(2));
+  const store = (key: string, value: unknown) => storage.setItem(key, JSON.stringify(value));
 
-      // Save the cart
-      await adapter.save(cart);
+  it('returns an empty cart in the store currency when nothing is stored', async () => {
+    const cart = await adapter.load();
+    expect(cart.isEmpty()).toBe(true);
+    expect(cart.currency).toBe('EUR');
+  });
 
-      // Load the cart
-      const loadedCart = await adapter.load();
+  it('returns an empty cart without storage (server rendering)', async () => {
+    const serverAdapter = new LocalStorageCartAdapter(catalog, 'EUR', null);
+    expect((await serverAdapter.load()).isEmpty()).toBe(true);
+    await expect(serverAdapter.save(new Cart('EUR'))).resolves.toBeUndefined();
+    await expect(serverAdapter.clear()).resolves.toBeUndefined();
+  });
 
-      // Verify the cart was loaded correctly
-      expect(loadedCart.itemCount()).toBe(2);
-      expect(loadedCart.totalAmount().amount).toBe(200);
-      
-      const items = loadedCart.getItems();
-      expect(items).toHaveLength(1);
-      expect(items[0].product.id.value).toBe('test-product');
-      expect(items[0].product.name).toBe('Test Product');
-      expect(items[0].quantity.value).toBe(2);
+  it('falls back to an empty cart when there is no window', async () => {
+    const defaultAdapter = new LocalStorageCartAdapter(catalog, 'EUR');
+    expect((await defaultAdapter.load()).isEmpty()).toBe(true);
+  });
+
+  it('saves only ids and quantities, and restores them', async () => {
+    const cart = new Cart('EUR');
+    cart.addItem(await catalog.findById(id('kit')), new Quantity(2));
+    cart.addItem(await catalog.findById(id('food')), new Quantity(1));
+    await adapter.save(cart);
+
+    expect(storage.json(CART_STORAGE_KEY)).toEqual({
+      version: 2,
+      items: [
+        { productId: 'kit', quantity: 2 },
+        { productId: 'food', quantity: 1 },
+      ],
     });
+    const restored = await adapter.load();
+    expect(restored.quantityOf(id('kit'))).toBe(2);
+    expect(restored.totalAmount().minor).toBe(44700);
+  });
 
-    it('should save and load a cart with multiple products', async () => {
-      const cart = new Cart();
-      
-      const product1 = new Product(
-        new ProductId('product-1'),
-        'Product 1',
-        new Money(50),
-        new Money(75),
-        4.0,
-        5,
-        'First product',
-        'category-1',
-        true,
-        'BESTSELLER'
-      );
-      
-      const product2 = new Product(
-        new ProductId('product-2'),
-        'Product 2',
-        new Money(30),
+  it('ignores a tampered price and uses the catalog price', async () => {
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1, price: 0.01, product: { price: 0.01 } }] });
+    const cart = await adapter.load();
+    expect(cart.totalAmount().minor).toBe(19900);
+  });
+
+  it('re-prices from the current catalog', async () => {
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1 }] });
+    catalog.products = [buildProduct({ id: 'kit', price: 150 })];
+    expect((await adapter.load()).totalAmount().minor).toBe(15000);
+  });
+
+  it('skips unknown products, now out-of-stock products and malformed lines', async () => {
+    store(CART_STORAGE_KEY, {
+      version: 2,
+      items: [
+        { productId: 'kit', quantity: 1 },
+        { productId: 'discontinued', quantity: 1 },
+        { productId: 'sold-out', quantity: 1 },
+        { productId: 'food', quantity: 0 },
+        { productId: 'food', quantity: 'two' },
+        { productId: '', quantity: 1 },
         null,
-        3.5,
-        8,
-        'Second product',
-        'category-2',
-        true,
-        null
-      );
-
-      cart.addItem(product1, new Quantity(1));
-      cart.addItem(product2, new Quantity(3));
-
-      await adapter.save(cart);
-      const loadedCart = await adapter.load();
-
-      expect(loadedCart.itemCount()).toBe(4);
-      expect(loadedCart.totalAmount().amount).toBe(140); // 50 + (30 * 3)
-      
-      const items = loadedCart.getItems();
-      expect(items).toHaveLength(2);
+        'food',
+      ],
     });
+    const cart = await adapter.load();
+    expect(cart.getItems().map((item) => item.product.id.value)).toEqual(['kit']);
+  });
 
-    it('should preserve product properties including originalPrice and badge', async () => {
-      const cart = new Cart();
-      const product = new Product(
-        new ProductId('sale-product'),
-        'Sale Product',
-        new Money(80),
-        new Money(100),
-        4.8,
-        20,
-        'A product on sale',
-        'sale-category',
-        true,
-        'PREMIUM'
-      );
+  it('clamps quantities to the per-item limit, including duplicated lines', async () => {
+    store(CART_STORAGE_KEY, {
+      version: 2,
+      items: [
+        { productId: 'kit', quantity: 500 },
+        { productId: 'food', quantity: 60 },
+        { productId: 'food', quantity: 60 },
+      ],
+    });
+    const cart = await adapter.load();
+    expect(cart.quantityOf(id('kit'))).toBe(99);
+    expect(cart.quantityOf(id('food'))).toBe(99);
+  });
 
-      cart.addItem(product, new Quantity(1));
-      await adapter.save(cart);
-      const loadedCart = await adapter.load();
+  it.each([
+    ['corrupt JSON', '{not json'],
+    ['a non-object', '42'],
+    ['a missing items array', JSON.stringify({ version: 2 })],
+    ['an unknown version', JSON.stringify({ version: 3, items: [{ productId: 'kit', quantity: 1 }] })],
+  ])('returns an empty cart for %s', async (_label, raw) => {
+    storage.setItem(CART_STORAGE_KEY, raw);
+    expect((await adapter.load()).isEmpty()).toBe(true);
+  });
 
-      const items = loadedCart.getItems();
-      expect(items[0].product.originalPrice?.amount).toBe(100);
-      expect(items[0].product.badge).toBe('PREMIUM');
-      expect(items[0].product.isOnSale()).toBe(true);
+  it('migrates the legacy format and deletes the old key', async () => {
+    store(LEGACY_CART_STORAGE_KEY, {
+      items: [
+        { product: { id: 'kit', name: 'Old name', price: { amount: 1 } }, quantity: 3 },
+        { product: { id: 'discontinued' }, quantity: 1 },
+        { quantity: 1 },
+      ],
+    });
+    const cart = await adapter.load();
+    expect(cart.quantityOf(id('kit'))).toBe(3);
+    expect(cart.totalAmount().minor).toBe(59700);
+    expect(storage.getItem(LEGACY_CART_STORAGE_KEY)).toBeNull();
+    expect(storage.json(CART_STORAGE_KEY)).toEqual({
+      version: 2,
+      items: [
+        { productId: 'kit', quantity: 3 },
+        { productId: 'discontinued', quantity: 1 },
+      ],
     });
   });
 
-  describe('load', () => {
-    it('should return an empty cart when no data exists', async () => {
-      const cart = await adapter.load();
-      
-      expect(cart.itemCount()).toBe(0);
-      expect(cart.getItems()).toHaveLength(0);
-    });
-
-    it('should return an empty cart when localStorage data is corrupted', async () => {
-      mockLocalStorage['shopping-cart'] = 'invalid json {{{';
-      
-      const cart = await adapter.load();
-      
-      expect(cart.itemCount()).toBe(0);
-      expect(cart.getItems()).toHaveLength(0);
-    });
-
-    it('should skip invalid items but load valid ones', async () => {
-      const validProduct = {
-        id: 'valid-product',
-        name: 'Valid Product',
-        price: 50,
-        originalPrice: null,
-        rating: 4.0,
-        reviews: 10,
-        description: 'Valid',
-        category: 'test',
-        inStock: true,
-        badge: null,
-      };
-
-      const invalidProduct = {
-        id: 'invalid-product',
-        name: 'Invalid Product',
-        price: -10, // Invalid: negative price
-        originalPrice: null,
-        rating: 4.0,
-        reviews: 10,
-        description: 'Invalid',
-        category: 'test',
-        inStock: true,
-        badge: null,
-      };
-
-      mockLocalStorage['shopping-cart'] = JSON.stringify({
-        items: [
-          { product: validProduct, quantity: 1 },
-          { product: invalidProduct, quantity: 1 },
-        ],
-      });
-
-      const cart = await adapter.load();
-      
-      // Should only load the valid product
-      expect(cart.itemCount()).toBe(1);
-      expect(cart.getItems()[0].product.id.value).toBe('valid-product');
-    });
+  it('prefers the current format and drops a leftover legacy key', async () => {
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'food', quantity: 1 }] });
+    store(LEGACY_CART_STORAGE_KEY, { items: [{ product: { id: 'kit' }, quantity: 1 }] });
+    const cart = await adapter.load();
+    expect(cart.getItems().map((item) => item.product.id.value)).toEqual(['food']);
+    expect(storage.getItem(LEGACY_CART_STORAGE_KEY)).toBeNull();
   });
 
-  describe('clear', () => {
-    it('should remove cart data from localStorage', async () => {
-      const cart = new Cart();
-      const product = new Product(
-        new ProductId('test-product'),
-        'Test Product',
-        new Money(100),
-        null,
-        4.5,
-        10,
-        'A test product',
-        'test-category',
-        true,
-        null
-      );
-      
-      cart.addItem(product, new Quantity(1));
-      await adapter.save(cart);
+  it('treats corrupt legacy data as an empty cart', async () => {
+    storage.setItem(LEGACY_CART_STORAGE_KEY, '[[[');
+    expect((await adapter.load()).isEmpty()).toBe(true);
+    expect(storage.getItem(LEGACY_CART_STORAGE_KEY)).toBeNull();
+  });
 
-      // Verify cart was saved
-      expect(mockLocalStorage['shopping-cart']).toBeDefined();
+  it('never throws from load, even when storage or the catalog fail', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const broken = new MemoryStorage();
+    broken.getItem = () => {
+      throw new Error('SecurityError');
+    };
+    expect((await new LocalStorageCartAdapter(catalog, 'EUR', broken).load()).isEmpty()).toBe(true);
 
-      // Clear the cart
-      await adapter.clear();
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1 }] });
+    catalog.findAll = () => Promise.reject(new Error('offline'));
+    expect((await adapter.load()).isEmpty()).toBe(true);
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
 
-      // Verify cart was removed
-      expect(mockLocalStorage['shopping-cart']).toBeUndefined();
-      
-      // Loading should return empty cart
-      const loadedCart = await adapter.load();
-      expect(loadedCart.itemCount()).toBe(0);
-    });
+  it('clear removes the stored cart', async () => {
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1 }] });
+    await adapter.clear();
+    expect(storage.getItem(CART_STORAGE_KEY)).toBeNull();
+  });
+
+  it('supports a custom key', async () => {
+    const custom = new LocalStorageCartAdapter(catalog, 'EUR', storage, 'custom.cart');
+    const cart = new Cart('EUR');
+    cart.addItem(await catalog.findById(id('kit')), new Quantity(1));
+    await custom.save(cart);
+    expect(storage.getItem('custom.cart')).not.toBeNull();
+    expect(storage.getItem(CART_STORAGE_KEY)).toBeNull();
   });
 });

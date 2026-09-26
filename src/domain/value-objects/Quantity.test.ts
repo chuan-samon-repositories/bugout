@@ -1,57 +1,39 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Quantity } from './Quantity';
 import { ValidationError } from '../errors';
 
-/**
- * Property-Based Tests for Quantity Value Object Validation
- * 
- * **Validates: Requirements 1.2, 1.5, 9.2**
- * 
- * Feature: hexagonal-architecture-refactor, Property 1: Domain Entity Validation
- * Quantity value object SHALL throw ValidationError when constructed with non-positive 
- * or non-integer values.
- */
-
-describe('Property 1: Domain Entity Validation - Quantity', () => {
-  test('Quantity rejects non-positive values', () => {
+describe('Quantity', () => {
+  it('accepts positive integers', () => {
     fc.assert(
-      fc.property(
-        fc.integer({ max: 0 }), // Generate non-positive integers
-        (nonPositiveValue) => {
-          expect(() => {
-            new Quantity(nonPositiveValue);
-          }).toThrow(ValidationError);
-        }
-      ),
-      { numRuns: 100 }
+      fc.property(fc.integer({ min: 1 }), (value) => {
+        expect(new Quantity(value).value).toBe(value);
+      }),
     );
   });
 
-  test('Quantity rejects non-integer values', () => {
+  it('rejects zero and negative values', () => {
     fc.assert(
-      fc.property(
-        fc.double({ min: 0.01, noNaN: true }).filter(n => !Number.isInteger(n)), // Generate non-integer values
-        (nonIntegerValue) => {
-          expect(() => {
-            new Quantity(nonIntegerValue);
-          }).toThrow(ValidationError);
-        }
-      ),
-      { numRuns: 100 }
+      fc.property(fc.integer({ max: 0 }), (value) => {
+        expect(() => new Quantity(value)).toThrow(ValidationError);
+      }),
     );
   });
 
-  test('Quantity accepts positive integers', () => {
+  it('rejects fractions, NaN and infinity', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 1 }), // Generate positive integers
-        (validQuantity) => {
-          const quantity = new Quantity(validQuantity);
-          expect(quantity.value).toBe(validQuantity);
-        }
+        fc.double({ min: 1, noNaN: true }).filter((n) => !Number.isInteger(n)),
+        (value) => {
+          expect(() => new Quantity(value)).toThrow(ValidationError);
+        },
       ),
-      { numRuns: 100 }
     );
+    expect(() => new Quantity(Number.NaN)).toThrow(ValidationError);
+    expect(() => new Quantity(Number.POSITIVE_INFINITY)).toThrow(ValidationError);
+  });
+
+  it('adds quantities', () => {
+    expect(new Quantity(2).add(new Quantity(3)).value).toBe(5);
   });
 });

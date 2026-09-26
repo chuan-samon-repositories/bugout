@@ -1,42 +1,84 @@
-import { describe, test, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import * as fc from 'fast-check';
 import { Money } from './Money';
 import { ValidationError } from '../errors';
 
-/**
- * Property-Based Tests for Money Value Object Validation
- * 
- * **Validates: Requirements 1.2, 1.5, 9.2**
- * 
- * Feature: hexagonal-architecture-refactor, Property 1: Domain Entity Validation
- * Money value object SHALL throw ValidationError when constructed with negative amounts.
- */
+describe('Money', () => {
+  it('stores integer minor units', () => {
+    const money = Money.fromMinor(1999, 'EUR');
+    expect(money.minor).toBe(1999);
+    expect(money.amount).toBe(19.99);
+    expect(money.currency).toBe('EUR');
+  });
 
-describe('Property 1: Domain Entity Validation - Money', () => {
-  test('Money rejects negative amounts', () => {
+  it('adds exactly where floating point would drift', () => {
+    const sum = Money.fromMajor(0.1, 'EUR').add(Money.fromMajor(0.2, 'EUR'));
+    expect(sum.minor).toBe(30);
+    expect(sum.equals(Money.fromMajor(0.3, 'EUR'))).toBe(true);
+  });
+
+  it('keeps sums of cents exact for any list of amounts', () => {
     fc.assert(
-      fc.property(
-        fc.double({ max: -0.01, noNaN: true }), // Generate negative amounts
-        (negativeAmount) => {
-          expect(() => {
-            new Money(negativeAmount);
-          }).toThrow(ValidationError);
-        }
-      ),
-      { numRuns: 100 }
+      fc.property(fc.array(fc.integer({ min: 0, max: 1_000_000 }), { maxLength: 50 }), (cents) => {
+        const total = cents.reduce((acc, c) => acc.add(Money.fromMinor(c, 'EUR')), Money.zero('EUR'));
+        expect(total.minor).toBe(cents.reduce((a, b) => a + b, 0));
+      }),
     );
   });
 
-  test('Money accepts zero and positive amounts', () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: 0, noNaN: true }), // Generate non-negative amounts
-        (validAmount) => {
-          const money = new Money(validAmount);
-          expect(money.amount).toBe(validAmount);
-        }
-      ),
-      { numRuns: 100 }
-    );
+  it('rounds major amounts to the nearest cent', () => {
+    expect(Money.fromMajor(19.99, 'EUR').minor).toBe(1999);
+    expect(Money.fromMajor('19.99', 'EUR').minor).toBe(1999);
+    expect(Money.fromMajor(10.004, 'EUR').minor).toBe(1000);
+    expect(Money.fromMajor(10.006, 'EUR').minor).toBe(1001);
+    expect(Money.fromMajor('249.0', 'USD').minor).toBe(24900);
+  });
+
+  it('rejects invalid major amounts', () => {
+    for (const amount of [Number.NaN, Number.POSITIVE_INFINITY, 'abc', '', '  ', -1]) {
+      expect(() => Money.fromMajor(amount, 'EUR')).toThrow(ValidationError);
+    }
+  });
+
+  it('rejects negative or fractional minor units', () => {
+    expect(() => Money.fromMinor(-1, 'EUR')).toThrow(ValidationError);
+    expect(() => Money.fromMinor(1.5, 'EUR')).toThrow(ValidationError);
+  });
+
+  it('rejects invalid currency codes', () => {
+    for (const code of ['', 'eur', 'EU', 'EURO', '€', '12A']) {
+      expect(() => Money.fromMinor(100, code)).toThrow(ValidationError);
+    }
+  });
+
+  it('refuses to combine different currencies', () => {
+    const eur = Money.fromMinor(100, 'EUR');
+    const usd = Money.fromMinor(100, 'USD');
+    expect(() => eur.add(usd)).toThrow(/Currency mismatch/);
+    expect(() => eur.subtract(usd)).toThrow(ValidationError);
+    expect(() => eur.greaterThan(usd)).toThrow(ValidationError);
+    expect(() => eur.greaterThanOrEqual(usd)).toThrow(ValidationError);
+    expect(eur.equals(usd)).toBe(false);
+  });
+
+  it('clamps subtraction at zero', () => {
+    expect(Money.fromMinor(100, 'EUR').subtract(Money.fromMinor(250, 'EUR')).isZero()).toBe(true);
+    expect(Money.fromMinor(250, 'EUR').subtract(Money.fromMinor(100, 'EUR')).minor).toBe(150);
+  });
+
+  it('multiplies and rounds to whole cents', () => {
+    expect(Money.fromMinor(1999, 'EUR').multiply(3).minor).toBe(5997);
+    expect(Money.fromMinor(1000, 'EUR').multiply(1 / 3).minor).toBe(333);
+    expect(() => Money.fromMinor(100, 'EUR').multiply(-1)).toThrow(ValidationError);
+    expect(() => Money.fromMinor(100, 'EUR').multiply(Number.NaN)).toThrow(ValidationError);
+  });
+
+  it('compares amounts', () => {
+    const small = Money.fromMinor(100, 'EUR');
+    const big = Money.fromMinor(200, 'EUR');
+    expect(big.greaterThan(small)).toBe(true);
+    expect(small.greaterThan(big)).toBe(false);
+    expect(small.greaterThanOrEqual(Money.fromMinor(100, 'EUR'))).toBe(true);
+    expect(Money.zero('EUR').isZero()).toBe(true);
   });
 });

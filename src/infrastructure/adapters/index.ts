@@ -1,7 +1,13 @@
 export { JsonProductAdapter } from './product/JsonProductAdapter';
-export { ApiProductAdapter } from './product/ApiProductAdapter';
 export { ShopifyProductAdapter } from './product/ShopifyProductAdapter';
 export { LocalStorageCartAdapter } from './cart/LocalStorageCartAdapter';
 export { ShopifyCartAdapter } from './cart/ShopifyCartAdapter';
 export { LocalCheckoutAdapter } from './checkout/LocalCheckoutAdapter';
 export { ShopifyCheckoutAdapter } from './checkout/ShopifyCheckoutAdapter';
+export { LocalOrderGateway } from './order/LocalOrderGateway';
+export { LocalNewsletterAdapter } from './newsletter/LocalNewsletterAdapter';
+export { LocalContactAdapter } from './contact/LocalContactAdapter';
+export { NoopAnalyticsAdapter } from './analytics/NoopAnalyticsAdapter';
+export { PostHogAnalyticsAdapter } from './analytics/PostHogAnalyticsAdapter';
+export { LocalStorageConsentRepository } from './consent/LocalStorageConsentRepository';
+export { ShopifyClient, ShopifyCartIdStore, ShopifyApiError } from './shopify';

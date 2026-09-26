@@ -1,3 +1,18 @@
 export { Product } from './product/Product';
-export { Cart } from './cart/Cart';
+export type {
+  ProductProps,
+  ProductImage,
+  ProductRating,
+  ProductDetails,
+  ProductSpecification,
+  ProductContentItem,
+} from './product/Product';
+export { Cart, MAX_QUANTITY_PER_ITEM } from './cart/Cart';
 export { CartItem } from './cart/CartItem';
+export {
+  calculateOrderTotals,
+  findShippingRate,
+  freeShippingThreshold,
+  shippingCost,
+} from './order/OrderPricing';
+export type { OrderTotals, PricingPolicy, ShippingMethodId, ShippingRate } from './order/OrderPricing';

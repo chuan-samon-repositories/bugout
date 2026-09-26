@@ -13,24 +13,47 @@ function originOf(value: string | undefined): string | null {
 }
 
 /**
+ * Origins a PostHog host needs when it is an absolute URL (not the default same-origin /ingest proxy): the host
+ * itself and, for PostHog Cloud ingestion hosts (eu.i.posthog.com, us.i.posthog.com), the matching assets host
+ * the SDK loads its scripts from (eu-assets.i.posthog.com, us-assets.i.posthog.com).
+ */
+export function posthogOrigins(host: string | undefined): string[] {
+  const trimmed = host?.trim();
+  if (!trimmed || !/^https?:\/\//i.test(trimmed)) return [];
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return [];
+  }
+  const origins = [url.origin];
+  const cloud = /^([a-z0-9-]+)\.i\.posthog\.com$/i.exec(url.hostname);
+  if (cloud && !cloud[1].endsWith("-assets")) origins.push(`https://${cloud[1].toLowerCase()}-assets.i.posthog.com`);
+  return origins;
+}
+
+type Env = Record<string, string | undefined>;
+
+/**
  * Content-Security-Policy for production builds (dev needs eval and websockets for Fast Refresh).
  * - Scripts: Next.js bootstraps with inline scripts and there is no nonce middleware, hence 'unsafe-inline'.
+ *   PostHog's scripts load same-origin through /ingest/static and /ingest/array, or from its own hosts when
+ *   NEXT_PUBLIC_POSTHOG_HOST is an absolute URL.
  * - Images: next/image serves optimised images from /_next/image; Shopify's CDN is allowed for unoptimised ones.
  * - Fonts: next/font self-hosts Geist.
- * - Connections: PostHog goes through the same-origin /ingest proxy (its scripts via /ingest/static and
- *   /ingest/array); the Shopify Storefront API is called from the browser when that provider is set up.
+ * - Connections: PostHog goes through the same-origin /ingest proxy unless pointed at its own host; the Shopify
+ *   Storefront API is called from the browser when that provider is set up.
  */
-function contentSecurityPolicy(): string {
-  const connectSrc = [
-    "'self'",
-    originOf(process.env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN),
-    // Only when PostHog is pointed at its own host instead of the /ingest proxy.
-    originOf(process.env.NEXT_PUBLIC_POSTHOG_HOST),
-  ].filter((source): source is string => source !== null);
+export function contentSecurityPolicy(env: Env = process.env): string {
+  const posthog = posthogOrigins(env.NEXT_PUBLIC_POSTHOG_HOST);
+  const scriptSrc = ["'self'", "'unsafe-inline'", ...posthog];
+  const connectSrc = ["'self'", originOf(env.NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN), ...posthog].filter(
+    (source): source is string => source !== null,
+  );
 
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline'",
+    `script-src ${[...new Set(scriptSrc)].join(" ")}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://cdn.shopify.com",
     "font-src 'self'",

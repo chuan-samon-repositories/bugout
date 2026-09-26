@@ -1,14 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getContainer } from "@/infrastructure/config";
-import { LegalPage, PricingTable } from "@/presentation/components/content";
+import { canPromiseReply, ContactChannel, LegalPage, PricingTable } from "@/presentation/components/content";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT, LEGAL_WITHDRAWAL_DAYS } from "@/presentation/i18n/messages/content";
 import { routes } from "@/presentation/routes";
 
 const copy = messages.content.shipping;
-const returnRequestHref = `${routes.contact}?topic=order`;
 
 export const metadata: Metadata = {
   title: copy.title,
@@ -20,6 +19,7 @@ export default function ShippingReturnsPage() {
   const freeRates = policy.shippingRates.filter((rate) => rate.freeFrom !== null);
   const returnDays = siteConfig.returnWindowDays;
   const extendedWindow = returnDays > LEGAL_WITHDRAWAL_DAYS;
+  const replies = canPromiseReply();
 
   return (
     <LegalPage title={copy.title} updatedAt={LEGAL_UPDATED_AT}>
@@ -96,10 +96,14 @@ export default function ShippingReturnsPage() {
       <h3>Cómo solicitar una devolución</h3>
       <ol>
         <li>
-          Escríbenos a través del <Link href={returnRequestHref}>formulario de contacto</Link> eligiendo el tema
-          «Pedido». Indica tu número de pedido y los productos que quieres devolver.
+          <ContactChannel capitalized topic="order" /> e indica tu número de pedido y los productos que quieres
+          devolver.
         </li>
-        <li>Te responderemos con las instrucciones y la dirección a la que debes enviar los productos.</li>
+        <li>
+          {replies
+            ? "Te responderemos con las instrucciones y la dirección a la que debes enviar los productos."
+            : "Cada solicitud se tramita con unas instrucciones y una dirección a la que enviar los productos."}
+        </li>
         <li>
           Envía los productos bien embalados en un plazo máximo de {LEGAL_WITHDRAWAL_DAYS} días naturales desde que
           nos comunicas tu decisión.
@@ -136,8 +140,8 @@ export default function ShippingReturnsPage() {
 
       <h2>Productos defectuosos o erróneos</h2>
       <p>
-        Si recibes un producto dañado, defectuoso o distinto del que pediste, escríbenos a través del{" "}
-        <Link href={returnRequestHref}>formulario de contacto</Link> y lo solucionaremos. Estos casos están cubiertos
+        Si recibes un producto dañado, defectuoso o distinto del que pediste, <ContactChannel topic="order" />
+        {replies && " y lo solucionaremos"}. Estos casos están cubiertos
         por la garantía legal de conformidad, que se explica en las{" "}
         <Link href={routes.terms}>condiciones de venta</Link>, y son independientes del plazo de devolución.
       </p>

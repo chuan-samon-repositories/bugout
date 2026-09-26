@@ -24,6 +24,7 @@ describe("ManageCookiesButton", () => {
     await userEvent.click(button);
 
     expect(consent.reopen).toHaveBeenCalledTimes(1);
+    expect(consent.reopen).toHaveBeenCalledWith(button);
     expect(consent.accept).not.toHaveBeenCalled();
     expect(consent.reject).not.toHaveBeenCalled();
   });

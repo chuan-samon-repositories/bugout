@@ -9,8 +9,6 @@ export const common = {
   loading: 'Cargando…',
   close: 'Cerrar',
   retry: 'Reintentar',
-  requiredField: 'Obligatorio',
-  optional: 'Opcional',
   breadcrumbs: 'Migas de pan',
   /** Spanish labels for known product badges (keys match `Product.badge`). */
   badges: {

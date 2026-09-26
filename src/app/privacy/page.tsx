@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
-import { BusinessIdentity, LegalPage } from "@/presentation/components/content";
+import { BusinessIdentity, canPromiseReply, ContactChannel, LegalPage } from "@/presentation/components/content";
 import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT } from "@/presentation/i18n/messages/content";
@@ -73,8 +73,7 @@ export default function PrivacyPage() {
       <BusinessIdentity
         fallback={
           <p>
-            Puedes contactar con el responsable del tratamiento a través del{" "}
-            <Link href={routes.contact}>formulario de contacto</Link>.
+            Para contactar con el responsable del tratamiento, <ContactChannel />.
           </p>
         }
       />
@@ -192,15 +191,11 @@ export default function PrivacyPage() {
         </li>
       </ul>
       <p>
-        Para ejercerlos, escríbenos a través del <Link href={routes.contact}>formulario de contacto</Link>
-        {siteConfig.contactEmail && (
-          <>
-            {" "}
-            o a <a href={`mailto:${siteConfig.contactEmail}`}>{siteConfig.contactEmail}</a>
-          </>
-        )}
-        . Te responderemos en el plazo de un mes. Si tenemos dudas razonables sobre tu identidad, podremos pedirte
-        información adicional para confirmarla.
+        Para ejercerlos, <ContactChannel />.{" "}
+        {canPromiseReply()
+          ? "Te responderemos en el plazo de un mes."
+          : "La normativa fija un plazo de un mes para atender estas solicitudes."}{" "}
+        Si tenemos dudas razonables sobre tu identidad, podremos pedirte información adicional para confirmarla.
       </p>
       <p>
         Si consideras que no hemos tratado tus datos correctamente, puedes presentar una reclamación ante la Agencia

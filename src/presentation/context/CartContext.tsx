@@ -16,6 +16,11 @@ import { useNotifications } from "./NotificationContext";
 
 export type AddToCartSource = "product_page" | "cart_drawer";
 
+export interface CheckoutOptions {
+  /** Replace the current history entry when handing off to a hosted checkout. Default false. */
+  replace?: boolean;
+}
+
 export interface CartContextValue {
   /** Null until the stored cart has been restored on the client. */
   cart: Cart | null;
@@ -30,14 +35,21 @@ export interface CartContextValue {
   /** Opens the drawer at the visitor's request (tracks cart_viewed). */
   openCart(): void;
   closeCart(): void;
-  /** Resolves true on success; shows a toast and opens the drawer, or shows an error toast. */
+  /**
+   * Resolves true on success and opens the drawer (a labelled dialog that receives focus, so it is the
+   * confirmation; no success toast that could cover its buttons), or shows an error toast.
+   */
   addItem(product: Product, quantity: number, source?: AddToCartSource): Promise<boolean>;
   setItemQuantity(productId: string, quantity: number): Promise<void>;
   /** Removes the whole line. */
   removeItem(productId: string): Promise<void>;
   clearCart(): Promise<void>;
-  /** Resolves true once navigation to the checkout has started, false if it could not start. */
-  checkout(): Promise<boolean>;
+  /**
+   * Resolves true once navigation to the checkout has started, false if it could not start. A hosted checkout
+   * is opened with `location.assign` by default; `replace: true` uses `location.replace` so the page that
+   * started it (e.g. /checkout) is not left in the history to bounce Back into the provider again.
+   */
+  checkout(options?: CheckoutOptions): Promise<boolean>;
   /** Reloads the cart from the repository (e.g. after an order is placed). */
   refresh(): Promise<void>;
   /**
@@ -48,9 +60,6 @@ export interface CartContextValue {
 }
 
 type FailureReason = Extract<AnalyticsEvent, { name: "add_to_cart_failed" }>["properties"]["reason"];
-
-/** localStorage keys that hold the cart (local cart, Shopify cart id). Other tabs changing them trigger a reload. */
-const CART_STORAGE_KEYS: readonly string[] = ["bugout.cart", "bugout.shopify-cart-id"];
 
 const CartContext = createContext<CartContextValue | null>(null);
 
@@ -90,9 +99,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const analytics = useAnalytics();
   const { notify } = useNotifications();
-  const [{ manageCart, createCheckout }] = useState(() => {
+  const [{ manageCart, createCheckout, cartStorageKeys }] = useState(() => {
     const container = getContainer();
-    return { manageCart: container.getManageCartUseCase(), createCheckout: container.getCreateCheckoutUseCase() };
+    return {
+      manageCart: container.getManageCartUseCase(),
+      createCheckout: container.getCreateCheckoutUseCase(),
+      /** Storage keys that hold the cart; other tabs changing them (or clearing storage) trigger a reload. */
+      cartStorageKeys: container.getSyncedStorageKeys().cart,
+    };
   });
 
   const [cart, setCartState] = useState<Cart | null>(null);
@@ -138,11 +152,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const onStorage = (event: StorageEvent) => {
-      if (event.key === null || CART_STORAGE_KEYS.includes(event.key)) void refresh();
+      if (event.key === null || cartStorageKeys.includes(event.key)) void refresh();
     };
     window.addEventListener("storage", onStorage);
     return () => window.removeEventListener("storage", onStorage);
-  }, [refresh]);
+  }, [refresh, cartStorageKeys]);
 
   const showDrawer = useCallback(() => {
     isOpenRef.current = true;
@@ -174,12 +188,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
         try {
           const updated = await manageCart.addToCart(product.id, new Quantity(quantity));
           setCart(updated);
+          // The drawer opening (a labelled dialog that takes focus) is the confirmation.
           showDrawer();
-          notify({
-            tone: "success",
-            title: messages.cart.added,
-            message: product.name,
-          });
           analytics.track({
             name: "product_added_to_cart",
             properties: { ...productProperties(product), ...cartProperties(updated), quantity, source },
@@ -266,7 +276,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const checkout = useCallback(
-    () =>
+    ({ replace = false }: CheckoutOptions = {}) =>
       enqueue(async () => {
         const current = cartRef.current;
         if (!current || current.isEmpty()) return false;
@@ -278,7 +288,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           });
           closeCart();
           if (session.type === "hosted") {
-            window.location.assign(session.url);
+            if (replace) window.location.replace(session.url);
+            else window.location.assign(session.url);
           } else {
             router.push(session.url);
           }

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { StrictMode } from "react";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ValidationError } from "@/domain/errors";
@@ -12,10 +12,9 @@ import { Money } from "@/domain/value-objects/Money";
 import { Quantity } from "@/domain/value-objects/Quantity";
 import { getContainer } from "@/infrastructure/config";
 import { CheckoutFlow } from "./CheckoutFlow";
-import { LAST_ORDER_STORAGE_KEY, serializeOrder } from "./storedOrder";
 
 const mocks = vi.hoisted(() => {
-  type Snapshot = { cart: import("@/domain/entities/cart/Cart").Cart | null; ready: boolean };
+  type Snapshot = { cart: import("@/domain/entities/cart/Cart").Cart | null; ready: boolean; loadError?: boolean };
   const listeners = new Set<() => void>();
   const store = {
     snapshot: { cart: null, ready: false } as Snapshot,
@@ -30,7 +29,7 @@ const mocks = vi.hoisted(() => {
   };
   return {
     store,
-    checkout: vi.fn(async (): Promise<boolean> => false),
+    checkout: vi.fn<(options?: { replace?: boolean }) => Promise<boolean>>(async () => false),
     refresh: vi.fn(async (): Promise<void> => undefined),
     /** Like CartContext.runExclusive: runs the task, then the cart is reloaded (see `afterExclusive`). */
     runExclusive: vi.fn(async <T,>(task: () => Promise<T>): Promise<T> => {
@@ -42,7 +41,7 @@ const mocks = vi.hoisted(() => {
     }),
     afterExclusive: vi.fn((): void => undefined),
     push: vi.fn(),
-    analytics: { track: vi.fn(), identify: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() },
+    analytics: { track: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() },
     notify: vi.fn(),
   };
 });
@@ -59,10 +58,11 @@ vi.mock("@/presentation/context/CartContext", async () => {
   const { useSyncExternalStore } = await import("react");
   return {
     useCart: () => {
-      const { cart, ready } = useSyncExternalStore(mocks.store.subscribe, () => mocks.store.snapshot);
+      const { cart, ready, loadError = false } = useSyncExternalStore(mocks.store.subscribe, () => mocks.store.snapshot);
       return {
         cart,
         ready,
+        loadError,
         pending: false,
         itemCount: cart?.itemCount() ?? 0,
         subtotal: ready && cart ? cart.totalAmount() : null,
@@ -99,6 +99,8 @@ function setCart(cart: Cart | null, ready = true) {
   mocks.store.set({ cart, ready });
 }
 
+const confirmations = () => getContainer().getOrderConfirmationStore();
+
 async function fillContact(user = userEvent.setup()) {
   await user.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "Ana@Example.es");
   await user.type(screen.getByRole("textbox", { name: "Nombre" }), "Ana");
@@ -121,6 +123,7 @@ beforeEach(() => {
   mocks.analytics.track.mockReset();
   mocks.afterExclusive.mockReset();
   window.sessionStorage.clear();
+  confirmations().clear();
   mocks.store.set({ cart: null, ready: false });
 });
 
@@ -143,6 +146,18 @@ describe("CheckoutFlow", () => {
     expect(screen.getByRole("heading", { name: "Tu carrito está vacío" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Ver productos" })).toHaveAttribute("href", "/products");
     expect(mocks.push).not.toHaveBeenCalled();
+  });
+
+  it("shows the cart drawer's load error with a retry instead of the empty state when the cart could not load", async () => {
+    mocks.store.set({ cart: null, ready: true, loadError: true });
+    render(<CheckoutFlow provider="local" />);
+    expect(screen.getByRole("alert")).toHaveTextContent(messages.cart.loadError);
+    expect(screen.queryByText("Tu carrito está vacío")).not.toBeInTheDocument();
+
+    mocks.refresh.mockImplementationOnce(async () => setCart(cartWith(60)));
+    await userEvent.click(screen.getByRole("button", { name: messages.cart.retryLoad }));
+    expect(mocks.refresh).toHaveBeenCalledTimes(1);
+    expect(await screen.findByRole("heading", { level: 2, name: "Contacto" })).toBeInTheDocument();
   });
 
   it("blocks step 1 on empty required fields with Spanish messages and focuses the first invalid field", async () => {
@@ -172,7 +187,7 @@ describe("CheckoutFlow", () => {
       name: "checkout_step_completed",
       properties: { step: 1, step_name: "contact", cart_value: 60, cart_item_count: 1, currency: "EUR" },
     });
-    const steps = screen.getByRole("list", { name: "Pasos del pago" });
+    const steps = screen.getByRole("list", { name: "Pasos para finalizar la compra" });
     expect(within(steps).getByRole("button", { name: /Contacto/ })).toBeInTheDocument();
     expect(within(steps).queryByRole("button", { name: /Revisión/ })).not.toBeInTheDocument();
     expect(within(steps).getByText("Envío").closest("li")).toHaveAttribute("aria-current", "step");
@@ -239,6 +254,7 @@ describe("CheckoutFlow", () => {
 
     const heading = await screen.findByRole("heading", { level: 1, name: "¡Gracias por tu pedido!" });
     expect(heading).toHaveFocus();
+    expect(document.title).toBe("Pedido confirmado · Bugout");
     expect(execute).toHaveBeenCalledWith(
       expect.objectContaining({
         shippingMethod: "express",
@@ -254,7 +270,6 @@ describe("CheckoutFlow", () => {
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(/89,95\s€/);
     expect(screen.queryByText("Tu carrito está vacío")).not.toBeInTheDocument();
 
-    expect(mocks.analytics.identify).not.toHaveBeenCalled();
     expect(mocks.analytics.captureException).not.toHaveBeenCalled();
     expect(screen.getByText("Ana@Example.es").closest(".ph-no-capture")).not.toBeNull();
     const completed = mocks.analytics.track.mock.calls.filter(([event]) => event.name === "checkout_step_completed");
@@ -272,7 +287,7 @@ describe("CheckoutFlow", () => {
         products: [{ product_id: "mochila-72h", quantity: 1, price: 80 }],
       },
     });
-    expect(window.sessionStorage.getItem(LAST_ORDER_STORAGE_KEY)).toContain("BUG-7K2Q9XA1");
+    expect(confirmations().load()?.orderNumber).toBe("BUG-7K2Q9XA1");
   });
 
   it("shows the confirmation even when order analytics throws", async () => {
@@ -296,6 +311,17 @@ describe("CheckoutFlow", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "¡Gracias por tu pedido!" })).toBeInTheDocument();
     expect(screen.getByText("BUG-NOANALYT")).toBeInTheDocument();
     expect(mocks.analytics.captureException).toHaveBeenCalledWith(expect.any(Error), { area: "checkout", action: "track_order" });
+  });
+
+  it("only restates the newsletter opt-in on review while messaging is simulated (no promise of emails)", async () => {
+    expect(getContainer().isMessagingSimulated()).toBe(true);
+    setCart(cartWith(60));
+    render(<CheckoutFlow provider="local" />);
+    await userEvent.click(screen.getByRole("checkbox", { name: messages.checkout.marketingOptIn }));
+    await fillContact();
+    await fillShipping();
+    expect(screen.getByText("Has marcado que quieres recibir novedades.")).toBeInTheDocument();
+    expect(screen.queryByText("Recibirás novedades por correo.")).not.toBeInTheDocument();
   });
 
   it("tracks each step once per checkout, even after going back and resubmitting", async () => {
@@ -396,28 +422,42 @@ describe("CheckoutFlow", () => {
   });
 
   it("restores the last confirmation after a reload when the cart is empty", () => {
-    window.sessionStorage.setItem(
-      LAST_ORDER_STORAGE_KEY,
-      serializeOrder({
+    confirmations().save({
         orderNumber: "BUG-RELOADED",
         placedAt: "2026-09-26T10:00:00.000Z",
         email: "ana@example.es",
         lines: [{ productId: "kit", name: "Kit 24H", quantity: 2, unitPriceMinor: 3900, subtotalMinor: 7800 }],
         totals: { subtotal: eur(78), shipping: eur(0), tax: eur(13.54), total: eur(78) },
         shippingMethod: "standard",
-      }),
-    );
+    });
     setCart(new Cart("EUR"));
     render(<CheckoutFlow provider="local" />);
     expect(screen.getByText("BUG-RELOADED")).toBeInTheDocument();
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(/78,00\s€/);
   });
 
+  it("sets the tab title while the confirmation is shown and restores it on unmount", () => {
+    document.title = "Finalizar compra · Bugout";
+    confirmations().save({
+      orderNumber: "BUG-TITLE001",
+      placedAt: "2026-09-26T10:00:00.000Z",
+      email: "ana@example.es",
+      lines: [{ productId: "kit", name: "Kit 24H", quantity: 1, unitPriceMinor: 3900, subtotalMinor: 3900 }],
+      totals: { subtotal: eur(39), shipping: eur(4.95), tax: eur(7.63), total: eur(43.95) },
+      shippingMethod: "standard",
+    });
+    setCart(new Cart("EUR"));
+    const { unmount } = render(<CheckoutFlow provider="local" />);
+    expect(document.title).toBe("Pedido confirmado · Bugout");
+    unmount();
+    expect(document.title).toBe("Finalizar compra · Bugout");
+  });
+
   it("forgets the last confirmation when a new checkout starts with items", () => {
-    window.sessionStorage.setItem(LAST_ORDER_STORAGE_KEY, "{}");
+    const clear = vi.spyOn(confirmations(), "clear");
     setCart(cartWith(60));
     render(<CheckoutFlow provider="local" />);
-    expect(window.sessionStorage.getItem(LAST_ORDER_STORAGE_KEY)).toBeNull();
+    expect(clear).toHaveBeenCalled();
     expect(screen.getByRole("heading", { level: 2, name: "Contacto" })).toBeInTheDocument();
   });
 
@@ -428,6 +468,33 @@ describe("CheckoutFlow", () => {
     await waitFor(() => expect(mocks.checkout).toHaveBeenCalledTimes(1));
     expect(screen.getByText("Te estamos llevando al pago seguro…")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Ir al pago" })).not.toBeInTheDocument();
+  });
+
+  it("replaces /checkout in the history when handing off, so Back does not bounce into the hosted checkout", async () => {
+    setCart(cartWith(60));
+    mocks.checkout.mockResolvedValueOnce(true);
+    render(<CheckoutFlow provider="shopify" />);
+    await waitFor(() => expect(mocks.checkout).toHaveBeenCalledWith({ replace: true }));
+  });
+
+  it("offers the retry instead of an endless spinner when the page is restored from the back/forward cache", async () => {
+    setCart(cartWith(60));
+    mocks.checkout.mockResolvedValueOnce(true).mockResolvedValueOnce(true);
+    render(<CheckoutFlow provider="shopify" />);
+    await waitFor(() => expect(mocks.checkout).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("button", { name: "Ir al pago" })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: false }));
+    });
+    expect(screen.queryByRole("button", { name: "Ir al pago" })).not.toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(new PageTransitionEvent("pageshow", { persisted: true }));
+    });
+    await userEvent.click(await screen.findByRole("button", { name: "Ir al pago" }));
+    expect(mocks.checkout).toHaveBeenCalledTimes(2);
+    expect(mocks.checkout).toHaveBeenLastCalledWith({ replace: true });
   });
 
   it("offers a retry when the hosted checkout could not start (Shopify provider, once per mount)", async () => {

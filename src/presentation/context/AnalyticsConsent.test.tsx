@@ -29,7 +29,11 @@ const fakes = vi.hoisted(() => {
 });
 
 vi.mock("@/infrastructure/config", () => ({
-  getContainer: () => ({ getAnalyticsService: () => fakes.service, getConsentRepository: () => fakes.repository }),
+  getContainer: () => ({
+    getAnalyticsService: () => fakes.service,
+    getConsentRepository: () => fakes.repository,
+    getSyncedStorageKeys: () => ({ cart: ["bugout.cart"], consent: "bugout.consent" }),
+  }),
 }));
 
 import { AnalyticsProvider, useAnalytics, useConsent } from "./AnalyticsContext";
@@ -93,6 +97,18 @@ describe("AnalyticsProvider consent restore", () => {
     expect(fakes.service.tracked).toEqual(["product_viewed"]);
   });
 
+  it("re-applies a stored grant as 'restored', not as a new visitor decision", () => {
+    const setConsent = vi.spyOn(fakes.service, "setConsent");
+    fakes.repository.stored = decision(true);
+    render(
+      <AnalyticsProvider>
+        <ViewTracker />
+      </AnalyticsProvider>,
+    );
+    expect(setConsent).toHaveBeenCalledTimes(1);
+    expect(setConsent).toHaveBeenCalledWith(true, "restored");
+  });
+
   it("tracks nothing on mount when there is no stored consent", () => {
     render(
       <AnalyticsProvider>
@@ -114,11 +130,11 @@ describe("AnalyticsProvider across tabs", () => {
     expect(screen.getByText("sin decisión")).toBeInTheDocument();
 
     otherTab("bugout.consent", decision(true));
-    expect(setConsent).toHaveBeenLastCalledWith(true);
+    expect(setConsent).toHaveBeenLastCalledWith(true, "restored");
     expect(screen.getByText("aceptado")).toBeInTheDocument();
 
     otherTab("bugout.consent", decision(false));
-    expect(setConsent).toHaveBeenLastCalledWith(false);
+    expect(setConsent).toHaveBeenLastCalledWith(false, "restored");
     expect(screen.getByText("rechazado")).toBeInTheDocument();
 
     otherTab(null, null);

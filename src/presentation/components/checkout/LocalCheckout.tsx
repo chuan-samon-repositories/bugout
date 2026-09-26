@@ -46,6 +46,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
   const { notify } = useNotifications();
   const analytics = useAnalytics();
   const { runExclusive } = useCart();
+  const [messagingSimulated] = useState(() => getContainer().isMessagingSimulated());
   const [details, setDetails] = useState<CheckoutDetails>(() => emptyCheckoutDetails(policy));
   const [step, setStep] = useState<CheckoutStepId>("contact");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -233,6 +234,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
               headingRef={headingRef}
               placing={placing}
               placeError={placeError}
+              messagingSimulated={messagingSimulated}
               onEdit={goBackTo}
               onBack={() => goBackTo("shipping")}
               onSubmit={() => void placeOrder()}

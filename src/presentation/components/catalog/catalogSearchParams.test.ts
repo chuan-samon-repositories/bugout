@@ -6,6 +6,7 @@ import {
   countActiveFilters,
   parseCatalogSearchParams,
   parsePrice,
+  readCategoryParam,
   serializeCatalogCriteria,
 } from "./catalogSearchParams";
 
@@ -37,6 +38,17 @@ describe("parseCatalogSearchParams", () => {
   it("falls back to defaults for invalid values", () => {
     const params = new URLSearchParams("category=%20%20&sort=cheapest&min=-5&max=abc&stock=yes&sale=true");
     expect(parseCatalogSearchParams(params)).toEqual({ sortBy: "featured" });
+  });
+
+  it("ignores a category that is not in the catalog when the catalog's categories are given", () => {
+    const categories = ["survival-kits", "accessories"];
+    expect(parseCatalogSearchParams({ category: "accessories" }, { categories }).category).toBe("accessories");
+    expect(parseCatalogSearchParams({ category: "llama-al-900123456", sale: "1" }, { categories })).toEqual({
+      sortBy: "featured",
+      onSaleOnly: true,
+    });
+    expect(readCategoryParam({ category: " llama-al-900123456 " })).toBe("llama-al-900123456");
+    expect(readCategoryParam({ category: "  " })).toBeUndefined();
   });
 
   it("keeps a zero minimum price instead of treating it as missing", () => {

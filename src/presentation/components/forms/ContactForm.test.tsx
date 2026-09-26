@@ -88,7 +88,9 @@ describe("ContactForm", () => {
     expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
     await fillValidMessage();
 
-    expect(await screen.findByText("Mensaje enviado. Te responderemos lo antes posible.")).toBeInTheDocument();
+    expect(await screen.findByText("Te responderemos lo antes posible.")).toBeInTheDocument();
+    // Title and body must not repeat each other.
+    expect(screen.getAllByText(/Mensaje enviado/)).toHaveLength(1);
     expect(analytics.track).toHaveBeenCalledWith({ name: "contact_message_sent", properties: { topic: "order" } });
 
     await userEvent.click(screen.getByRole("button", { name: "Enviar otro mensaje" }));

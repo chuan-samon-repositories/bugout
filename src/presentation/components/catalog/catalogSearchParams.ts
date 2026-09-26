@@ -27,13 +27,26 @@ export function parsePrice(value: string | undefined): number | undefined {
   return Number.isFinite(amount) ? amount : undefined;
 }
 
+export interface ParseCatalogOptions {
+  /**
+   * Category slugs of the loaded catalog (summarizeCategories). When given, any other `category` value is
+   * ignored, so arbitrary query text never becomes page content (title, heading, breadcrumbs).
+   */
+  categories?: readonly string[];
+}
+
+/** The raw `category` value, trimmed; undefined when absent or blank. */
+export function readCategoryParam(input: SearchParamsInput): string | undefined {
+  return read(input, catalogParams.category)?.trim() || undefined;
+}
+
 /** Catalog query string → FilterCriteria. Invalid values fall back to their defaults. */
-export function parseCatalogSearchParams(input: SearchParamsInput): FilterCriteria {
-  const category = read(input, catalogParams.category)?.trim();
+export function parseCatalogSearchParams(input: SearchParamsInput, options: ParseCatalogOptions = {}): FilterCriteria {
+  const category = readCategoryParam(input);
   const sort = read(input, catalogParams.sort);
   const criteria: FilterCriteria = { sortBy: isSortOption(sort) ? sort : "featured" };
 
-  if (category) criteria.category = category;
+  if (category && (!options.categories || options.categories.includes(category))) criteria.category = category;
   const priceMin = parsePrice(read(input, catalogParams.priceMin));
   if (priceMin !== undefined) criteria.priceMin = priceMin;
   const priceMax = parsePrice(read(input, catalogParams.priceMax));

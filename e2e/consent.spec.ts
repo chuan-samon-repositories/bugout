@@ -77,6 +77,26 @@ test.describe('consent banner', () => {
     await expect(banner).toBeHidden();
   });
 
+  test('a reopened banner takes focus and Escape closes it without changing the choice', async ({ page }) => {
+    await page.goto('/contact');
+    const banner = consentBanner(page);
+    await expect(banner).toBeVisible();
+    // An undecided first visit does not steal focus.
+    await expect(banner.getByRole('button', { name: 'Rechazar' })).not.toBeFocused();
+    await banner.getByRole('button', { name: 'Aceptar' }).click();
+    await expect(banner).toBeHidden();
+
+    const settings = page.getByRole('contentinfo').getByRole('button', { name: 'Configurar cookies' });
+    await settings.click();
+    await expect(banner).toBeVisible();
+    await expect(banner.getByRole('button', { name: 'Rechazar' })).toBeFocused();
+
+    await page.keyboard.press('Escape');
+    await expect(banner).toBeHidden();
+    await expect(settings).toBeFocused();
+    await expect.poll(() => readStorage(page, CONSENT_KEY)).toMatchObject({ analytics: true });
+  });
+
   test('the cookie policy page can reopen the banner', async ({ page }) => {
     await page.goto('/cookies');
     const banner = consentBanner(page);

@@ -1,7 +1,6 @@
 /** Copy for the cart area: provider notifications and the cart drawer. */
 export const cart = {
   title: 'Tu carrito',
-  added: 'Añadido al carrito',
   empty: 'Tu carrito está vacío.',
   emptyHint: 'Echa un vistazo a nuestros kits y accesorios.',
   loadError: 'No hemos podido cargar tu carrito.',

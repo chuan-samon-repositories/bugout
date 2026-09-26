@@ -53,7 +53,7 @@ export const forms = {
     messageHint: (min: number) => `Mínimo ${min} caracteres.`,
     submit: 'Enviar mensaje',
     successTitle: 'Mensaje enviado',
-    successText: 'Mensaje enviado. Te responderemos lo antes posible.',
+    successText: 'Te responderemos lo antes posible.',
     simulatedSuccessTitle: 'Gracias por escribirnos',
     simulatedSuccessText: 'Recibido. En modo demostración el mensaje no se envía a nadie.',
     sendAnother: 'Enviar otro mensaje',
@@ -84,8 +84,8 @@ export const forms = {
           ? `Sí. Cuando el formulario de esta página esté conectado, podrás usarlo con el tema «${topic}» para contarnos qué necesitas y cuántas unidades.`
           : `Sí. Usa el formulario de esta página con el tema «${topic}» y cuéntanos qué necesitas y cuántas unidades. Te responderemos por correo.`,
       orderStatusQuestion: '¿Cómo consulto el estado de mi pedido?',
-      orderStatusAnswer: (topic: string) =>
-        `Escríbenos con el tema «${topic}» e indica el número de pedido que aparece en la confirmación y el correo con el que compraste.`,
+      /** Follows the contact channel ("Escríbenos a …"). */
+      orderStatusAnswer: 'e indica el número de pedido que aparece en la confirmación y el correo con el que compraste.',
       taxQuestion: '¿Los precios incluyen IVA?',
       taxIncludedAnswer: (rate: string) => `Sí. Todos los precios de la tienda incluyen el IVA (${rate} %).`,
       taxExcludedAnswer: (rate: string) => `No. El IVA (${rate} %) se añade al finalizar la compra.`,

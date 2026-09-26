@@ -5,7 +5,11 @@ import { Button, Spinner } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 
 export interface HostedCheckoutRedirectProps {
-  /** useCart().checkout: resolves true once the browser is navigating to the hosted checkout. */
+  /**
+   * Starts the hand-off, e.g. `() => useCart().checkout({ replace: true })` so /checkout is replaced in the
+   * history and Back from the hosted checkout does not bounce straight into it again. Resolves true once the
+   * browser is navigating to the hosted checkout.
+   */
   checkout(): Promise<boolean>;
 }
 
@@ -28,6 +32,16 @@ export function HostedCheckoutRedirect({ checkout }: HostedCheckoutRedirectProps
     started.current = true;
     start().catch(() => undefined);
   }, [start]);
+
+  // Coming back from the hosted checkout can restore this page from the back/forward cache with its spinner
+  // still showing; offer the retry instead of an endless "redirecting".
+  useEffect(() => {
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) setRedirecting(false);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
 
   return (
     <div className="flex flex-col items-center gap-4 py-16 text-center">

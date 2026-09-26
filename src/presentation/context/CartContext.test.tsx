@@ -52,7 +52,7 @@ describe("CartProvider", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
-  it("adds an item, opens the drawer, confirms with a toast and tracks the event (but not cart_viewed)", async () => {
+  it("adds an item, opens the drawer as the confirmation (no success toast) and tracks the event (but not cart_viewed)", async () => {
     const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
     const backpack = await product("24h-survival-backpack");
     const { result } = await renderCart();
@@ -65,8 +65,9 @@ describe("CartProvider", () => {
     expect(added).toBe(true);
     expect(result.current.itemCount).toBe(2);
     expect(result.current.isOpen).toBe(true);
-    expect(screen.getByText("Añadido al carrito")).toBeInTheDocument();
-    expect(screen.getByText("Mochila de supervivencia 24H")).toBeInTheDocument();
+    // A success toast would cover the drawer's footer buttons; the opened drawer is the confirmation.
+    expect(screen.queryByText("Añadido al carrito")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
     expect(track).toHaveBeenCalledWith({
       name: "product_added_to_cart",
       properties: expect.objectContaining({
@@ -293,6 +294,27 @@ describe("CartProvider", () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
+  it("replaces the current history entry for a hosted checkout when asked (the /checkout hand-off)", async () => {
+    const assign = vi.fn();
+    const replace = vi.fn();
+    vi.spyOn(window, "location", "get").mockReturnValue({ ...window.location, assign, replace });
+    vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockResolvedValue({
+      url: "https://tienda.myshopify.com/checkouts/abc",
+      type: "hosted",
+    });
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    const { result } = await renderCart();
+
+    let started = false;
+    await act(async () => {
+      started = await result.current.checkout({ replace: true });
+    });
+
+    expect(started).toBe(true);
+    expect(replace).toHaveBeenCalledWith("https://tienda.myshopify.com/checkouts/abc");
+    expect(assign).not.toHaveBeenCalled();
+  });
+
   it("shows an error toast when checkout cannot start", async () => {
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockRejectedValue(new Error("down"));
@@ -328,19 +350,32 @@ describe("CartProvider", () => {
   it("ignores storage events for keys that are not the cart's", async () => {
     const { result } = await renderCart();
     const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
+    const { cart: cartKeys, consent } = getContainer().getSyncedStorageKeys();
 
     await act(async () => {
-      window.dispatchEvent(new StorageEvent("storage", { key: "bugout.consent" }));
+      window.dispatchEvent(new StorageEvent("storage", { key: consent }));
       window.dispatchEvent(new StorageEvent("storage", { key: "bugout.something-else" }));
       await new Promise((resolve) => setTimeout(resolve, 10));
     });
     expect(getCart).not.toHaveBeenCalled();
 
+    for (const [index, key] of cartKeys.entries()) {
+      act(() => {
+        window.dispatchEvent(new StorageEvent("storage", { key }));
+      });
+      await waitFor(() => expect(getCart).toHaveBeenCalledTimes(index + 1));
+    }
+    expect(cartKeys.length).toBeGreaterThan(0);
+    expect(result.current.itemCount).toBe(0);
+  });
+
+  it("reloads when another tab clears storage (key null)", async () => {
+    await renderCart();
+    const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
     act(() => {
-      window.dispatchEvent(new StorageEvent("storage", { key: "bugout.shopify-cart-id" }));
+      window.dispatchEvent(new StorageEvent("storage", { key: null }));
     });
     await waitFor(() => expect(getCart).toHaveBeenCalledTimes(1));
-    expect(result.current.itemCount).toBe(0);
   });
 
   it("reloads when another tab changes the stored cart", async () => {

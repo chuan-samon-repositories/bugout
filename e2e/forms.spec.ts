@@ -7,11 +7,11 @@ const REQUIRED = 'Este campo es obligatorio.';
 
 /*
  * Success copy is in flux while delivery is simulated: the original "¡Gracias! Te hemos apuntado
- * a la lista." / "Mensaje enviado…" is being replaced by honest demo copy starting with "Recibido.".
+ * a la lista." / "Te responderemos…" is being replaced by honest demo copy starting with "Recibido.".
  * Assert on the stable part of either wording.
  */
 const NEWSLETTER_SUCCESS = /¡Gracias! Te hemos apuntado a la lista\.|Recibido\./;
-const CONTACT_SUCCESS = /Mensaje enviado\. Te responderemos lo antes posible\.|Recibido\./;
+const CONTACT_SUCCESS = /Te responderemos lo antes posible\.|Recibido\./;
 
 function homeNewsletter(page: Page) {
   return page.getByRole('region', { name: 'Consejos de preparación en tu correo' });

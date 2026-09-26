@@ -34,6 +34,20 @@ describe("productJsonLd", () => {
     expect((data.offers as { availability: string }).availability).toBe("https://schema.org/OutOfStock");
   });
 
+  it("omits image when the product has no images", () => {
+    const data = productJsonLd(buildProduct({ images: [] }), "https://bugout.example");
+    expect(data).not.toHaveProperty("image");
+  });
+
+  it("emits sku for catalog ids but not for Shopify GIDs", () => {
+    const shopify = productJsonLd(
+      buildProduct({ id: "gid://shopify/ProductVariant/4455", slug: "mochila-72h" }),
+      "https://bugout.example",
+    );
+    expect(shopify).not.toHaveProperty("sku");
+    expect(productJsonLd(buildProduct({ id: "first-aid-pro" }), "https://bugout.example").sku).toBe("first-aid-pro");
+  });
+
   it("escapes < so the JSON cannot close the script tag", () => {
     const json = serializeJsonLd({ name: "</script><script>alert(1)</script>" });
     expect(json).not.toContain("<");

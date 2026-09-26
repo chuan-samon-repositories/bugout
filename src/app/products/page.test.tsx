@@ -1,0 +1,64 @@
+// @vitest-environment jsdom
+import { render, screen } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const nav = vi.hoisted(() => ({ searchParams: new URLSearchParams() }));
+
+vi.mock("next/navigation", () => ({
+  usePathname: () => "/products",
+  useSearchParams: () => nav.searchParams,
+}));
+
+vi.mock("@/presentation/context/AnalyticsContext", () => ({
+  useAnalytics: () => ({ track: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() }),
+}));
+
+vi.mock("@/presentation/context/CartContext", () => ({
+  useCart: () => ({ cart: null, addItem: vi.fn(), pending: false }),
+}));
+
+import ProductsPage, { generateMetadata } from "./page";
+
+const INJECTED = "llama-al-900123456";
+
+async function renderPage(query: string) {
+  nav.searchParams = new URLSearchParams(query);
+  const searchParams = Promise.resolve(Object.fromEntries(nav.searchParams));
+  render(await ProductsPage({ searchParams }));
+}
+
+const metadataFor = (query: string) =>
+  generateMetadata({ searchParams: Promise.resolve(Object.fromEntries(new URLSearchParams(query))) });
+
+beforeEach(() => {
+  vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
+});
+
+describe("/products", () => {
+  it("titles a known category and lets it be indexed", async () => {
+    const metadata = await metadataFor("category=accessories");
+    expect(metadata.title).toBe("Accesorios");
+    expect(metadata.robots).toBeUndefined();
+    await renderPage("category=accessories");
+    expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
+  });
+
+  it("ignores an unknown category: default title and heading, every product, noindex", async () => {
+    const metadata = await metadataFor(`category=${INJECTED}`);
+    expect(metadata.title).toBe("Productos");
+    expect(JSON.stringify(metadata)).not.toMatch(/llama|900123456/i);
+    expect(metadata.robots).toEqual({ index: false });
+    expect(metadata.alternates?.canonical).toBe("/products");
+
+    await renderPage(`category=${INJECTED}`);
+    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/llama|900123456/i);
+    expect(screen.getByText("6 productos")).toBeInTheDocument();
+  });
+
+  it("keeps the other filters when only the category is unknown", async () => {
+    const metadata = await metadataFor(`category=${INJECTED}&sale=1`);
+    expect(metadata.robots).toEqual({ index: false });
+    expect(metadata.title).not.toMatch(/llama/i);
+  });
+});

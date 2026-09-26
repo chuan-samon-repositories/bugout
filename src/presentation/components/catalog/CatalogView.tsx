@@ -45,6 +45,7 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
 
   const products = useMemo(() => snapshots.map(fromProductSnapshot), [snapshots]);
   const categories = useMemo(() => summarizeCategories(products), [products]);
+  const categorySlugs = useMemo(() => categories.map((category) => category.slug), [categories]);
   const bounds = useMemo(() => priceBounds(products), [products]);
 
   const [criteria, setCriteria] = useState<FilterCriteria>(initialCriteria);
@@ -83,7 +84,8 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
   // those are recognised via writtenQueries and ignored, so the two effects never loop.
   const urlQuery = searchParams?.toString() ?? "";
   useEffect(() => {
-    const fromUrl = parseCatalogSearchParams(new URLSearchParams(urlQuery));
+    // Unknown categories are ignored, as on the server, so query text never becomes the heading.
+    const fromUrl = parseCatalogSearchParams(new URLSearchParams(urlQuery), { categories: categorySlugs });
     const canonical = queryOf(fromUrl);
     if (canonical === syncedQuery.current) {
       writtenQueries.current.clear();
@@ -94,7 +96,7 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
     setCriteria(fromUrl);
     setMinText(priceText(fromUrl.priceMin));
     setMaxText(priceText(fromUrl.priceMax));
-  }, [urlQuery]);
+  }, [urlQuery, categorySlugs]);
 
   const results = useMemo(() => applyFilterCriteria(products, criteria), [products, criteria]);
 

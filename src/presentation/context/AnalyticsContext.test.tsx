@@ -31,6 +31,7 @@ describe("AnalyticsProvider", () => {
     await waitFor(() => expect(result.current.ready).toBe(true));
     expect(result.current.decision).toBeNull();
     expect(result.current.isBannerOpen).toBe(true);
+    expect(result.current.reopenRequest).toBe(0);
   });
 
   it("records a decision and can reopen the banner without forgetting it", async () => {
@@ -41,15 +42,23 @@ describe("AnalyticsProvider", () => {
     act(() => result.current.reject());
     expect(result.current.decision).toMatchObject({ analytics: false, version: CONSENT_VERSION });
     expect(result.current.isBannerOpen).toBe(false);
-    expect(setConsent).toHaveBeenLastCalledWith(false);
+    expect(setConsent).toHaveBeenLastCalledWith(false, "visitor");
 
     act(() => result.current.reopen());
     expect(result.current.isBannerOpen).toBe(true);
+    expect(result.current.reopenRequest).toBe(1);
     expect(result.current.decision?.analytics).toBe(false);
+
+    act(() => result.current.dismiss());
+    expect(result.current.isBannerOpen).toBe(false);
+    expect(result.current.reopenRequest).toBe(0);
+    expect(result.current.decision?.analytics).toBe(false);
+
+    act(() => result.current.reopen());
 
     act(() => result.current.accept());
     expect(getContainer().getConsentRepository().get()?.analytics).toBe(true);
-    expect(setConsent).toHaveBeenLastCalledWith(true);
+    expect(setConsent).toHaveBeenLastCalledWith(true, "visitor");
     expect(result.current.isBannerOpen).toBe(false);
   });
 });

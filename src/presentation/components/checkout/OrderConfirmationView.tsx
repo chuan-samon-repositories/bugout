@@ -5,6 +5,7 @@ import type { OrderConfirmation } from "@/application/dtos/Order";
 import type { PricingPolicy } from "@/domain/entities/order/OrderPricing";
 import { Money } from "@/domain/value-objects/Money";
 import { ButtonLink, CheckCircleIcon, Container, InfoIcon } from "@/presentation/components/ui";
+import { siteConfig } from "@/presentation/config/site";
 import { formatDate, formatMoney, messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 import { OrderTotalsList } from "./OrderTotalsList";
@@ -26,6 +27,15 @@ export function OrderConfirmationView({ confirmation, policy }: OrderConfirmatio
 
   useEffect(() => {
     headingRef.current?.focus();
+  }, []);
+
+  // The confirmation replaces the checkout in place, so the tab title says so too (restored on unmount).
+  useEffect(() => {
+    const previous = document.title;
+    document.title = `${copy.documentTitle} · ${siteConfig.name}`;
+    return () => {
+      document.title = previous;
+    };
   }, []);
 
   return (

@@ -8,7 +8,7 @@ import { messages } from "@/presentation/i18n";
 export function CookieSettingsButton({ className }: { className?: string }) {
   const { reopen } = useConsent();
   return (
-    <button type="button" onClick={reopen} className={cn("ph-no-capture", className)}>
+    <button type="button" onClick={(event) => reopen(event.currentTarget)} className={cn("ph-no-capture", className)}>
       {messages.shell.footer.cookieSettings}
     </button>
   );

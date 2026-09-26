@@ -16,7 +16,7 @@ export const checkout = {
     retry: 'Ir al pago',
   },
   steps: {
-    label: 'Pasos del pago',
+    label: 'Pasos para finalizar la compra',
     contact: 'Contacto',
     shipping: 'Envío',
     review: 'Revisión',
@@ -61,6 +61,8 @@ export const checkout = {
     editContact: 'datos de contacto',
     editShipping: 'dirección y método de envío',
     marketingYes: 'Recibirás novedades por correo.',
+    /** While the newsletter is simulated nothing will actually be sent, so only restate the choice. */
+    marketingYesSimulated: 'Has marcado que quieres recibir novedades.',
     demoNotice: 'Modo demostración: no se realizará ningún cargo ni se enviará ningún pedido real.',
     placeOrder: 'Confirmar pedido',
     placeError: 'No hemos podido confirmar tu pedido. Tus datos siguen aquí; inténtalo de nuevo.',
@@ -78,6 +80,8 @@ export const checkout = {
     total: 'Total',
   },
   confirmation: {
+    /** Tab title while the confirmation replaces the checkout (followed by the site name). */
+    documentTitle: 'Pedido confirmado',
     title: '¡Gracias por tu pedido!',
     orderNumber: 'Número de pedido',
     email: 'Correo de contacto',

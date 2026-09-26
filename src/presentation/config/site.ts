@@ -7,13 +7,20 @@ export interface SiteUrlSources {
   vercelProductionUrl?: string;
 }
 
+/** Adds `https://` to a bare host ("bugout.es") and drops trailing slashes. */
+function normalizeOrigin(value: string): string {
+  const withProtocol = /^https?:\/\//i.test(value) ? value : `https://${value.replace(/^\/+/, "")}`;
+  return withProtocol.replace(/\/+$/, "");
+}
+
 /**
  * Canonical origin: NEXT_PUBLIC_SITE_URL, else the Vercel production domain, else localhost.
- * `configured` is false when it fell back to localhost. Trailing slashes are dropped.
+ * `configured` is false when it fell back to localhost. A value without protocol gets `https://`
+ * (like the Vercel domain) and trailing slashes are dropped.
  */
 export function resolveSiteUrl({ siteUrl, vercelProductionUrl }: SiteUrlSources): { url: string; configured: boolean } {
   const explicit = siteUrl?.trim();
-  if (explicit) return { url: explicit.replace(/\/+$/, ""), configured: true };
+  if (explicit) return { url: normalizeOrigin(explicit), configured: true };
   const vercel = vercelProductionUrl?.trim().replace(/^https?:\/\//, "").replace(/\/+$/, "");
   if (vercel) return { url: `https://${vercel}`, configured: true };
   return { url: LOCAL_SITE_URL, configured: false };

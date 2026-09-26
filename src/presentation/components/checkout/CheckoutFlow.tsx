@@ -4,14 +4,13 @@ import { useCallback, useEffect, useState } from "react";
 import type { CommerceProvider } from "@/application/dtos/Checkout";
 import type { OrderConfirmation } from "@/application/dtos/Order";
 import { getContainer } from "@/infrastructure/config";
-import { ButtonLink, CartIcon, Container, PageHeader, Spinner } from "@/presentation/components/ui";
+import { AlertCircleIcon, Button, ButtonLink, CartIcon, Container, PageHeader, Spinner } from "@/presentation/components/ui";
 import { useCart } from "@/presentation/context/CartContext";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 import { HostedCheckoutRedirect } from "./HostedCheckoutRedirect";
 import { LocalCheckout } from "./LocalCheckout";
 import { OrderConfirmationView } from "./OrderConfirmationView";
-import { clearLastOrder, readLastOrder, saveLastOrder } from "./storedOrder";
 
 export interface CheckoutFlowProps {
   provider: CommerceProvider;
@@ -32,13 +31,38 @@ function EmptyCheckout() {
   );
 }
 
+/** Same message and retry as the cart drawer when the stored cart could not be restored. */
+function CartLoadError({ onRetry }: { onRetry(): Promise<void> }) {
+  const [retrying, setRetrying] = useState(false);
+  const retry = async () => {
+    setRetrying(true);
+    try {
+      await onRetry();
+    } finally {
+      setRetrying(false);
+    }
+  };
+  return (
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-muted/30 px-4 py-16 text-center">
+      <AlertCircleIcon className="size-12 text-danger" />
+      <p className="text-lg font-semibold text-ink">{messages.cart.loadError}</p>
+      <Button variant="secondary" onClick={() => void retry()} loading={retrying} className="mt-2">
+        {messages.cart.retryLoad}
+      </Button>
+    </div>
+  );
+}
+
 /**
- * /checkout: waits for the stored cart (never redirects), then shows the empty state,
+ * /checkout: waits for the stored cart (never redirects), then shows the load error, the empty state,
  * the hosted-checkout hand-off (Shopify) or the local demo checkout and its confirmation.
  */
 export function CheckoutFlow({ provider }: CheckoutFlowProps) {
-  const { cart, ready, checkout } = useCart();
-  const [policy] = useState(() => getContainer().getPricingPolicy());
+  const { cart, ready, loadError, checkout, refresh } = useCart();
+  const [{ policy, confirmations }] = useState(() => {
+    const container = getContainer();
+    return { policy: container.getPricingPolicy(), confirmations: container.getOrderConfirmationStore() };
+  });
   const [confirmation, setConfirmation] = useState<OrderConfirmation | null>(null);
   const [storageChecked, setStorageChecked] = useState(false);
   const hasItems = cart !== null && !cart.isEmpty();
@@ -46,19 +70,22 @@ export function CheckoutFlow({ provider }: CheckoutFlowProps) {
   useEffect(() => {
     if (!ready || storageChecked || confirmation) return;
     if (hasItems) {
-      clearLastOrder();
+      confirmations.clear();
     } else {
-      const stored = readLastOrder();
+      const stored = confirmations.load();
       if (stored) setConfirmation(stored);
     }
     setStorageChecked(true);
-  }, [ready, storageChecked, confirmation, hasItems]);
+  }, [ready, storageChecked, confirmation, hasItems, confirmations]);
 
   /** The cart itself is refreshed by `runExclusive` in LocalCheckout; this only switches to the confirmation. */
-  const handleOrderPlaced = useCallback((placed: OrderConfirmation) => {
-    saveLastOrder(placed);
-    setConfirmation(placed);
-  }, []);
+  const handleOrderPlaced = useCallback(
+    (placed: OrderConfirmation) => {
+      confirmations.save(placed);
+      setConfirmation(placed);
+    },
+    [confirmations],
+  );
 
   if (confirmation) {
     return <OrderConfirmationView confirmation={confirmation} policy={policy} />;
@@ -71,10 +98,12 @@ export function CheckoutFlow({ provider }: CheckoutFlowProps) {
         <Spinner size="lg" label={copy.loadingCart} />
       </div>
     );
+  } else if (loadError && !hasItems) {
+    body = <CartLoadError onRetry={refresh} />;
   } else if (!cart || !hasItems) {
     body = <EmptyCheckout />;
   } else if (provider === "shopify") {
-    body = <HostedCheckoutRedirect checkout={checkout} />;
+    body = <HostedCheckoutRedirect checkout={() => checkout({ replace: true })} />;
   } else {
     body = <LocalCheckout cart={cart} policy={policy} onOrderPlaced={handleOrderPlaced} />;
   }

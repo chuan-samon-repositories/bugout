@@ -10,7 +10,16 @@ import { siteConfig } from "@/presentation/config/site";
 import { routes } from "@/presentation/routes";
 
 vi.mock("@/presentation/context/AnalyticsContext", () => ({
-  useConsent: () => ({ decision: null, ready: true, accept: vi.fn(), reject: vi.fn(), reopen: vi.fn() }),
+  useConsent: () => ({
+    decision: null,
+    ready: true,
+    accept: vi.fn(),
+    reject: vi.fn(),
+    reopen: vi.fn(),
+    dismiss: vi.fn(),
+    isBannerOpen: false,
+    reopenRequest: 0,
+  }),
 }));
 
 const pages = [

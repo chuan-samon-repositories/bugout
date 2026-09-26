@@ -9,6 +9,13 @@ describe("resolveSiteUrl", () => {
     });
   });
 
+  it("adds https:// to a NEXT_PUBLIC_SITE_URL without protocol, like the Vercel fallback", () => {
+    expect(resolveSiteUrl({ siteUrl: "bugout.es" })).toEqual({ url: "https://bugout.es", configured: true });
+    expect(resolveSiteUrl({ siteUrl: " www.bugout.es/ " })).toEqual({ url: "https://www.bugout.es", configured: true });
+    expect(resolveSiteUrl({ siteUrl: "http://localhost:3000" }).url).toBe("http://localhost:3000");
+    expect(() => new URL(resolveSiteUrl({ siteUrl: "bugout.es" }).url)).not.toThrow();
+  });
+
   it("falls back to the Vercel production domain over https", () => {
     expect(resolveSiteUrl({ siteUrl: "", vercelProductionUrl: "bugout.vercel.app" })).toEqual({
       url: "https://bugout.vercel.app",

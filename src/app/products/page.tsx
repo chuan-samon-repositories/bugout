@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
+import { summarizeCategories } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { getContainer } from "@/infrastructure/config";
-import { parseCatalogSearchParams } from "@/presentation/components/catalog/catalogSearchParams";
+import { parseCatalogSearchParams, readCategoryParam } from "@/presentation/components/catalog/catalogSearchParams";
 import { CatalogView } from "@/presentation/components/catalog/CatalogView";
 import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
 import { AlertCircleIcon, buttonClasses, Container, PageHeader, Spinner } from "@/presentation/components/ui";
@@ -14,9 +15,35 @@ interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
-/** Category and offer views get their own title and canonical URL; other filters share the catalog's. */
+/** The catalog, loaded once per request for both the metadata and the page (React cache). */
+const loadProducts = cache(() => getContainer().getGetProductsUseCase().execute());
+
+/** Category slugs of the catalog, or null when it could not be loaded. */
+async function loadCategorySlugs(): Promise<string[] | null> {
+  try {
+    return summarizeCategories(await loadProducts()).map((category) => category.slug);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Category and offer views get their own title and canonical URL; other filters share the catalog's.
+ * A `category` that is not in the catalog is ignored (never echoed into the title) and the page is noindex.
+ */
 export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
-  const { category, onSaleOnly } = parseCatalogSearchParams(await searchParams);
+  const params = await searchParams;
+  const categories = (await loadCategorySlugs()) ?? [];
+  const { category, onSaleOnly } = parseCatalogSearchParams(params, { categories });
+  const requested = readCategoryParam(params);
+  if (requested && !category) {
+    return {
+      title: messages.catalog.list.metaTitle,
+      description: messages.catalog.list.metaDescription,
+      alternates: { canonical: routes.products },
+      robots: { index: false },
+    };
+  }
   if (category) {
     return {
       title: categoryLabel(category),
@@ -41,15 +68,17 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
 const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
-  const criteria = parseCatalogSearchParams(await searchParams);
+  const params = await searchParams;
 
   let products: Product[];
   try {
-    products = await getContainer().getGetProductsUseCase().execute();
+    products = await loadProducts();
   } catch (error) {
     console.error("Could not load the catalog", error);
     return <CatalogUnavailable />;
   }
+  const categories = summarizeCategories(products).map((category) => category.slug);
+  const criteria = parseCatalogSearchParams(params, { categories });
 
   return (
     <Container>

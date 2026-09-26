@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getContainer } from "@/infrastructure/config";
-import { BusinessIdentity, LegalPage } from "@/presentation/components/content";
+import { BusinessIdentity, canPromiseReply, ContactChannel, LegalPage } from "@/presentation/components/content";
 import { siteConfig } from "@/presentation/config/site";
 import { formatNumber, messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT, LEGAL_WITHDRAWAL_DAYS } from "@/presentation/i18n/messages/content";
@@ -37,8 +37,7 @@ export default function TermsPage() {
       <BusinessIdentity
         fallback={
           <p>
-            Para cualquier consulta sobre la tienda o tus pedidos puedes escribirnos a través del{" "}
-            <Link href={routes.contact}>formulario de contacto</Link>.
+            Para cualquier consulta sobre la tienda o tus pedidos, <ContactChannel />.
           </p>
         }
       />
@@ -127,10 +126,11 @@ export default function TermsPage() {
 
       <h2>10. Atención al cliente y reclamaciones</h2>
       <p>
-        Puedes enviarnos cualquier consulta, queja o reclamación a través del{" "}
-        <Link href={`${routes.contact}?topic=order`}>formulario de contacto</Link>. Te responderemos lo antes posible y,
-        en todo caso, dentro de los plazos legales. También tienes a tu disposición hojas de reclamaciones oficiales,
-        que puedes solicitarnos por el mismo medio.
+        Para enviarnos cualquier consulta, queja o reclamación, <ContactChannel topic="order" />.{" "}
+        {canPromiseReply()
+          ? "Te responderemos lo antes posible y, en todo caso, dentro de los plazos legales."
+          : "Las reclamaciones se atienden dentro de los plazos legales."}{" "}
+        También tienes a tu disposición hojas de reclamaciones oficiales, que puedes solicitarnos por el mismo medio.
       </p>
       <p>
         Si no quedas satisfecho con nuestra respuesta, puedes acudir a los servicios de consumo de tu comunidad autónoma

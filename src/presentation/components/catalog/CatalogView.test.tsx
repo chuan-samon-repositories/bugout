@@ -13,7 +13,6 @@ const nav = vi.hoisted(() => ({
 }));
 const analytics = vi.hoisted(() => ({
   track: vi.fn(),
-  identify: vi.fn(),
   captureException: vi.fn(),
   setConsent: vi.fn(),
 }));
@@ -42,7 +41,9 @@ const products = [
 function renderCatalog(query = "") {
   nav.searchParams = new URLSearchParams(query);
   const user = userEvent.setup();
-  const initialCriteria: FilterCriteria = parseCatalogSearchParams(nav.searchParams);
+  const initialCriteria: FilterCriteria = parseCatalogSearchParams(nav.searchParams, {
+    categories: ["survival-kits", "accessories"],
+  });
   const view = render(<CatalogView products={products} initialCriteria={initialCriteria} />);
   return { user, ...view };
 }
@@ -179,6 +180,17 @@ describe("CatalogView", () => {
     rerender(view());
     expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
     expect(replaceState).toHaveBeenCalledTimes(2);
+  });
+
+  it("never turns an unknown category from the URL into the heading", () => {
+    const { rerender } = renderCatalog("category=llama-al-900123456");
+    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
+
+    nav.searchParams = new URLSearchParams("category=otra-cosa-rara");
+    rerender(<CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />);
+    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(document.body).not.toHaveTextContent(/llama|otra cosa rara/i);
   });
 
   it("offers the rating sorts only when some product has reviews", () => {

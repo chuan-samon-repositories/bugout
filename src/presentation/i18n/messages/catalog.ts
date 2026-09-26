@@ -96,7 +96,7 @@ export const catalog = {
     shippingTitleFallback: 'Envío a domicilio',
     shippingFree: (threshold: string) => `Envío estándar gratis en pedidos desde ${threshold}.`,
     shippingPaid: (price: string) => `Envío estándar por ${price}.`,
-    returnsTitle: (days: number) => `${days} días para devolverlo`,
+    returnsTitle: (days: number) => `${days} días para devolver tu pedido`,
     returnsText: (days: number) => `Si no te convence, tienes ${days} días para devolver tu pedido.`,
 
     featuredTitle: 'Productos destacados',

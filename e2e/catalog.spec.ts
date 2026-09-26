@@ -172,6 +172,15 @@ test.describe('catalog', () => {
     await expect(current.getByRole('link', { name: 'Ofertas' })).toHaveAttribute('aria-current', 'page');
   });
 
+  test('an unknown category in the URL is ignored and never echoed into the page', async ({ page }) => {
+    await openPage(page, '/products?category=llama-al-900123456');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Productos');
+    await expect(page).toHaveTitle('Productos · Bugout');
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
+    await expectProducts(page, ALL);
+    await expect(page.getByRole('main')).not.toContainText('llama');
+  });
+
   test('a product card is a single link to its detail page', async ({ page }) => {
     await openPage(page, '/products');
     await expect(cards(page)).toHaveCount(CATALOG_SIZE);

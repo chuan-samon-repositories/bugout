@@ -7,7 +7,7 @@ export function toUserMessage(error: unknown, context: { productName?: string } 
   if (error instanceof BusinessRuleError) {
     switch (error.code) {
       case 'OUT_OF_STOCK':
-        return messages.errors.outOfStock(context.productName ?? 'Este producto');
+        return messages.errors.outOfStock(context.productName ?? messages.errors.unnamedProduct);
       case 'MAX_QUANTITY_EXCEEDED':
         return messages.errors.maxQuantity(MAX_QUANTITY_PER_ITEM);
       case 'CURRENCY_MISMATCH':

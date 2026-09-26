@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import type { ComponentType } from "react";
+import { canPromiseReply, ContactChannel } from "@/presentation/components/content";
 import {
   ButtonLink,
   CheckCircleIcon,
   ClockIcon,
   Container,
+  cn,
+  focusRing,
   InfoIcon,
   MailIcon,
   PackageIcon,
@@ -22,6 +25,7 @@ export const metadata: Metadata = {
   description: copy.description,
 };
 
+const linkClasses = cn("rounded-sm font-medium text-accent underline underline-offset-2 hover:no-underline", focusRing);
 const valueIcons: ComponentType<IconProps>[] = [CheckCircleIcon, InfoIcon, ShieldIcon, MailIcon];
 const designIcons: ComponentType<IconProps>[] = [ClockIcon, CheckCircleIcon, PackageIcon];
 
@@ -77,6 +81,14 @@ export default function AboutPage() {
               <p className="mt-2 leading-7 text-muted">{value.description}</p>
             </li>
           ))}
+          <li className="min-w-0 rounded-xl border border-sand p-6">
+            <IconBadge icon={valueIcons[copy.values.length % valueIcons.length]} />
+            <h3 className="mt-4 text-lg font-semibold text-ink">{copy.supportValue.title}</h3>
+            <p className="mt-2 leading-7 text-muted">
+              {copy.supportValue.lead} <ContactChannel linkClassName={linkClasses} />
+              {canPromiseReply() && ` ${copy.supportValue.replyPromise}`}.
+            </p>
+          </li>
         </ul>
       </section>
 

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import type { PricingPolicy } from "@/domain/entities/order/OrderPricing";
 import { getContainer } from "@/infrastructure/config";
+import { ContactChannel } from "@/presentation/components/content/ContactChannel";
 import { ChevronDownIcon, cn, focusRing } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
@@ -15,6 +16,7 @@ import {
 
 const copy = messages.forms.contact.faq;
 const topics = messages.forms.contact.topics;
+const linkClasses = cn("rounded-sm text-accent underline underline-offset-2 hover:no-underline", focusRing);
 
 function FaqItem({ question, children }: { question: string; children: ReactNode }) {
   return (
@@ -44,10 +46,7 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
         <FaqItem question={copy.returnsQuestion}>
           <p>
             {copy.returnsAnswer(siteConfig.returnWindowDays)}{" "}
-            <Link
-              href={routes.shippingReturns}
-              className={cn("rounded-sm text-accent underline underline-offset-2 hover:no-underline", focusRing)}
-            >
+            <Link href={routes.shippingReturns} className={linkClasses}>
               {copy.returnsLink}
             </Link>
             .
@@ -70,7 +69,9 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
           <p>{copy.wholesaleAnswer(topics.wholesale, simulated)}</p>
         </FaqItem>
         <FaqItem question={copy.orderStatusQuestion}>
-          <p>{copy.orderStatusAnswer(topics.order)}</p>
+          <p>
+            <ContactChannel capitalized topic="order" linkClassName={linkClasses} /> {copy.orderStatusAnswer}
+          </p>
         </FaqItem>
         <FaqItem question={copy.taxQuestion}>
           <p>

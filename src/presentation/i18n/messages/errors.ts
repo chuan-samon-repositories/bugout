@@ -1,6 +1,8 @@
 /** User-facing error copy. Keep technical details out of these strings. */
 export const errors = {
   outOfStock: (productName: string) => `${productName} está agotado.`,
+  /** Stands in for the product name in outOfStock when it is unknown. */
+  unnamedProduct: 'Este producto',
   maxQuantity: (max: number) => `Puedes añadir como máximo ${max} unidades de cada producto.`,
   productNotFound: 'Este producto ya no está disponible.',
   cartUnavailable: 'No hemos podido actualizar tu carrito. Inténtalo de nuevo.',

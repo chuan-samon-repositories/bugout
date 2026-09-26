@@ -4,6 +4,9 @@ import { routes } from "@/presentation/routes";
 
 const absolute = (path: string, origin: string) => new URL(path, origin).toString();
 
+/** Shopify ids are GIDs ("gid://shopify/ProductVariant/…"): internal handles, not a stock-keeping unit. */
+const isShopifyGid = (id: string) => id.startsWith("gid://");
+
 /** schema.org Product data for a product page. */
 export function productJsonLd(product: Product, origin: string): Record<string, unknown> {
   const data: Record<string, unknown> = {
@@ -11,8 +14,6 @@ export function productJsonLd(product: Product, origin: string): Record<string, 
     "@type": "Product",
     name: product.name,
     description: product.details?.longDescription ?? product.description,
-    image: product.images.map((image) => absolute(image.url, origin)),
-    sku: product.id.value,
     brand: { "@type": "Brand", name: messages.catalog.product.brand },
     offers: {
       "@type": "Offer",
@@ -22,6 +23,8 @@ export function productJsonLd(product: Product, origin: string): Record<string, 
       url: absolute(routes.product(product.slug), origin),
     },
   };
+  if (product.images.length > 0) data.image = product.images.map((image) => absolute(image.url, origin));
+  if (!isShopifyGid(product.id.value)) data.sku = product.id.value;
   if (product.hasReviews() && product.rating) {
     data.aggregateRating = {
       "@type": "AggregateRating",

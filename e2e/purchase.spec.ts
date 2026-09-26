@@ -36,6 +36,8 @@ test('golden path: product page to order confirmation', async ({ page }) => {
 
   const drawer = cartDrawer(page);
   await expect(drawer).toBeVisible();
+  // The opened drawer is the confirmation: no success toast covers its buttons.
+  await expect(page.getByText('Añadido al carrito')).toHaveCount(0);
   const line = cartLine(drawer, product.name);
   await expect(line).toHaveCount(1);
   await expect(line).toContainText(`Precio por unidad: ${eur(product.price)}`, { useInnerText: true });
@@ -67,6 +69,7 @@ test('golden path: product page to order confirmation', async ({ page }) => {
   const heading = page.getByRole('heading', { level: 1, name: /^¡Gracias/ });
   await expect(heading).toBeVisible();
   await expect(heading).toBeFocused();
+  await expect(page).toHaveTitle('Pedido confirmado · Bugout');
   const main = page.getByRole('main');
   await expect(totalsValue(main, 'Total')).toHaveText(total);
   await expect(totalsValue(main, 'Correo de contacto')).toHaveText(CUSTOMER.email);

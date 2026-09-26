@@ -41,6 +41,15 @@ const cookieItems: readonly CookieItem[] = [
     duration: 'Hasta que finalices la compra o borres los datos del navegador',
   },
   {
+    name: 'bugout.shopify-cart-rev',
+    storage: 'localStorage',
+    provider: 'Bugout (propio)',
+    purpose:
+      'Avisa a las demás pestañas abiertas de que tu carrito de Shopify ha cambiado para que lo actualicen. Solo se usa cuando el pago se gestiona con Shopify.',
+    category: 'necessary',
+    duration: 'Hasta que borres los datos del navegador',
+  },
+  {
     name: 'bugout.lastOrder',
     storage: 'sessionStorage',
     provider: 'Bugout (propio)',
@@ -76,7 +85,6 @@ const cookieItems: readonly CookieItem[] = [
 
 /** Copy for the about page and the legal pages (privacy, cookies, terms, shipping and returns). */
 export const content = {
-  legalUpdatedAt: LEGAL_UPDATED_AT,
   updatedAt: 'Última actualización:',
   pricingTable: {
     caption: 'Tarifas de envío (IVA incluido)',
@@ -97,6 +105,13 @@ export const content = {
     email: 'Correo electrónico',
   },
   manageCookies: 'Cambiar preferencias de cookies',
+  /** How customers reach the shop (ContactChannel): the configured email, else the contact form. */
+  contactChannel: {
+    writeToEmail: 'escríbenos a',
+    writeViaForm: 'escríbenos a través del',
+    formLink: 'formulario de contacto',
+    withTopic: (topic: string) => `con el tema «${topic}»`,
+  },
   cookieTable: {
     caption: 'Cookies y datos que guardamos en tu navegador',
     name: 'Nombre',
@@ -142,12 +157,14 @@ export const content = {
         description:
           'Elegimos mochilas y componentes resistentes para que el kit siga listo cuando lo necesites, aunque pase meses guardado en un armario.',
       },
-      {
-        title: 'Atención cercana',
-        description:
-          'Si tienes dudas sobre qué kit te conviene o necesitas ayuda con un pedido, te respondemos personalmente a través del formulario de contacto.',
-      },
     ],
+    /** Last value: its sentence names the contact channel (ContactChannel), so it is rendered separately. */
+    supportValue: {
+      title: 'Atención cercana',
+      lead: 'Si tienes dudas sobre qué kit te conviene o necesitas ayuda con un pedido,',
+      /** Only when a message really reaches someone (email configured or the form connected). */
+      replyPromise: 'y te responderemos personalmente',
+    },
     designTitle: 'Cómo diseñamos nuestros kits',
     designIntro:
       'Organizamos cada kit en torno a una pregunta: ¿qué necesitas para ser autosuficiente durante las primeras horas de una emergencia?',

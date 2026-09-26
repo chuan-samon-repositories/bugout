@@ -5,3 +5,10 @@ export { ManageCookiesButton, type ManageCookiesButtonProps } from './ManageCook
 export { PricingTable, type PricingTableProps } from './PricingTable';
 export { CookieTable } from './CookieTable';
 export { TableScroll, tableClasses, type TableScrollProps } from './TableScroll';
+export {
+  ContactChannel,
+  canPromiseReply,
+  contactChannelState,
+  type ContactChannelProps,
+  type ContactChannelState,
+} from './ContactChannel';

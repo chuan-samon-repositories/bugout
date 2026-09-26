@@ -11,7 +11,7 @@ export type ManageCookiesButtonProps = Pick<ButtonProps, "variant" | "size" | "c
 export function ManageCookiesButton({ variant = "secondary", size, className }: ManageCookiesButtonProps) {
   const { reopen } = useConsent();
   return (
-    <Button variant={variant} size={size} className={cn("ph-no-capture", className)} onClick={reopen}>
+    <Button variant={variant} size={size} className={cn("ph-no-capture", className)} onClick={(event) => reopen(event.currentTarget)}>
       {messages.content.manageCookies}
     </Button>
   );

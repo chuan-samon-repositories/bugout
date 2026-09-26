@@ -17,7 +17,7 @@ cp .env.example .env.local   # optional: the defaults run the local demo store
 npm run dev                  # http://localhost:3000
 ```
 
-No variable is required for local development. With no configuration the app runs the local demo provider with analytics disabled.
+No variable is required for local development. With no configuration the app runs the local demo provider with analytics disabled. Before a public launch, `NEXT_PUBLIC_CONTACT_EMAIL` and the `NEXT_PUBLIC_LEGAL_*` variables are required (see [Deployment notes](#deployment-notes)).
 
 ## Scripts
 
@@ -75,8 +75,8 @@ Newsletter sign-up and the contact form are not connected to a backend yet. They
 - Product analytics use PostHog and are enabled only when `NEXT_PUBLIC_POSTHOG_KEY` is set.
 - The PostHog SDK is loaded only after the visitor accepts analytics cookies in the consent banner. Before that, no events are sent and no analytics cookies are written. Visitors can change their choice from the footer or the cookie policy page.
 - Events are a typed catalogue in `src/application/analytics/events.ts`. No personal data is sent: there is no `identify` call, and checkout sections with customer data are excluded from autocapture (`ph-no-capture`). Session recording and feature flags are disabled.
-- Withdrawing consent opts PostHog out and deletes its cookies and storage, keeping only its opt-out marker.
-- Requests go through a first-party reverse proxy at `/ingest` to PostHog's EU region (`next.config.ts`). `NEXT_PUBLIC_POSTHOG_HOST` overrides the ingestion host (default `/ingest`).
+- Withdrawing consent opts PostHog out and deletes its cookies (including those on parent domains) and storage, keeping only its opt-out marker. A restored consent opts in silently on each page load; only a visitor's Accept is recorded as an opt-in.
+- Requests go through a first-party reverse proxy at `/ingest` to PostHog's EU region (`next.config.ts`). `NEXT_PUBLIC_POSTHOG_HOST` overrides the ingestion host (default `/ingest`). A custom absolute host, such as PostHog Cloud or a self-hosted instance, is supported: the production CSP allows it automatically.
 
 ## Testing
 
@@ -85,15 +85,15 @@ Newsletter sign-up and the contact form are not connected to a backend yet. They
   - Playwright starts `next start` on port 3100 (`E2E_PORT`).
   - Set `E2E_SKIP_SERVER=1` to target an already running server.
   - It runs desktop and mobile (Pixel 7) projects. Specs cover smoke, navigation, catalog, cart, purchase, forms, consent and accessibility (axe).
-  - Install browsers once with `npx playwright install chromium`.
+  - Install browsers once with `npx playwright install --with-deps chromium`, the same command CI uses.
 - CI (`.github/workflows/ci.yml`) runs on pushes to `master` and on pull requests: lint, typecheck, unit tests, build and E2E.
 
 ## Deployment notes
 
-- Set `NEXT_PUBLIC_SITE_URL` to the production origin. It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data. Without it, the app uses `https://$VERCEL_PROJECT_PRODUCTION_URL` (set automatically on Vercel), then `http://localhost:3000`. A production build logs a warning when it falls back to localhost.
-- Set the seller identity required by Spanish law (LSSI) before launch: `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL`. Fields left unset are hidden on the legal and contact pages.
+- Set `NEXT_PUBLIC_SITE_URL` to the production origin (a bare host gets `https://` added). It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data. Without it, the app uses `https://$VERCEL_PROJECT_PRODUCTION_URL` (set automatically on Vercel), then `http://localhost:3000`. A production build logs a warning when it falls back to localhost.
+- **Required before launch (LSSI):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Unset fields are silently hidden on the legal and contact pages, so the build won't fail if they are missing. While the contact form is still simulated, the email is the only channel that actually reaches the shop.
 - `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.
-  - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain (and a custom PostHog host if set).
+  - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain. A custom absolute PostHog host is added to `script-src` and `connect-src`, together with its `-assets` host for PostHog Cloud.
   - The CSP blocks third-party scripts, so the Vercel and PostHog toolbars don't load in production.
 - Home, product pages and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
 - Shopify product images from `cdn.shopify.com` are allowed in `images.remotePatterns`.

@@ -37,15 +37,17 @@ src/domain/         entities (Product, Cart, CartItem, OrderPricing), value-obje
 src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simulated services), config/ (AppContainer, env, pricing), data/
 ```
 
-- `domain` imports nothing outside itself. `application` imports only `domain`.
+- `domain` imports nothing outside itself. `application` imports only `domain`. Imports use `@/` everywhere, not relative `../` paths across folders.
 - `app/` and `presentation/` reach infrastructure only through `@/infrastructure/config` (`getContainer()`), never adapters directly.
 - `getContainer()` lazily builds a singleton `AppContainer` from env on first use, on server and client alike. There is no init call. Tests use `createContainer(config)` / `resetContainer()`.
 - Imports use the `@/` alias for `src/`.
 
 ## Conventions agents must follow
 
-- **Copy:** every user-visible string lives in `src/presentation/i18n/messages/<area>.ts` (areas: common, errors, shell, catalog, cart, checkout, forms, content) and is read as `messages.<area>.<key>`. Do not hardcode Spanish text in components.
+- **Copy:** short UI copy (labels, buttons, messages, errors, metadata) lives in `src/presentation/i18n/messages/<area>.ts` (areas: common, errors, shell, catalog, cart, checkout, forms, content) and is read as `messages.<area>.<key>`. Do not hardcode UI strings in components.
+  - Long-form prose lives in the page components. The legal and shipping pages (`src/app/{privacy,cookies,terms,shipping-returns}/page.tsx`) render it with `LegalPage` and `Prose` from `presentation/components/content/`, and the about page keeps its own text in `src/app/about/page.tsx`.
   - Shipping-method names come only from `messages.common.shippingMethods`.
+  - To tell customers how to reach the shop, use `ContactChannel` (`presentation/components/content/ContactChannel.tsx`). It shows the email when `NEXT_PUBLIC_CONTACT_EMAIL` is set and otherwise links to the contact form. Copy must not promise a reply while messaging is simulated (`canPromiseReply()`).
 - **Formatting and errors:** format prices with `formatMoney` (plus `formatNumber`, `formatRating`, `formatDate`) from `@/presentation/i18n`. Turn thrown errors into user text with `toUserMessage(error, { productName })`. Never show `error.message`.
 - **Links:** build URLs from `src/presentation/routes.ts`, using `routes.*` and `catalogUrl({ category, sort, priceMin, priceMax, inStock, onSale })`. Do not hardcode paths or link to pages that do not exist.
 - **Colors:** use the theme tokens in `src/app/globals.css` (`navy`, `navy-deep`, `sand`, `accent`, `accent-hover`, `accent-soft`, `orange`, `orange-on-navy`, `ink`, `muted`, `danger`, `success`), never raw hex.
@@ -57,10 +59,12 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - Entities are class instances and cannot cross the server/client boundary. Pass products to Client Components as a `ProductSnapshot` (`toProductSnapshot`), and rebuild them with `fromProductSnapshot` in `presentation/components/catalog/productSnapshot.ts`.
   - The home page, product pages and `sitemap.ts` export `revalidate = 300`.
   - The root layout loads the catalog once to build the header, mobile menu and footer categories.
+  - `/products` reads its filters with `parseCatalogSearchParams(input, { categories })`. Unknown categories are ignored, and the page is `noindex` for them.
   - `siteConfig.url` is only correct on the server; use it from Server Components, metadata and route handlers.
 - **Money:** `Money` holds integer minor units (cents) and a currency. Use `add`, `subtract`, `multiply` and the comparisons; never do arithmetic on `.amount` (major units, for display and analytics only).
   - Build values with `Money.fromMinor` or `Money.fromMajor`.
   - Discounts come from `discountPercentage(price, original)` in `domain/value-objects/Money.ts`.
+  - Shipping-method ids come from `SHIPPING_METHOD_IDS` / `isShippingMethodId()` in `domain/entities/order/OrderPricing.ts`.
 - **Pricing:** `PricingPolicy` is the single source of shipping and tax. The store's policy is `storePricingPolicy` in `src/infrastructure/config/pricingPolicy.ts`: standard 4,95 € (free from 75 €), express 9,95 €, overnight 14,95 €, 21 % IVA included.
   - Get the policy from `getContainer().getPricingPolicy()`.
   - Use `calculateOrderTotals`, `shippingCost` and `freeShippingThreshold` from `domain/entities/order/OrderPricing.ts`.
@@ -74,16 +78,22 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - The cart allows at most 99 units per product (`MAX_QUANTITY_PER_ITEM`).
   - `Cart` has `addItem`, `setQuantity`, `deleteItem` and `clear`; there is no single-unit removal.
 - **Cart state:** use `useCart()` from `presentation/context/CartContext.tsx`. It is mounted in `app/Providers.tsx` together with `useNotifications()` and `useAnalytics()`/`useConsent()`.
-  - `addItem` and `checkout()` resolve `Promise<boolean>`; `checkout()` is true once navigation has started.
+  - `addItem` resolves `Promise<boolean>`. It shows no success toast: the cart drawer opening is the confirmation. Only failures show an error toast.
+  - `checkout({ replace?: boolean })` resolves `Promise<boolean>`, true once navigation has started. `/checkout` hands off to Shopify with `replace: true` (`location.replace`) and recovers when the page is restored from the back/forward cache.
   - `loadError` is true when restoring the cart failed; `refresh()` retries.
   - Any other operation that must not interleave with cart mutations goes through `runExclusive(task)`. For example, the local checkout places its order this way.
+  - Cross-tab sync listens only to `getContainer().getSyncedStorageKeys()`: `cart` = `bugout.cart`, `bugout.shopify-cart-id` and `bugout.shopify-cart-rev`; `consent` = `bugout.consent`. The key constants are exported from their adapters. Never hardcode storage keys.
+  - The last order confirmation goes through `getContainer().getOrderConfirmationStore()` (sessionStorage `bugout.lastOrder`, strictly validated on load).
 - **Analytics:** track only events defined in the typed catalogue `src/application/analytics/events.ts`, through the `AnalyticsService` from `useAnalytics()`. Do not import `posthog-js` anywhere else. Add a new event to the catalogue first.
-  - `AnalyticsService` has only `track`, `captureException` and `setConsent`; there is no `identify`.
+  - `AnalyticsService` has only `track`, `captureException` and `setConsent(granted, origin)`; there is no `identify`.
+  - `origin` is a `ConsentOrigin`: `'visitor'` for a fresh Accept or Reject (a visitor Accept sends one `$opt_in`), or `'restored'` for a stored or other-tab decision (opts in silently).
   - Never send personal data (names, emails, phones, addresses, free text) in events.
   - Mark containers that show customer data with the `ph-no-capture` class.
   - Monetary properties are in major units with `currency`.
-- **Consent:** analytics are gated on consent. `PostHogAnalyticsAdapter` drops every call and loads nothing until `setConsent(true)`, which happens after the visitor accepts the banner.
+- **Consent:** analytics are gated on consent. `PostHogAnalyticsAdapter` drops every call and loads nothing until `setConsent(true, origin)`: after the visitor accepts the banner, or when a stored grant is restored. Withdrawal resets and opts out, then deletes PostHog storage and cookies (host and parent domains, `cookieDomainsFor`), keeping only `__ph_opt_in_out_<key>="0"`.
   - `AnalyticsProvider` restores a stored decision in a layout effect, before children track on mount, and syncs consent across tabs.
+  - `useConsent()` offers `accept`, `reject`, `reopen(returnFocusTo?)`, `dismiss()` and `reopenRequest`. A reopened banner focuses its first button, and Escape closes it without changing the decision.
+  - The banner reserves its height with a spacer so it never covers page content.
   - `ConsentDecision` is stored under `bugout.consent`, versioned by `CONSENT_VERSION`.
   - If you add any cookie or storage key, add it to the cookie table in `messages/content.ts`.
 - **Accessibility and honesty:**
@@ -91,11 +101,12 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - Dialogs must trap focus, close on Escape and restore focus.
   - Respect `prefers-reduced-motion`.
   - No fabricated ratings, reviews, stock figures or success messages. The demo catalog has no ratings (`rating: null`), so the rating UI, JSON-LD `aggregateRating` and the rating and reviews sort options appear only when real review data exists (for example, Shopify `reviews.*` metafields).
+  - Product JSON-LD omits `image` when a product has none and omits `sku` for Shopify GIDs.
   - When `getContainer().isMessagingSimulated()` is true, the newsletter and contact forms must show the demo notice and non-committal success copy.
 
 ## Environment variables
 
-See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild after changing them.
+See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild after changing them. The app runs locally with none set, but the LSSI variables below must be set before launch.
 
 | Variable | Default | Read in | Purpose |
 |---|---|---|---|
@@ -104,11 +115,11 @@ See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild af
 | `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` | none | `appConfig.ts` | Required for `shopify`; public Storefront API token |
 | `NEXT_PUBLIC_SHOPIFY_API_VERSION` | `2026-07` (`DEFAULT_SHOPIFY_API_VERSION` in `adapters/shopify/ShopifyClient.ts`) | `appConfig.ts` | Storefront API version |
 | `NEXT_PUBLIC_POSTHOG_KEY` | none (analytics off, `NoopAnalyticsAdapter`) | `appConfig.ts` | PostHog project key |
-| `NEXT_PUBLIC_POSTHOG_HOST` | `/ingest` (set in `PostHogAnalyticsAdapter`) | `appConfig.ts`, `next.config.ts` (CSP) | PostHog ingestion host |
+| `NEXT_PUBLIC_POSTHOG_HOST` | `/ingest` (set in `PostHogAnalyticsAdapter`) | `appConfig.ts`, `next.config.ts` (CSP) | PostHog ingestion host. An absolute host is supported: `posthogOrigins()` adds it to CSP `script-src` and `connect-src`, plus the `-assets` host for `*.i.posthog.com` |
 | `NEXT_PUBLIC_SITE_URL` | see next row | `presentation/config/site.ts` | Canonical origin (metadata, sitemap, robots, JSON-LD) |
-| `VERCEL_PROJECT_PRODUCTION_URL` | set by Vercel | `site.ts` | Fallback origin `https://<value>`, then `http://localhost:3000`. A production build warns when neither is set |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | hidden | `site.ts` | Support email on contact and legal pages |
-| `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | hidden | `site.ts` | Seller identity (LSSI) on legal pages |
+| `VERCEL_PROJECT_PRODUCTION_URL` | set by Vercel | `site.ts` | Fallback origin `https://<value>`, then `http://localhost:3000`. A production build warns when neither is set. A bare host in `NEXT_PUBLIC_SITE_URL` gets `https://` added |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Support email on contact and legal pages, and via `ContactChannel` |
+| `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Seller identity on legal pages |
 | `E2E_PORT` / `E2E_SKIP_SERVER` / `CI` | `3100` / unset | `playwright.config.ts` | E2E server port, reuse a running server, CI mode |
 
 Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines only literal references. The simulated-delay setting (`simulatedDelayMs`) comes only from `AppConfig`, not from env.
@@ -117,20 +128,20 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 
 - Unit tests sit next to the code as `*.test.ts(x)` (Vitest, globals on, `@/` alias).
 - The default environment is `node`. React component, context and hook tests opt into jsdom with `// @vitest-environment jsdom` on the **first line**, and use Testing Library (`vitest.setup.ts` loads jest-dom and cleans up).
-- `PostHogAnalyticsAdapter.sdk.test.ts` runs the real `posthog-js` SDK to check consent, opt-out and storage cleanup. Keep it passing when you touch analytics.
+- `PostHogAnalyticsAdapter.sdk.test.ts` runs the real `posthog-js` SDK to check consent, opt-out and storage cleanup, and `PostHogAnalyticsAdapter.cookies.test.ts` covers cookie removal on parent domains. Keep both passing when you touch analytics.
 - Test helpers: `domain/testing/` (`buildProduct`, `testPricingPolicy`), `application/testing/` (fakes, checkout details), `infrastructure/testing/` (`MemoryStorage`, Shopify fixtures). `fast-check` is available for property tests.
 - Add or update tests with every behaviour change.
 - E2E: Playwright specs live in `e2e/` (smoke, navigation, catalog, cart, purchase, forms, consent, a11y) with shared helpers in `e2e/support/`.
   - They run against a production build, with `desktop` (Chrome 1440×900) and `mobile` (Pixel 7) projects and locale `es-ES`.
   - Accessibility checks use `@axe-core/playwright`.
-- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and on PRs: `npm ci`, lint, typecheck, `npm test`, build, `playwright install chromium`, `npm run e2e`. It uploads the Playwright report on failure.
+- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
 
 ## Known limitations / backend work pending
 
 - Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) only simulate delivery after a short delay and send nothing. `isMessagingSimulated()` returns `true`, so the forms say so. No backend is connected yet.
-- The `local` checkout is a demo (`LocalOrderGateway`): no payment, no real order, nothing leaves the browser. The confirmation is kept in sessionStorage (`bugout.lastOrder`).
+- The `local` checkout is a demo (`LocalOrderGateway`): no payment, no real order, nothing leaves the browser. The confirmation is kept in sessionStorage (`bugout.lastOrder`, via `OrderConfirmationStore`).
 - `order_completed` is tracked client-side only, in `LocalCheckout`. Server-side tracking (Shopify order webhooks → PostHog) is pending, so Shopify purchases are not tracked yet.
-- The legal identity env vars (`NEXT_PUBLIC_LEGAL_*`) must be set before launch; the LSSI requires them.
+- `NEXT_PUBLIC_CONTACT_EMAIL` and the legal identity vars (`NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`) are required before launch (LSSI). Unset fields are simply hidden, so nothing fails loudly if they are missing. Until the contact backend exists, the email is the only real channel.
 - Product photos: in the local catalog only the survival kits (backpacks) have a photo, and they share `public/images/products/backpack.png`. Accessories show a placeholder. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
 - The Shopify API version default `2026-07` must stay within Shopify's supported window. Bump `DEFAULT_SHOPIFY_API_VERSION` or set the env var before it expires.
 - Shopify shipping zones and rates must be configured to match `storePricingPolicy`, including excluding Canarias, Ceuta and Melilla. The app quotes shipping and tax from that policy, while Shopify's hosted checkout charges its own.

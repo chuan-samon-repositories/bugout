@@ -1,2 +1,95 @@
-/** Copy for the checkout area. Owned by the checkout UI; add keys as needed. */
-export const checkout = {} as const;
+/** Copy for the checkout area. */
+export const checkout = {
+  metadata: {
+    title: 'Finalizar compra',
+  },
+  title: 'Finalizar compra',
+  loadingCart: 'Cargando tu carrito…',
+  empty: {
+    title: 'Tu carrito está vacío',
+    text: 'Añade algún producto al carrito para finalizar la compra.',
+    cta: 'Ver productos',
+  },
+  hosted: {
+    redirecting: 'Te estamos llevando al pago seguro…',
+    notOpened: 'Si la página de pago no se ha abierto, vuelve a intentarlo.',
+    retry: 'Ir al pago',
+  },
+  steps: {
+    label: 'Pasos del pago',
+    contact: 'Contacto',
+    shipping: 'Envío',
+    review: 'Revisión',
+    completed: 'completado',
+  },
+  fields: {
+    'customer.email': 'Correo electrónico',
+    'customer.firstName': 'Nombre',
+    'customer.lastName': 'Apellidos',
+    'customer.phone': 'Teléfono (opcional)',
+    'shippingAddress.address': 'Dirección',
+    'shippingAddress.city': 'Localidad',
+    'shippingAddress.province': 'Provincia',
+    'shippingAddress.postalCode': 'Código postal',
+    'shippingAddress.country': 'País',
+    shippingMethod: 'Método de envío',
+    notes: 'Notas para la entrega (opcional)',
+  } as Record<string, string>,
+  hints: {
+    phone: 'Solo lo usaremos si hay alguna incidencia con la entrega.',
+    address: 'Calle, número, piso y puerta.',
+    country: 'Por ahora solo enviamos a España.',
+  },
+  marketingOptIn: 'Quiero recibir por correo novedades y ofertas de Bugout.',
+  provincePlaceholder: 'Selecciona una provincia',
+  countryName: 'España',
+  shippingMethods: {
+    standard: 'Estándar',
+    express: 'Urgente',
+    overnight: '24 horas',
+  },
+  deliveryEstimate: (min: number, max: number) =>
+    min === max
+      ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}`
+      : `Entrega en ${min}–${max} días laborables`,
+  freeFrom: (threshold: string) => `Gratis a partir de ${threshold}`,
+  free: 'Gratis',
+  continueToShipping: 'Continuar con el envío',
+  continueToReview: 'Revisar el pedido',
+  back: 'Volver',
+  review: {
+    contactTitle: 'Datos de contacto',
+    shippingTitle: 'Dirección de envío',
+    methodTitle: 'Método de envío',
+    notesTitle: 'Notas',
+    edit: 'Editar',
+    editContact: 'datos de contacto',
+    editShipping: 'dirección y método de envío',
+    marketingYes: 'Recibirás novedades por correo.',
+    demoNotice: 'Modo demostración: no se realizará ningún cargo ni se enviará ningún pedido real.',
+    placeOrder: 'Confirmar pedido',
+    placeError: 'No hemos podido confirmar tu pedido. Tus datos siguen aquí; inténtalo de nuevo.',
+    retry: 'Reintentar',
+  },
+  summary: {
+    title: 'Resumen del pedido',
+    show: 'Mostrar resumen del pedido',
+    hide: 'Ocultar resumen del pedido',
+    quantity: (quantity: number) => `Cantidad: ${quantity}`,
+    subtotal: 'Subtotal',
+    shipping: 'Envío',
+    taxIncluded: (rate: string) => `IVA incluido (${rate} %)`,
+    tax: (rate: string) => `IVA (${rate} %)`,
+    total: 'Total',
+  },
+  confirmation: {
+    title: '¡Gracias por tu pedido!',
+    orderNumber: 'Número de pedido',
+    email: 'Correo de contacto',
+    placedAt: 'Fecha',
+    shippingMethod: 'Método de envío',
+    items: 'Productos',
+    continueShopping: 'Seguir comprando',
+    home: 'Volver al inicio',
+  },
+} as const;

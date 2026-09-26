@@ -10,6 +10,7 @@ import { calculateOrderTotals, type PricingPolicy } from "@/domain/entities/orde
 import { Money } from "@/domain/value-objects/Money";
 import { getContainer } from "@/infrastructure/config";
 import { focusFirstInvalidField } from "@/presentation/components/forms/focusField";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
 import { useCart } from "@/presentation/context/CartContext";
 import { useNotifications } from "@/presentation/context/NotificationContext";
@@ -46,7 +47,8 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
   const { notify } = useNotifications();
   const analytics = useAnalytics();
   const { runExclusive } = useCart();
-  const [messagingSimulated] = useState(() => getContainer().isMessagingSimulated());
+  /** The marketing opt-in is offered only when a real newsletter backend would act on it. */
+  const [marketingOptInOffered] = useState(isMessagingEnabled);
   const [details, setDetails] = useState<CheckoutDetails>(() => emptyCheckoutDetails(policy));
   const [step, setStep] = useState<CheckoutStepId>("contact");
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -208,6 +210,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
               errors={errors}
               headingRef={headingRef}
               onCustomerChange={updateCustomer}
+              showMarketingOptIn={marketingOptInOffered}
               onMarketingChange={(marketingOptIn) => setDetails((current) => ({ ...current, marketingOptIn }))}
               onSubmit={() => submitStep("contact")}
             />
@@ -234,7 +237,6 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
               headingRef={headingRef}
               placing={placing}
               placeError={placeError}
-              messagingSimulated={messagingSimulated}
               onEdit={goBackTo}
               onBack={() => goBackTo("shipping")}
               onSubmit={() => void placeOrder()}

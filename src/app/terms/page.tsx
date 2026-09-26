@@ -19,6 +19,7 @@ export default function TermsPage() {
   const policy = getContainer().getPricingPolicy();
   const taxPercent = formatNumber(policy.taxRate * 100);
   const sellerName = siteConfig.legal.name ?? siteConfig.name;
+  const replies = canPromiseReply();
 
   return (
     <LegalPage title={copy.title} updatedAt={LEGAL_UPDATED_AT}>
@@ -127,10 +128,11 @@ export default function TermsPage() {
       <h2>10. Atención al cliente y reclamaciones</h2>
       <p>
         Para enviarnos cualquier consulta, queja o reclamación, <ContactChannel topic="order" />.{" "}
-        {canPromiseReply()
+        {replies
           ? "Te responderemos lo antes posible y, en todo caso, dentro de los plazos legales."
           : "Las reclamaciones se atienden dentro de los plazos legales."}{" "}
-        También tienes a tu disposición hojas de reclamaciones oficiales, que puedes solicitarnos por el mismo medio.
+        También tienes a tu disposición hojas de reclamaciones oficiales
+        {replies ? ", que puedes solicitarnos por el mismo medio." : "."}
       </p>
       <p>
         Si no quedas satisfecho con nuestra respuesta, puedes acudir a los servicios de consumo de tu comunidad autónoma

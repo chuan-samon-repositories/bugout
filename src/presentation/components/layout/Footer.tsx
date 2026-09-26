@@ -2,6 +2,7 @@ import Link from "next/link";
 import { NewsletterForm } from "@/presentation/components/forms/NewsletterForm";
 import { Container, focusRing } from "@/presentation/components/ui";
 import { cn } from "@/presentation/components/ui/cn";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 import { CookieSettingsButton } from "./CookieSettingsButton";
@@ -83,17 +84,20 @@ export function Footer({ categories }: FooterProps) {
           ))}
         </div>
       </Container>
-      <div className="border-t border-white/10">
-        <Container className="grid gap-4 py-8 md:grid-cols-2 md:items-center md:gap-8">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-white">{copy.newsletterTitle}</h2>
-            <p className="mt-1 text-sm text-sand">{copy.newsletterText}</p>
-          </div>
-          <div className="min-w-0">
-            <NewsletterForm location="footer" tone="dark" />
-          </div>
-        </Container>
-      </div>
+      {/* A full-width band of its own, so hiding it leaves the columns above untouched. */}
+      {isMessagingEnabled() && (
+        <div className="border-t border-white/10">
+          <Container className="grid gap-4 py-8 md:grid-cols-2 md:items-center md:gap-8">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-white">{copy.newsletterTitle}</h2>
+              <p className="mt-1 text-sm text-sand">{copy.newsletterText}</p>
+            </div>
+            <div className="min-w-0">
+              <NewsletterForm location="footer" tone="dark" />
+            </div>
+          </Container>
+        </div>
+      )}
       <div className="border-t border-white/10">
         <Container className="py-6">
           <CopyrightNotice renderedYear={new Date().getFullYear()} className="text-sm text-sand" />

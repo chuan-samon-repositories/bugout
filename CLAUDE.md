@@ -8,7 +8,7 @@ Bugout is a Spanish online shop for survival backpacks and emergency gear, built
 
 `NEXT_PUBLIC_COMMERCE_PROVIDER` selects one of two commerce backends:
 - `local` (default): the catalog bundled in `src/infrastructure/data/products.json`, a localStorage cart and an in-app demo checkout that places no real order.
-- `shopify`: the Shopify Storefront API for catalog and cart, with Shopify's hosted checkout.
+- `shopify`: the Shopify Storefront API for catalog and cart, with Shopify's hosted checkout. Store setup (settings, metafields, products, tokens) is in [docs/SHOPIFY_SETUP.md](docs/SHOPIFY_SETUP.md).
 
 ## Commands
 
@@ -47,7 +47,8 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
 - **Copy:** short UI copy (labels, buttons, messages, errors, metadata) lives in `src/presentation/i18n/messages/<area>.ts` (areas: common, errors, shell, catalog, cart, checkout, forms, content) and is read as `messages.<area>.<key>`. Do not hardcode UI strings in components.
   - Long-form prose lives in the page components. The legal and shipping pages (`src/app/{privacy,cookies,terms,shipping-returns}/page.tsx`) render it with `LegalPage` and `Prose` from `presentation/components/content/`, and the about page keeps its own text in `src/app/about/page.tsx`.
   - Shipping-method names come only from `messages.common.shippingMethods`.
-  - To tell customers how to reach the shop, use `ContactChannel` (`presentation/components/content/ContactChannel.tsx`). It shows the email when `NEXT_PUBLIC_CONTACT_EMAIL` is set and otherwise links to the contact form. Copy must not promise a reply while messaging is simulated (`canPromiseReply()`).
+  - To tell customers how to reach the shop, use `ContactChannel` (`presentation/components/content/ContactChannel.tsx`). It says "escríbenos a <email>" when `NEXT_PUBLIC_CONTACT_EMAIL` is set, otherwise "escríbenos a través del formulario de contacto" (with `?topic=`) when messaging is enabled, and otherwise "visita nuestra página de contacto" (a plain link to `routes.contact`, never mentioning a form).
+  - `canPromiseReply()` is true when a message really reaches the shop (an email is configured or messaging is enabled). Copy that promises a reply, invites people to write, or answers "write to us" (the about CTA and "Contactar" button, the contact-page intro, the wholesale and order-status FAQ items) is shown only when it is true.
 - **Formatting and errors:** format prices with `formatMoney` (plus `formatNumber`, `formatRating`, `formatDate`) from `@/presentation/i18n`. Turn thrown errors into user text with `toUserMessage(error, { productName })`. Never show `error.message`.
 - **Links:** build URLs from `src/presentation/routes.ts`, using `routes.*` and `catalogUrl({ category, sort, priceMin, priceMax, inStock, onSale })`. Do not hardcode paths or link to pages that do not exist.
 - **Colors:** use the theme tokens in `src/app/globals.css` (`navy`, `navy-deep`, `sand`, `accent`, `accent-hover`, `accent-soft`, `orange`, `orange-on-navy`, `ink`, `muted`, `danger`, `success`), never raw hex.
@@ -96,13 +97,18 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - The banner reserves its height with a spacer so it never covers page content.
   - `ConsentDecision` is stored under `bugout.consent`, versioned by `CONSENT_VERSION`.
   - If you add any cookie or storage key, add it to the cookie table in `messages/content.ts`.
+- **Messaging (newsletter and contact form):** hidden while their adapters only simulate delivery, not deleted, so they reappear once a real backend exists. `isMessagingEnabled()` in `presentation/config/messaging.ts` (`!getContainer().isMessagingSimulated()`) is the one switch; never read `isMessagingSimulated()` elsewhere in the UI. While it is false:
+  - the home page has no `NewsletterSection` and the footer has no "Recibe novedades" band;
+  - `/contact` renders no `ContactForm` and ignores `?topic=`: the FAQ (`ContactFaq`) sits beside the quick help (`ContactHelp`);
+  - the local checkout does not offer the marketing opt-in (`marketingOptIn` stays `false`), so the review step never mentions it;
+  - the privacy policy leaves out the contact-form and newsletter processing purposes.
+  - `NewsletterForm` and `ContactForm` have no demo mode: they are rendered only when messaging is enabled, so their success copy is the real one.
 - **Accessibility and honesty:**
   - Give every control an accessible name, use one `<h1>` per page, and associate labels and errors with their fields.
   - Dialogs must trap focus, close on Escape and restore focus.
   - Respect `prefers-reduced-motion`.
   - No fabricated ratings, reviews, stock figures or success messages. The demo catalog has no ratings (`rating: null`), so the rating UI, JSON-LD `aggregateRating` and the rating and reviews sort options appear only when real review data exists (for example, Shopify `reviews.*` metafields).
   - Product JSON-LD omits `image` when a product has none and omits `sku` for Shopify GIDs.
-  - When `getContainer().isMessagingSimulated()` is true, the newsletter and contact forms must show the demo notice and non-committal success copy.
 
 ## Environment variables
 
@@ -138,7 +144,8 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 
 ## Known limitations / backend work pending
 
-- Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) only simulate delivery after a short delay and send nothing. `isMessagingSimulated()` returns `true`, so the forms say so. No backend is connected yet.
+- Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) only simulate delivery after a short delay and send nothing. `isMessagingSimulated()` returns `true`, so `isMessagingEnabled()` is false and the newsletter, the contact form and the checkout marketing opt-in are hidden. No backend is connected yet. Connecting one means wiring real adapters in `AppContainer` and making `isMessagingSimulated()` return `false`; the UI then shows them again.
+- With messaging hidden and no `NEXT_PUBLIC_CONTACT_EMAIL`, the site offers no way to reach the shop: `ContactChannel` links to `/contact`, which shows only the quick help and FAQ. Set the email before launch.
 - The `local` checkout is a demo (`LocalOrderGateway`): no payment, no real order, nothing leaves the browser. The confirmation is kept in sessionStorage (`bugout.lastOrder`, via `OrderConfirmationStore`).
 - `order_completed` is tracked client-side only, in `LocalCheckout`. Server-side tracking (Shopify order webhooks → PostHog) is pending, so Shopify purchases are not tracked yet.
 - `NEXT_PUBLIC_CONTACT_EMAIL` and the legal identity vars (`NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`) are required before launch (LSSI). Unset fields are simply hidden, so nothing fails loudly if they are missing. Until the contact backend exists, the email is the only real channel.

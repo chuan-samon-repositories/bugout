@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { freeShippingThreshold, type PricingPolicy } from "@/domain/entities/order/OrderPricing";
+import { canPromiseReply } from "@/presentation/components/content/ContactChannel";
 import { cn, focusRing, MailIcon, ReturnIcon, TruckIcon } from "@/presentation/components/ui";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
@@ -21,13 +23,17 @@ function HelpItem({ icon, title, children }: { icon: ReactNode; title: string; c
   );
 }
 
-/** Honest quick-help facts next to the contact form: shipping area, returns and, when configured, an email. */
+/**
+ * Honest quick-help facts on the contact page: shipping area, returns and, when configured, an email. Sits next
+ * to the contact form when messaging is enabled, and next to the FAQ otherwise.
+ */
 export function ContactHelp({ policy }: { policy: PricingPolicy }) {
   const threshold = freeShippingThreshold(policy);
+  const formShown = isMessagingEnabled();
   return (
     <section aria-labelledby="contact-help-title" className="rounded-xl bg-sand/40 p-6">
       <h2 id="contact-help-title" className="text-lg font-semibold text-ink">
-        {copy.title}
+        {canPromiseReply() ? copy.title : copy.titleWithoutChannel}
       </h2>
       <ul className="mt-4 space-y-5">
         <HelpItem icon={<TruckIcon />} title={copy.shippingTitle}>
@@ -45,7 +51,7 @@ export function ContactHelp({ policy }: { policy: PricingPolicy }) {
         {siteConfig.contactEmail && (
           <HelpItem icon={<MailIcon />} title={copy.emailTitle}>
             <p>
-              {copy.emailText}{" "}
+              {formShown ? copy.emailTextBesideForm : copy.emailText}{" "}
               <a href={`mailto:${siteConfig.contactEmail}`} className={cn(linkClasses, "break-all")}>
                 {siteConfig.contactEmail}
               </a>

@@ -7,6 +7,7 @@ import { KitShowcase } from "@/presentation/components/home/KitShowcase";
 import { NewsletterSection } from "@/presentation/components/home/NewsletterSection";
 import { Principles } from "@/presentation/components/home/Principles";
 import { ValueProps } from "@/presentation/components/home/ValueProps";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 
 /** Regenerate at most every 5 minutes so catalog price and stock changes show up without a redeploy. */
 export const revalidate = 300;
@@ -31,7 +32,7 @@ export default async function HomePage() {
       <ValueProps policy={getContainer().getPricingPolicy()} />
       {featured.length > 0 && <FeaturedProducts products={featured} />}
       {flagship && <KitShowcase product={flagship} />}
-      <NewsletterSection />
+      {isMessagingEnabled() && <NewsletterSection />}
       <Principles />
     </>
   );

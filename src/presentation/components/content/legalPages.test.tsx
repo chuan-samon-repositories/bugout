@@ -6,6 +6,7 @@ import CookiesPage from "@/app/cookies/page";
 import PrivacyPage from "@/app/privacy/page";
 import ShippingReturnsPage from "@/app/shipping-returns/page";
 import TermsPage from "@/app/terms/page";
+import { getContainer } from "@/infrastructure/config";
 import { siteConfig } from "@/presentation/config/site";
 import { routes } from "@/presentation/routes";
 
@@ -39,25 +40,40 @@ describe("content pages", () => {
     expect(container.querySelector("main")).toBeNull();
   });
 
-  it("about links to the catalog and the contact page", () => {
+  it("about links to the catalog (the “Contactar” button needs a contact channel, see ContactChannel.test)", () => {
     render(<AboutPage />);
     expect(screen.getByRole("link", { name: "Ver productos" })).toHaveAttribute("href", routes.products);
-    expect(screen.getByRole("link", { name: "Contactar" })).toHaveAttribute("href", routes.contact);
+    expect(screen.queryByRole("link", { name: "Contactar" })).not.toBeInTheDocument();
   });
 
   it("shipping and returns quotes the pricing policy and the return window", () => {
     render(<ShippingReturnsPage />);
     expect(screen.getByRole("table", { name: "Tarifas de envío (IVA incluido)" })).toBeInTheDocument();
     expect(screen.getByText(`${siteConfig.returnWindowDays} días naturales`)).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: "formulario de contacto" })[0]).toHaveAttribute(
-      "href",
-      `${routes.contact}?topic=order`,
-    );
+    // Default build: no email and messaging disabled, so the contact page is the only reference.
+    expect(screen.getAllByRole("link", { name: "página de contacto" })[0]).toHaveAttribute("href", routes.contact);
   });
 
   it("privacy points to the AEPD", () => {
     render(<PrivacyPage />);
     expect(screen.getByRole("link", { name: "www.aepd.es" })).toHaveAttribute("href", "https://www.aepd.es");
+  });
+
+  it("privacy describes the newsletter and contact form only while messaging is enabled", () => {
+    const { unmount } = render(<PrivacyPage />);
+    expect(screen.getByRole("heading", { level: 3, name: "Pedidos y compras" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Analítica web" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Formulario de contacto" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { level: 3, name: "Newsletter" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/newsletter/i)).not.toBeInTheDocument();
+    unmount();
+
+    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+    render(<PrivacyPage />);
+    expect(screen.getByRole("heading", { level: 3, name: "Formulario de contacto" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 3, name: "Newsletter" })).toBeInTheDocument();
+    expect(screen.queryByText(/todavía no están conectados/)).not.toBeInTheDocument();
+    vi.restoreAllMocks();
   });
 
   it("cookies lists the storage in use and offers to change the choice", () => {

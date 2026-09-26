@@ -1,8 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import type { PricingPolicy } from "@/domain/entities/order/OrderPricing";
-import { getContainer } from "@/infrastructure/config";
-import { ContactChannel } from "@/presentation/components/content/ContactChannel";
+import { canPromiseReply, ContactChannel } from "@/presentation/components/content/ContactChannel";
 import { ChevronDownIcon, cn, focusRing } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
@@ -15,7 +14,6 @@ import {
 } from "@/presentation/components/checkout/shippingCopy";
 
 const copy = messages.forms.contact.faq;
-const topics = messages.forms.contact.topics;
 const linkClasses = cn("rounded-sm text-accent underline underline-offset-2 hover:no-underline", focusRing);
 
 function FaqItem({ question, children }: { question: string; children: ReactNode }) {
@@ -35,8 +33,12 @@ function FaqItem({ question, children }: { question: string; children: ReactNode
   );
 }
 
+/**
+ * Frequent questions on the contact page. Answers that consist of "write to us" (wholesale, order status) are
+ * shown only when a message really reaches the shop (an email is configured or the contact form is connected).
+ */
 export function ContactFaq({ policy }: { policy: PricingPolicy }) {
-  const simulated = getContainer().isMessagingSimulated();
+  const hasChannel = canPromiseReply();
   return (
     <section aria-labelledby="contact-faq-title">
       <h2 id="contact-faq-title" className="text-2xl font-bold tracking-tight text-ink">
@@ -65,14 +67,21 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
             })}
           </ul>
         </FaqItem>
-        <FaqItem question={copy.wholesaleQuestion}>
-          <p>{copy.wholesaleAnswer(topics.wholesale, simulated)}</p>
-        </FaqItem>
-        <FaqItem question={copy.orderStatusQuestion}>
-          <p>
-            <ContactChannel capitalized topic="order" linkClassName={linkClasses} /> {copy.orderStatusAnswer}
-          </p>
-        </FaqItem>
+        {hasChannel && (
+          <FaqItem question={copy.wholesaleQuestion}>
+            <p>
+              {copy.wholesaleLead} <ContactChannel capitalized topic="wholesale" linkClassName={linkClasses} />{" "}
+              {copy.wholesaleAnswer}
+            </p>
+          </FaqItem>
+        )}
+        {hasChannel && (
+          <FaqItem question={copy.orderStatusQuestion}>
+            <p>
+              <ContactChannel capitalized topic="order" linkClassName={linkClasses} /> {copy.orderStatusAnswer}
+            </p>
+          </FaqItem>
+        )}
         <FaqItem question={copy.taxQuestion}>
           <p>
             {policy.pricesIncludeTax

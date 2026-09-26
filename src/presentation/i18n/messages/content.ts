@@ -105,12 +105,17 @@ export const content = {
     email: 'Correo electrónico',
   },
   manageCookies: 'Cambiar preferencias de cookies',
-  /** How customers reach the shop (ContactChannel): the configured email, else the contact form. */
+  /**
+   * How customers reach the shop (ContactChannel): the configured email, else the contact form when messaging
+   * is enabled, else a neutral link to the contact page.
+   */
   contactChannel: {
     writeToEmail: 'escríbenos a',
     writeViaForm: 'escríbenos a través del',
     formLink: 'formulario de contacto',
     withTopic: (topic: string) => `con el tema «${topic}»`,
+    visitPage: 'visita nuestra',
+    pageLink: 'página de contacto',
   },
   cookieTable: {
     caption: 'Cookies y datos que guardamos en tu navegador',
@@ -187,6 +192,8 @@ export const content = {
     ],
     ctaTitle: '¿Empezamos a preparar tu kit?',
     ctaText: 'Consulta el contenido de cada kit o escríbenos si no sabes cuál elegir.',
+    /** When no contact channel exists yet (no email, contact form hidden): no invitation to write. */
+    ctaTextWithoutChannel: 'Consulta el contenido de cada kit y elige el que mejor se adapta a ti.',
     ctaProducts: 'Ver productos',
     ctaContact: 'Contactar',
   },

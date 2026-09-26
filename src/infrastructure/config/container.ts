@@ -103,8 +103,9 @@ export class AppContainer {
    * True while the newsletter and contact use cases run on the simulated Local*
    * adapters (`LocalNewsletterAdapter`, `LocalContactAdapter`), which only wait and
    * resolve without delivering anything. That is always the case today, under both
-   * commerce providers, until a mail/CRM backend is connected. The UI uses it to
-   * label those forms honestly instead of claiming a message was sent.
+   * commerce providers, until a mail/CRM backend is connected. The UI reads it only
+   * through `isMessagingEnabled()` (`presentation/config/messaging.ts`) and hides the
+   * newsletter, the contact form and the checkout marketing opt-in while it is true.
    */
   isMessagingSimulated(): boolean {
     return true;

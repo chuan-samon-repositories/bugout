@@ -14,13 +14,23 @@ export interface ContactStepProps {
   errors: FieldErrors;
   headingRef: Ref<HTMLHeadingElement>;
   onCustomerChange(patch: Partial<CustomerDetails>): void;
+  /** Offer the newsletter opt-in (only while messaging is enabled); otherwise `marketingOptIn` stays false. */
+  showMarketingOptIn: boolean;
   onMarketingChange(optIn: boolean): void;
   onSubmit(): void;
 }
 
 const copy = messages.checkout;
 
-export function ContactStep({ details, errors, headingRef, onCustomerChange, onMarketingChange, onSubmit }: ContactStepProps) {
+export function ContactStep({
+  details,
+  errors,
+  headingRef,
+  onCustomerChange,
+  showMarketingOptIn,
+  onMarketingChange,
+  onSubmit,
+}: ContactStepProps) {
   const { customer } = details;
   const fieldProps = (field: keyof CustomerDetails) => {
     const path = `customer.${field}`;
@@ -53,13 +63,15 @@ export function ContactStep({ details, errors, headingRef, onCustomerChange, onM
         <TextField {...fieldProps("lastName")} autoComplete="family-name" required />
       </div>
       <TextField {...fieldProps("phone")} type="tel" inputMode="tel" autoComplete="tel" hint={copy.hints.phone} />
-      <CheckboxField
-        id="checkout-marketingOptIn"
-        name="marketingOptIn"
-        label={copy.marketingOptIn}
-        checked={details.marketingOptIn}
-        onChange={(event) => onMarketingChange(event.target.checked)}
-      />
+      {showMarketingOptIn && (
+        <CheckboxField
+          id="checkout-marketingOptIn"
+          name="marketingOptIn"
+          label={copy.marketingOptIn}
+          checked={details.marketingOptIn}
+          onChange={(event) => onMarketingChange(event.target.checked)}
+        />
+      )}
     </StepForm>
   );
 }

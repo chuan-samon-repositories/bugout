@@ -37,20 +37,9 @@ describe("NewsletterForm", () => {
     expect(analytics.track).not.toHaveBeenCalled();
   });
 
-  it("says it is a demo while messaging is simulated and does not claim the email was stored", async () => {
-    render(<NewsletterForm location="home" />);
-    expect(
-      screen.getByText("Modo demostración: este formulario todavía no envía los datos a ninguna parte."),
-    ).toBeInTheDocument();
-    await userEvent.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "ana@example.es");
-    await userEvent.click(screen.getByRole("button", { name: "Suscribirme" }));
-
-    expect(await screen.findByText("Recibido. En modo demostración no guardamos tu correo.")).toBeInTheDocument();
-    expect(screen.queryByText("¡Gracias! Te hemos apuntado a la lista.")).not.toBeInTheDocument();
-  });
-
-  it("replaces the form with a confirmation and tracks the subscription once messaging is connected", async () => {
-    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+  // The form is rendered only while messaging is enabled (see Footer.test and the home page), so it has no
+  // demo mode of its own.
+  it("replaces the form with a confirmation and tracks the subscription", async () => {
     render(<NewsletterForm location="footer" tone="dark" />);
     expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
     await userEvent.type(screen.getByRole("textbox", { name: "Correo electrónico" }), "ana@example.es");
@@ -75,7 +64,7 @@ describe("NewsletterForm", () => {
     await userEvent.click(screen.getByRole("button", { name: "Suscribirme" }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent("Algo ha salido mal. Inténtalo de nuevo.");
-    expect(screen.queryByText(/Recibido/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Gracias/)).not.toBeInTheDocument();
     expect(analytics.track).not.toHaveBeenCalled();
   });
 });

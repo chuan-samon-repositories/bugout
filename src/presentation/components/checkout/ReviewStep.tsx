@@ -16,8 +16,6 @@ export interface ReviewStepProps {
   headingRef: Ref<HTMLHeadingElement>;
   placing: boolean;
   placeError: string | null;
-  /** Newsletter delivery is simulated: restate the opt-in instead of promising emails. */
-  messagingSimulated: boolean;
   onEdit(step: "contact" | "shipping"): void;
   onBack(): void;
   onSubmit(): void;
@@ -58,7 +56,6 @@ export function ReviewStep({
   headingRef,
   placing,
   placeError,
-  messagingSimulated,
   onEdit,
   onBack,
   onSubmit,
@@ -87,9 +84,8 @@ export function ReviewStep({
         </p>
         <p>{customer.email}</p>
         {customer.phone.trim() && <p>{customer.phone}</p>}
-        {details.marketingOptIn && (
-          <p>{messagingSimulated ? copy.review.marketingYesSimulated : copy.review.marketingYes}</p>
-        )}
+        {/* The opt-in is only offered while messaging is enabled, so a ticked box means real emails. */}
+        {details.marketingOptIn && <p>{copy.review.marketingYes}</p>}
       </ReviewSection>
       <ReviewSection title={copy.review.shippingTitle} editLabel={copy.review.editShipping} onEdit={() => onEdit("shipping")}>
         <p className="font-medium text-ink">{address.address}</p>

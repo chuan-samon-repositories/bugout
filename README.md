@@ -44,7 +44,7 @@ No variable is required for local development. With no configuration the app run
 
 ### `shopify`
 
-Set:
+Create the store first by following [docs/SHOPIFY_SETUP.md](docs/SHOPIFY_SETUP.md), then set:
 
 ```
 NEXT_PUBLIC_COMMERCE_PROVIDER=shopify
@@ -68,7 +68,7 @@ NEXT_PUBLIC_SHOPIFY_API_VERSION=2026-07
 
 The storefront token is a public token meant to be exposed to browsers. Never put an Admin API token in these variables. Shipping rates and taxes shown in the storefront come from `src/infrastructure/config/pricingPolicy.ts` in both modes. Configure Shopify's shipping zones and rates to match it, including excluding Canarias, Ceuta and Melilla.
 
-Newsletter sign-up and the contact form are not connected to a backend yet. They send nothing, show a demo notice and use non-committal success copy.
+Newsletter sign-up and the contact form are not connected to a backend yet, so they are hidden: the home page and footer show no sign-up, `/contact` shows only quick help and FAQ, and the local checkout offers no marketing opt-in. They reappear once a real backend is connected (`isMessagingEnabled()` in `src/presentation/config/messaging.ts`).
 
 ## Analytics and consent
 
@@ -91,7 +91,7 @@ Newsletter sign-up and the contact form are not connected to a backend yet. They
 ## Deployment notes
 
 - Set `NEXT_PUBLIC_SITE_URL` to the production origin (a bare host gets `https://` added). It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data. Without it, the app uses `https://$VERCEL_PROJECT_PRODUCTION_URL` (set automatically on Vercel), then `http://localhost:3000`. A production build logs a warning when it falls back to localhost.
-- **Required before launch (LSSI):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Unset fields are silently hidden on the legal and contact pages, so the build won't fail if they are missing. While the contact form is still simulated, the email is the only channel that actually reaches the shop.
+- **Required before launch (LSSI):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Unset fields are silently hidden on the legal and contact pages, so the build won't fail if they are missing. While the contact form is hidden, the email is the only way customers can reach the shop; without it the contact page offers no channel at all.
 - `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.
   - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain. A custom absolute PostHog host is added to `script-src` and `connect-src`, together with its `-assets` host for PostHog Cloud.
   - The CSP blocks third-party scripts, so the Vercel and PostHog toolbars don't load in production.

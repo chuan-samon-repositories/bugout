@@ -1,35 +1,63 @@
 import type { Metadata } from "next";
 import { getContainer } from "@/infrastructure/config";
+import { canPromiseReply } from "@/presentation/components/content/ContactChannel";
 import { ContactFaq } from "@/presentation/components/forms/ContactFaq";
 import { ContactForm } from "@/presentation/components/forms/ContactForm";
 import { isContactTopic } from "@/presentation/components/forms/contactTopics";
 import { ContactHelp } from "@/presentation/components/forms/ContactHelp";
 import { Container, PageHeader } from "@/presentation/components/ui";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
 const copy = messages.forms.contact;
 
-export const metadata: Metadata = {
-  title: copy.metadata.title,
-  description: copy.metadata.description,
-};
+export function generateMetadata(): Metadata {
+  return {
+    title: copy.metadata.title,
+    description: canPromiseReply() ? copy.metadata.description : copy.metadata.descriptionWithoutChannel,
+  };
+}
 
 interface ContactPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }
 
+/**
+ * With messaging enabled: the contact form (topic preselected from `?topic=`) beside the quick help, then the
+ * FAQ. Without it the form is hidden and `?topic=` is ignored: the FAQ takes the main column beside the help.
+ */
 export default async function ContactPage({ searchParams }: ContactPageProps) {
+  const policy = getContainer().getPricingPolicy();
+  const header = (
+    <PageHeader
+      title={copy.title}
+      description={canPromiseReply() ? copy.intro : copy.introWithoutChannel}
+      breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: copy.title }]}
+    />
+  );
+
+  if (!isMessagingEnabled()) {
+    return (
+      <Container className="pb-16">
+        {header}
+        <div className="grid gap-10 lg:grid-cols-3">
+          <div className="min-w-0 lg:col-span-2">
+            <ContactFaq policy={policy} />
+          </div>
+          <div className="min-w-0">
+            <ContactHelp policy={policy} />
+          </div>
+        </div>
+      </Container>
+    );
+  }
+
   const { topic } = await searchParams;
   const initialTopic = isContactTopic(topic) ? topic : undefined;
-  const policy = getContainer().getPricingPolicy();
   return (
     <Container className="pb-16">
-      <PageHeader
-        title={copy.title}
-        description={copy.intro}
-        breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: copy.title }]}
-      />
+      {header}
       <div className="grid gap-10 lg:grid-cols-3">
         <section aria-labelledby="contact-form-title" className="min-w-0 lg:col-span-2">
           <h2 id="contact-form-title" className="mb-6 text-2xl font-bold tracking-tight text-ink">

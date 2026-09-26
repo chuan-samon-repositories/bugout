@@ -29,7 +29,13 @@ Imports use the `@/` alias throughout, with no relative `../` imports across fol
 
 Shopify env: `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN`, `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` (public Storefront token) and optional `NEXT_PUBLIC_SHOPIFY_API_VERSION` (default `DEFAULT_SHOPIFY_API_VERSION` = `2026-07`). Selecting `shopify` without the first two throws `ConfigurationError` when the container is first built. `ShopifyClient` sends every query and mutation with `@inContext(country: ES, language: ES)`. Catalog queries are cached by Next.js with `revalidate: 300` seconds (`CATALOG_REVALIDATE_SECONDS`), and cart calls use `cache: 'no-store'`.
 
-Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use local adapters under both providers. They only simulate delivery until a mail/CRM backend is connected. `AppContainer.isMessagingSimulated()` returns `true` so the forms can show a demo notice and non-committal success copy.
+Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use local adapters under both providers. They only simulate delivery until a mail/CRM backend is connected, and `AppContainer.isMessagingSimulated()` returns `true`. The UI reads this only through `isMessagingEnabled()` (`presentation/config/messaging.ts`, `!isMessagingSimulated()`), and while it is false it hides the features that need that backend instead of showing a demo:
+- the home `NewsletterSection` and the footer's "Recibe novedades" band;
+- the `ContactForm` on `/contact`, which then ignores `?topic=` and shows the FAQ beside the quick help;
+- the local checkout's marketing opt-in (`marketingOptIn` stays `false`) and its review line;
+- the contact-form and newsletter purposes in the privacy policy.
+
+`NewsletterForm` and `ContactForm` keep their validation and analytics but have no demo mode, since they are rendered only when messaging is enabled. They reappear automatically once `isMessagingSimulated()` returns `false`.
 
 ## Dependency container
 
@@ -48,7 +54,7 @@ Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use lo
 | `getPlaceOrderUseCase()` | `execute(details: CheckoutDetails): Promise<OrderConfirmation>` (`dtos/Order.ts`). Throws `FormValidationError` for invalid fields and `ValidationError` for an empty cart; clears the cart on success |
 | `getSubscribeNewsletterUseCase()` | `execute(email): Promise<void>` (throws `FormValidationError`) |
 | `getSendContactMessageUseCase()` | `execute(message: ContactMessage): Promise<void>` (throws `FormValidationError`) |
-| `isMessagingSimulated()` | `true` while newsletter and contact use the simulated local adapters |
+| `isMessagingSimulated()` | `true` while newsletter and contact use the simulated local adapters. Read it in the UI only via `isMessagingEnabled()` |
 | `getAnalyticsService()` | `AnalyticsService` (`PostHogAnalyticsAdapter` when `NEXT_PUBLIC_POSTHOG_KEY` is set, otherwise `NoopAnalyticsAdapter`) |
 | `getConsentRepository()` | `ConsentRepository` (`LocalStorageConsentRepository`, key `bugout.consent`) |
 | `getOrderConfirmationStore()` | `OrderConfirmationStore` port (`save / load / clear`, never throws): `SessionStorageOrderConfirmationStore`, key `bugout.lastOrder`. It strictly validates stored data and returns `null` for anything invalid |
@@ -76,7 +82,7 @@ Pure helpers:
 
 ## Presentation conventions
 
-- **Copy:** short UI copy lives in `presentation/i18n/messages/<area>.ts` (Spanish), and components read `messages.<area>.<key>`. Long-form prose lives in the page components: the legal and shipping pages (`app/{privacy,cookies,terms,shipping-returns}/page.tsx`, rendered with `LegalPage` / `Prose`) and `app/about/page.tsx`. Use `ContactChannel` (`presentation/components/content/`) whenever copy tells customers how to reach the shop: it shows the email when configured and otherwise the contact form, and makes no reply promise while messaging is simulated. Shipping-method names come only from `messages.common.shippingMethods`. Format prices with `formatMoney` and map errors with `toUserMessage`.
+- **Copy:** short UI copy lives in `presentation/i18n/messages/<area>.ts` (Spanish), and components read `messages.<area>.<key>`. Long-form prose lives in the page components: the legal and shipping pages (`app/{privacy,cookies,terms,shipping-returns}/page.tsx`, rendered with `LegalPage` / `Prose`) and `app/about/page.tsx`. Use `ContactChannel` (`presentation/components/content/`) whenever copy tells customers how to reach the shop: it shows the email when configured, otherwise the contact form when messaging is enabled, and otherwise a neutral link to the contact page ("visita nuestra página de contacto"). `canPromiseReply()` (an email is configured or messaging is enabled) gates every reply promise and invitation to write, including the about page's "Contactar" button and the "write to us" FAQ answers. Shipping-method names come only from `messages.common.shippingMethods`. Format prices with `formatMoney` and map errors with `toUserMessage`.
 - **Routes:** build links with `presentation/routes.ts` (`routes`, `catalogUrl`). Don't link to pages that don't exist.
 - **Colors:** use theme tokens from `globals.css` (`bg-navy`, `text-accent`, `bg-accent`, `border-sand`, …), not raw hex.
   - Orange buttons use `bg-accent`; white text on it passes WCAG AA.

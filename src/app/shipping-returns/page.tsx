@@ -96,8 +96,8 @@ export default function ShippingReturnsPage() {
       <h3>Cómo solicitar una devolución</h3>
       <ol>
         <li>
-          <ContactChannel capitalized topic="order" /> e indica tu número de pedido y los productos que quieres
-          devolver.
+          Comunícanos tu decisión e indica tu número de pedido y los productos que quieres devolver:{" "}
+          <ContactChannel topic="order" />.
         </li>
         <li>
           {replies

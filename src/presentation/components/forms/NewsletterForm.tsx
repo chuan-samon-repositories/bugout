@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { FormValidationError } from "@/application/errors";
 import { getContainer } from "@/infrastructure/config";
-import { Button, CheckCircleIcon, cn, focusRing, InfoIcon, TextField } from "@/presentation/components/ui";
+import { Button, CheckCircleIcon, cn, focusRing, TextField } from "@/presentation/components/ui";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
@@ -19,9 +19,12 @@ export interface NewsletterFormProps {
 
 type Status = "idle" | "submitting" | "subscribed";
 
+/**
+ * Newsletter sign-up. Rendered only while messaging is enabled (`isMessagingEnabled()`), i.e. when a real
+ * backend stores the subscription, so its success copy can say so.
+ */
 export function NewsletterForm({ location, tone = "light", className }: NewsletterFormProps) {
   const analytics = useAnalytics();
-  const [simulated] = useState(() => getContainer().isMessagingSimulated());
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<Status>("idle");
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -68,7 +71,7 @@ export function NewsletterForm({ location, tone = "light", className }: Newslett
             )}
           >
             <CheckCircleIcon className={cn("mt-0.5 size-5 shrink-0", dark && "text-orange-on-navy")} />
-            <span className="min-w-0">{simulated ? copy.simulatedSuccess : copy.success}</span>
+            <span className="min-w-0">{copy.success}</span>
           </p>
         )}
       </div>
@@ -102,12 +105,6 @@ export function NewsletterForm({ location, tone = "light", className }: Newslett
               {copy.submit}
             </Button>
           </div>
-          {simulated && (
-            <p className={cn("mt-2 flex items-start gap-2 text-sm", dark ? "text-sand" : "text-muted")}>
-              <InfoIcon className={cn("mt-0.5 size-4 shrink-0", dark ? "text-orange-on-navy" : "text-navy")} />
-              <span className="min-w-0">{messages.forms.simulatedNotice}</span>
-            </p>
-          )}
           {formError && (
             <p role="alert" className={cn("mt-2 text-sm font-medium", dark ? "text-orange-on-navy" : "text-danger")}>
               {formError}

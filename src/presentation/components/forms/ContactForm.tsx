@@ -8,7 +8,6 @@ import { getContainer } from "@/infrastructure/config";
 import {
   Button,
   CheckCircleIcon,
-  InfoIcon,
   SelectField,
   TextAreaField,
   TextField,
@@ -37,9 +36,12 @@ export interface ContactFormProps {
   initialTopic?: ContactTopic;
 }
 
+/**
+ * The contact form. Rendered only while messaging is enabled (`isMessagingEnabled()`), i.e. when a real backend
+ * delivers the message, so its success copy can promise a reply.
+ */
 export function ContactForm({ initialTopic = "general" }: ContactFormProps) {
   const analytics = useAnalytics();
-  const [simulated] = useState(() => getContainer().isMessagingSimulated());
   const initialValues: ContactMessage = { ...EMPTY_MESSAGE, topic: initialTopic };
   const [values, setValues] = useState<ContactMessage>(initialValues);
   const [errors, setErrors] = useState<FieldErrors>({});
@@ -112,9 +114,9 @@ export function ContactForm({ initialTopic = "general" }: ContactFormProps) {
       >
         <p className="flex items-start gap-2 text-lg font-semibold text-success">
           <CheckCircleIcon className="mt-1 size-5 shrink-0" />
-          <span className="min-w-0">{simulated ? copy.simulatedSuccessTitle : copy.successTitle}</span>
+          <span className="min-w-0">{copy.successTitle}</span>
         </p>
-        <p className="mt-2 text-ink">{simulated ? copy.simulatedSuccessText : copy.successText}</p>
+        <p className="mt-2 text-ink">{copy.successText}</p>
         <Button variant="secondary" className="mt-6" onClick={reset}>
           {copy.sendAnother}
         </Button>
@@ -194,18 +196,10 @@ export function ContactForm({ initialTopic = "general" }: ContactFormProps) {
             {formError}
           </p>
         )}
-        <div className="flex flex-col gap-3">
-          {simulated && (
-            <p className="flex items-start gap-2 text-sm text-muted">
-              <InfoIcon className="mt-0.5 size-4 shrink-0 text-navy" />
-              <span className="min-w-0">{messages.forms.simulatedNotice}</span>
-            </p>
-          )}
-          <div>
-            <Button type="submit" size="lg" loading={submitting}>
-              {copy.submit}
-            </Button>
-          </div>
+        <div>
+          <Button type="submit" size="lg" loading={submitting}>
+            {copy.submit}
+          </Button>
         </div>
       </div>
     </form>

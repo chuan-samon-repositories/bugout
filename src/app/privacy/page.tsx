@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Fragment } from "react";
 import { BusinessIdentity, canPromiseReply, ContactChannel, LegalPage } from "@/presentation/components/content";
+import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT } from "@/presentation/i18n/messages/content";
@@ -20,6 +21,8 @@ interface Purpose {
   purpose: string;
   legalBasis: string;
   retention: string;
+  /** Only described while the newsletter and contact form are offered (`isMessagingEnabled()`). */
+  messaging?: true;
 }
 
 const purposes: Purpose[] = [
@@ -39,6 +42,7 @@ const purposes: Purpose[] = [
     legalBasis:
       "nuestro interés legítimo en atender las consultas que recibimos (art. 6.1.f RGPD) y, cuando la consulta se refiere a un pedido, la ejecución del contrato (art. 6.1.b RGPD).",
     retention: "hasta resolver tu consulta y, después, durante el tiempo necesario para atender posibles reclamaciones.",
+    messaging: true,
   },
   {
     title: "Newsletter",
@@ -47,6 +51,7 @@ const purposes: Purpose[] = [
     legalBasis:
       "tu consentimiento (art. 6.1.a RGPD y art. 21 de la LSSI), que prestas al suscribirte o al marcar la casilla correspondiente durante la compra.",
     retention: "hasta que te des de baja o retires tu consentimiento.",
+    messaging: true,
   },
   {
     title: "Analítica web",
@@ -60,6 +65,8 @@ const purposes: Purpose[] = [
 ];
 
 export default function PrivacyPage() {
+  const messagingEnabled = isMessagingEnabled();
+  const activePurposes = purposes.filter((item) => messagingEnabled || !item.messaging);
   return (
     <LegalPage title={copy.title} updatedAt={LEGAL_UPDATED_AT}>
       <p>
@@ -84,7 +91,7 @@ export default function PrivacyPage() {
         finalidades que se indican a continuación. No elaboramos perfiles con efectos jurídicos ni tomamos decisiones
         automatizadas sobre ti.
       </p>
-      {purposes.map((item) => (
+      {activePurposes.map((item) => (
         <Fragment key={item.title}>
           <h3>{item.title}</h3>
           <ul>
@@ -114,11 +121,6 @@ export default function PrivacyPage() {
         <li>
           Cuando la compra se realiza con Shopify, los datos del pedido y del pago se introducen directamente en la
           página de pago de Shopify.
-        </li>
-        <li>
-          Los formularios de contacto y de newsletter todavía no están conectados a ningún servicio de correo: los
-          datos se comprueban en tu navegador, pero no se envían ni se guardan. Actualizaremos esta política antes de
-          conectarlos.
         </li>
         <li>Nunca recibimos ni almacenamos los datos de tu tarjeta de pago.</li>
       </ul>

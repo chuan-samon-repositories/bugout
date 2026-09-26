@@ -61,8 +61,6 @@ export const checkout = {
     editContact: 'datos de contacto',
     editShipping: 'dirección y método de envío',
     marketingYes: 'Recibirás novedades por correo.',
-    /** While the newsletter is simulated nothing will actually be sent, so only restate the choice. */
-    marketingYesSimulated: 'Has marcado que quieres recibir novedades.',
     demoNotice: 'Modo demostración: no se realizará ningún cargo ni se enviará ningún pedido real.',
     placeOrder: 'Confirmar pedido',
     placeError: 'No hemos podido confirmar tu pedido. Tus datos siguen aquí; inténtalo de nuevo.',

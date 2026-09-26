@@ -3,7 +3,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getContainer } from "@/infrastructure/config";
-import ContactPage from "@/app/contact/page";
+import ContactPage, { generateMetadata } from "@/app/contact/page";
 import { ContactForm } from "./ContactForm";
 import { isContactTopic } from "./contactTopics";
 
@@ -70,20 +70,8 @@ describe("ContactForm", () => {
     expect(screen.getByText("4 / 2000 caracteres")).toBeInTheDocument();
   });
 
-  it("says it is a demo while messaging is simulated and does not claim the message was sent", async () => {
-    render(<ContactForm />);
-    expect(
-      screen.getByText("Modo demostración: este formulario todavía no envía los datos a ninguna parte."),
-    ).toBeInTheDocument();
-    await fillValidMessage();
-
-    expect(await screen.findByText("Recibido. En modo demostración el mensaje no se envía a nadie.")).toBeInTheDocument();
-    expect(screen.queryByText(/Mensaje enviado/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Te responderemos/)).not.toBeInTheDocument();
-  });
-
-  it("sends the message, shows the success panel, tracks the topic and resets once messaging is connected", async () => {
-    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+  // The form is rendered only while messaging is enabled (see ContactPage below), so it has no demo mode.
+  it("sends the message, shows the success panel, tracks the topic and resets", async () => {
     render(<ContactForm />);
     expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
     await fillValidMessage();
@@ -114,8 +102,42 @@ describe("isContactTopic", () => {
   });
 });
 
-describe("ContactPage", () => {
+const enableMessaging = () => vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+
+describe("ContactPage with messaging disabled (default)", () => {
+  it("hides the form, ignores ?topic= and shows the FAQ beside the quick help", async () => {
+    expect(getContainer().isMessagingSimulated()).toBe(true);
+    render(await ContactPage({ searchParams: Promise.resolve({ topic: "order" }) }));
+    expect(screen.getByRole("heading", { level: 1, name: "Contacto" })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Escríbenos" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Enviar mensaje" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox")).not.toBeInTheDocument();
+
+    expect(screen.getByRole("heading", { level: 2, name: "Preguntas frecuentes" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Información útil" })).toBeInTheDocument();
+    expect(screen.getByText("Tienes 30 días desde la entrega para devolver tu pedido.")).toBeInTheDocument();
+    expect(screen.getByText("Enviamos a la España peninsular y a las islas Baleares.")).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /@/ })).not.toBeInTheDocument();
+  });
+
+  it("does not invite people to write when there is no channel", async () => {
+    const { container } = render(await ContactPage({ searchParams: Promise.resolve({}) }));
+    expect(
+      screen.getByText(
+        "Aquí tienes la información básica sobre envíos y devoluciones, y las respuestas a las preguntas más frecuentes.",
+      ),
+    ).toBeInTheDocument();
+    expect(container).not.toHaveTextContent(/escríbenos|formulario de contacto|te responderemos|Modo demostración/i);
+    expect(generateMetadata().description).toBe(
+      "Información sobre envíos, devoluciones e IVA, y respuestas a las preguntas más frecuentes.",
+    );
+  });
+});
+
+describe("ContactPage with messaging enabled", () => {
   it("preselects a valid ?topic= and ignores invalid ones", async () => {
+    enableMessaging();
     const { unmount } = render(await ContactPage({ searchParams: Promise.resolve({ topic: "order" }) }));
     expect(screen.getByRole("combobox", { name: "Tema" })).toHaveValue("order");
     unmount();
@@ -124,20 +146,21 @@ describe("ContactPage", () => {
     expect(screen.getByRole("combobox", { name: "Tema" })).toHaveValue("general");
   });
 
-  it("shows honest help: returns window, Spain-only shipping and no invented contact details", async () => {
+  it("shows the form, honest help (returns window, Spain-only shipping, no invented contact details) and the FAQ", async () => {
+    enableMessaging();
     render(await ContactPage({ searchParams: Promise.resolve({}) }));
+    expect(screen.getByRole("heading", { level: 2, name: "Escríbenos" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Enviar mensaje" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 2, name: "Antes de escribirnos" })).toBeInTheDocument();
+    expect(
+      screen.getByText("¿Tienes dudas sobre un kit, un pedido o una compra para tu empresa o grupo? Escríbenos."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("heading", { level: 1, name: "Contacto" })).toBeInTheDocument();
     expect(screen.getByText("Tienes 30 días desde la entrega para devolver tu pedido.")).toBeInTheDocument();
     expect(screen.getByText("Enviamos a la España peninsular y a las islas Baleares.")).toBeInTheDocument();
     expect(screen.getByText(/Envío estándar gratis a partir de 75,00\s€/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /@/ })).not.toBeInTheDocument();
     expect(screen.getByText("¿Hacéis pedidos para empresas o grupos?")).toBeInTheDocument();
-    expect(screen.queryByText(/Te responderemos por correo/)).not.toBeInTheDocument();
-  });
-
-  it("only promises an email reply to wholesale enquiries once messaging is connected", async () => {
-    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
-    render(await ContactPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByText(/Te responderemos por correo/)).toBeInTheDocument();
     expect(screen.queryByText(/Modo demostración/)).not.toBeInTheDocument();
   });

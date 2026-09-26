@@ -38,6 +38,8 @@ function IconBadge({ icon: Icon }: { icon: ComponentType<IconProps> }) {
 }
 
 export default function AboutPage() {
+  /** A message really reaches the shop (email or connected form): invite people to write and promise a reply. */
+  const hasChannel = canPromiseReply();
   return (
     <Container className="pb-16 sm:pb-20">
       <PageHeader
@@ -86,7 +88,7 @@ export default function AboutPage() {
             <h3 className="mt-4 text-lg font-semibold text-ink">{copy.supportValue.title}</h3>
             <p className="mt-2 leading-7 text-muted">
               {copy.supportValue.lead} <ContactChannel linkClassName={linkClasses} />
-              {canPromiseReply() && ` ${copy.supportValue.replyPromise}`}.
+              {hasChannel && ` ${copy.supportValue.replyPromise}`}.
             </p>
           </li>
         </ul>
@@ -117,14 +119,16 @@ export default function AboutPage() {
         <h2 id="about-cta" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
           {copy.ctaTitle}
         </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-lg text-ink">{copy.ctaText}</p>
+        <p className="mx-auto mt-3 max-w-2xl text-lg text-ink">{hasChannel ? copy.ctaText : copy.ctaTextWithoutChannel}</p>
         <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
           <ButtonLink href={routes.products} size="lg">
             {copy.ctaProducts}
           </ButtonLink>
-          <ButtonLink href={routes.contact} variant="secondary" size="lg">
-            {copy.ctaContact}
-          </ButtonLink>
+          {hasChannel && (
+            <ButtonLink href={routes.contact} variant="secondary" size="lg">
+              {copy.ctaContact}
+            </ButtonLink>
+          )}
         </div>
       </section>
     </Container>

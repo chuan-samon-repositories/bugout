@@ -313,15 +313,28 @@ describe("CheckoutFlow", () => {
     expect(mocks.analytics.captureException).toHaveBeenCalledWith(expect.any(Error), { area: "checkout", action: "track_order" });
   });
 
-  it("only restates the newsletter opt-in on review while messaging is simulated (no promise of emails)", async () => {
+  it("does not offer the newsletter opt-in while messaging is disabled, and places the order without it", async () => {
     expect(getContainer().isMessagingSimulated()).toBe(true);
+    setCart(cartWith(60));
+    const execute = vi.spyOn(getContainer().getPlaceOrderUseCase(), "execute");
+    render(<CheckoutFlow provider="local" />);
+    expect(screen.queryByRole("checkbox", { name: messages.checkout.marketingOptIn })).not.toBeInTheDocument();
+    await fillContact();
+    await fillShipping();
+    expect(screen.queryByText(messages.checkout.review.marketingYes)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar pedido" }));
+    await waitFor(() => expect(execute).toHaveBeenCalled());
+    expect(execute.mock.calls[0][0].marketingOptIn).toBe(false);
+  });
+
+  it("offers the newsletter opt-in once messaging is enabled and confirms it on review", async () => {
+    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
     setCart(cartWith(60));
     render(<CheckoutFlow provider="local" />);
     await userEvent.click(screen.getByRole("checkbox", { name: messages.checkout.marketingOptIn }));
     await fillContact();
     await fillShipping();
-    expect(screen.getByText("Has marcado que quieres recibir novedades.")).toBeInTheDocument();
-    expect(screen.queryByText("Recibirás novedades por correo.")).not.toBeInTheDocument();
+    expect(screen.getByText("Recibirás novedades por correo.")).toBeInTheDocument();
   });
 
   it("tracks each step once per checkout, even after going back and resubmitting", async () => {

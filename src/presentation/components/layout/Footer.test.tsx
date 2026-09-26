@@ -4,7 +4,7 @@ import { hydrateRoot } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "@/app/Providers";
-import { resetContainer } from "@/infrastructure/config";
+import { getContainer, resetContainer } from "@/infrastructure/config";
 import { CopyrightNotice } from "./CopyrightNotice";
 import { Footer } from "./Footer";
 
@@ -16,10 +16,39 @@ vi.mock("next/navigation", () => ({
 
 const shopColumn = () => screen.getByRole("heading", { level: 2, name: "Tienda" }).parentElement!;
 
+const renderFooter = () =>
+  render(
+    <Providers>
+      <Footer categories={[{ slug: "camping-gear", label: "Camping" }]} />
+    </Providers>,
+  );
+
 describe("Footer", () => {
   beforeEach(() => {
     localStorage.clear();
     resetContainer();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("leaves out the newsletter band while messaging is disabled, keeping the link columns and copyright", () => {
+    expect(getContainer().isMessagingSimulated()).toBe(true);
+    renderFooter();
+    expect(screen.queryByRole("heading", { name: "Recibe novedades" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Suscribirme" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
+    const columns = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    expect(columns).toEqual(["Tienda", "Ayuda", "Empresa", "Legal"]);
+    expect(screen.getByText(/Todos los derechos reservados/)).toBeInTheDocument();
+  });
+
+  it("offers the newsletter sign-up once messaging is enabled", () => {
+    vi.spyOn(getContainer(), "isMessagingSimulated").mockReturnValue(false);
+    renderFooter();
+    expect(screen.getByRole("heading", { level: 2, name: "Recibe novedades" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Suscribirme" })).toBeInTheDocument();
   });
 
   it("lists the catalog's categories in the shop column", () => {

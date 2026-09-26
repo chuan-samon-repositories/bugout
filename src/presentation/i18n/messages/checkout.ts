@@ -38,7 +38,7 @@ export const checkout = {
   hints: {
     phone: 'Solo lo usaremos si hay alguna incidencia con la entrega.',
     address: 'Calle, número, piso y puerta.',
-    country: 'Por ahora solo enviamos a España.',
+    country: 'Por ahora solo enviamos a la España peninsular y a las islas Baleares.',
   },
   marketingOptIn: 'Quiero recibir por correo novedades y ofertas de Bugout.',
   provincePlaceholder: 'Selecciona una provincia',

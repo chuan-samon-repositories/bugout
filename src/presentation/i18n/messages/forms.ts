@@ -5,6 +5,7 @@ export const forms = {
     invalidEmail: 'Introduce un correo electrónico válido, por ejemplo nombre@dominio.es.',
     invalidPhone: 'Introduce un teléfono español de 9 cifras, por ejemplo 612 345 678.',
     invalidPostalCode: 'Introduce un código postal español de 5 cifras, por ejemplo 28013.',
+    unsupportedRegion: 'Por ahora solo enviamos a la España peninsular y a las islas Baleares.',
     tooShort: (min?: number) =>
       min ? `Escribe al menos ${min} caracteres.` : 'El texto es demasiado corto.',
     tooLong: (max?: number) =>
@@ -53,7 +54,7 @@ export const forms = {
     help: {
       title: 'Antes de escribirnos',
       shippingTitle: 'Envíos',
-      shippingText: 'Enviamos solo a direcciones de España.',
+      shippingText: 'Enviamos a la España peninsular y a las islas Baleares.',
       freeShipping: (threshold: string) => `Envío estándar gratis a partir de ${threshold}.`,
       returnsTitle: 'Devoluciones',
       returnsText: (days: number) => `Tienes ${days} días desde la entrega para devolver tu pedido.`,
@@ -68,7 +69,7 @@ export const forms = {
         `Sí. Tienes ${days} días desde la entrega para devolverlo. Consulta las condiciones en`,
       returnsLink: 'Envíos y devoluciones',
       shippingQuestion: '¿A dónde enviáis y cuánto tarda?',
-      shippingAnswer: 'Enviamos a direcciones de España. Puedes elegir entre estas opciones al finalizar la compra:',
+      shippingAnswer: 'Enviamos a la España peninsular y a las islas Baleares. Puedes elegir entre estas opciones al finalizar la compra:',
       shippingRate: (label: string, estimate: string, price: string) => `${label}: ${estimate}, ${price}.`,
       freeFrom: (threshold: string) => `gratis a partir de ${threshold}`,
       wholesaleQuestion: '¿Hacéis pedidos para empresas o grupos?',

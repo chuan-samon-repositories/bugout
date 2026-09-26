@@ -9,6 +9,7 @@ export interface ShippingRate {
   price: Money;
   /** Order subtotal at or above which this rate is free; null when never free. */
   freeFrom: Money | null;
+  /** Delivery estimate in business days. */
   deliveryDays: { min: number; max: number };
 }
 

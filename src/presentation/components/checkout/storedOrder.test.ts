@@ -34,9 +34,12 @@ describe("stored order", () => {
 });
 
 describe("SPANISH_PROVINCES", () => {
-  it("lists all 52 provinces and autonomous cities once", () => {
-    expect(SPANISH_PROVINCES).toHaveLength(52);
-    expect(new Set(SPANISH_PROVINCES).size).toBe(52);
-    expect(SPANISH_PROVINCES).toEqual(expect.arrayContaining(["Ceuta", "Melilla", "Las Palmas", "Illes Balears"]));
+  it("lists the 48 shippable provinces (peninsula and Balearics) once", () => {
+    expect(SPANISH_PROVINCES).toHaveLength(48);
+    expect(new Set(SPANISH_PROVINCES).size).toBe(48);
+    expect(SPANISH_PROVINCES).toEqual(expect.arrayContaining(["Illes Balears", "Madrid", "A Coruña"]));
+    for (const excluded of ["Ceuta", "Melilla", "Las Palmas", "Santa Cruz de Tenerife"]) {
+      expect(SPANISH_PROVINCES).not.toContain(excluded);
+    }
   });
 });

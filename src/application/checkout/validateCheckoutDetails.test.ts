@@ -35,13 +35,24 @@ describe('validateCheckoutDetails', () => {
   });
 
   it('validates Spanish postal codes', () => {
-    for (const postalCode of ['01001', '28013', '52006', ' 08001 ']) {
+    for (const postalCode of ['01001', '28013', '50006', ' 08001 ', '07001']) {
       expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({});
     }
     for (const postalCode of ['00123', '53001', '99999', '2801', '280133', 'ABCDE']) {
       expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({
         'shippingAddress.postalCode': 'invalidPostalCode',
       });
+    }
+  });
+
+  it('rejects postal codes outside the IVA territory (Canarias, Ceuta, Melilla)', () => {
+    for (const postalCode of ['35001', '38001', '51001', '52001']) {
+      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({
+        'shippingAddress.postalCode': 'unsupportedRegion',
+      });
+    }
+    for (const postalCode of ['07001', '28013', '50001']) {
+      expect(validateCheckoutDetails(buildCheckoutDetails({ shippingAddress: { postalCode } }), 'shipping')).toEqual({});
     }
   });
 

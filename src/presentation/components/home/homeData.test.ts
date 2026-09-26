@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
-import { pickFeatured, summarizeReviews } from "./homeData";
+import { pickFeatured, pickFlagship, summarizeReviews } from "./homeData";
 
 describe("pickFeatured", () => {
   it("prefers featured products and falls back to the first ones", () => {
@@ -25,5 +25,28 @@ describe("summarizeReviews", () => {
 
   it("is null when nothing has reviews", () => {
     expect(summarizeReviews([buildProduct({ rating: null })])).toBeNull();
+  });
+});
+
+describe("pickFlagship", () => {
+  const contents = (n: number) => ({
+    features: [],
+    specifications: [],
+    contents: Array.from({ length: n }, (_, i) => ({ item: `Item ${i}`, quantity: "1" })),
+  });
+
+  it("picks the featured kit with the most contents", () => {
+    const small = buildProduct({ id: "small", featured: true, details: contents(3) });
+    const big = buildProduct({ id: "big", featured: true, details: contents(8) });
+    const unfeatured = buildProduct({ id: "unfeatured", details: contents(12) });
+    expect(pickFlagship([small, big, unfeatured])?.slug).toBe("big");
+  });
+
+  it("falls back to non-featured kits and skips products without contents or stock", () => {
+    const empty = buildProduct({ id: "empty", featured: true, details: null });
+    const soldOut = buildProduct({ id: "sold-out", details: contents(9), inStock: false });
+    const kit = buildProduct({ id: "kit", details: contents(2) });
+    expect(pickFlagship([empty, soldOut, kit])?.slug).toBe("kit");
+    expect(pickFlagship([empty])).toBeNull();
   });
 });

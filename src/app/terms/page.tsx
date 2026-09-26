@@ -25,7 +25,7 @@ export default function TermsPage() {
       <h2>1. Objeto y ámbito de aplicación</h2>
       <p>
         Estas condiciones regulan la venta de los productos ofrecidos en la tienda online {siteConfig.name} a
-        consumidores con domicilio de entrega en España. Al realizar un pedido declaras haberlas leído y aceptado. Se
+        consumidores con domicilio de entrega en la España peninsular o en las islas Baleares. Al realizar un pedido declaras haberlas leído y aceptado. Se
         aplica la versión vigente en el momento en que haces tu pedido.
       </p>
       <p>
@@ -79,7 +79,7 @@ export default function TermsPage() {
 
       <h2>6. Envío y entrega</h2>
       <p>
-        Enviamos a direcciones de España con las modalidades, precios y plazos indicados en{" "}
+        Enviamos a la España peninsular y a las islas Baleares con las modalidades, precios y plazos indicados en{" "}
         <Link href={routes.shippingReturns}>envíos y devoluciones</Link>. Salvo que se indique otro plazo, entregaremos
         tu pedido como máximo en 30 días naturales desde su confirmación. Si no podemos cumplir el plazo, te
         informaremos y podrás cancelar el pedido con el reembolso íntegro de lo pagado. El riesgo de pérdida o daño de

@@ -3,6 +3,7 @@ export type ValidationCode =
   | 'invalidEmail'
   | 'invalidPhone'
   | 'invalidPostalCode'
+  | 'unsupportedRegion'
   | 'tooShort'
   | 'tooLong';
 

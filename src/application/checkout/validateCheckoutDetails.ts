@@ -7,6 +7,17 @@ export type CheckoutStep = 'contact' | 'shipping' | 'all';
 /** Spain-only shipping. */
 export const SHIPPING_COUNTRY = 'ES';
 
+/**
+ * Postal-code prefixes outside the IVA territory (Las Palmas, Santa Cruz de Tenerife,
+ * Ceuta, Melilla). Prices include 21 % IVA, so the store ships to the peninsula and
+ * the Balearic Islands only.
+ */
+export const NON_SHIPPABLE_POSTAL_PREFIXES: readonly string[] = ['35', '38', '51', '52'];
+
+export function isShippablePostalCode(postalCode: string): boolean {
+  return !NON_SHIPPABLE_POSTAL_PREFIXES.includes(postalCode.trim().slice(0, 2));
+}
+
 const SPANISH_POSTAL_CODE = /^(0[1-9]|[1-4]\d|5[0-2])\d{3}$/;
 const SPANISH_PHONE = /^[6-9]\d{8}$/;
 
@@ -33,6 +44,8 @@ function validateShipping({ shippingAddress: address }: CheckoutDetails, errors:
   if (isBlank(address.postalCode)) errors['shippingAddress.postalCode'] = 'required';
   else if (!SPANISH_POSTAL_CODE.test(address.postalCode.trim())) {
     errors['shippingAddress.postalCode'] = 'invalidPostalCode';
+  } else if (!isShippablePostalCode(address.postalCode)) {
+    errors['shippingAddress.postalCode'] = 'unsupportedRegion';
   }
   if ((address.country ?? '').trim().toUpperCase() !== SHIPPING_COUNTRY) {
     errors['shippingAddress.country'] = 'required';

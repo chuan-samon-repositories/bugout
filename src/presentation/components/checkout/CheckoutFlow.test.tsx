@@ -28,7 +28,7 @@ const mocks = vi.hoisted(() => {
   };
   return {
     store,
-    checkout: vi.fn(async (): Promise<void> => undefined),
+    checkout: vi.fn(async (): Promise<boolean> => false),
     refresh: vi.fn(async (): Promise<void> => undefined),
     push: vi.fn(),
     analytics: { track: vi.fn(), identify: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() },
@@ -310,7 +310,16 @@ describe("CheckoutFlow", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Contacto" })).toBeInTheDocument();
   });
 
-  it("hands off to the hosted checkout exactly once with the Shopify provider", async () => {
+  it("keeps the redirect message (no retry prompt) once the hosted checkout is opening", async () => {
+    setCart(cartWith(60));
+    mocks.checkout.mockResolvedValueOnce(true);
+    render(<CheckoutFlow provider="shopify" />);
+    await waitFor(() => expect(mocks.checkout).toHaveBeenCalledTimes(1));
+    expect(screen.getByText("Te estamos llevando al pago seguro…")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ir al pago" })).not.toBeInTheDocument();
+  });
+
+  it("offers a retry when the hosted checkout could not start (Shopify provider, once per mount)", async () => {
     setCart(cartWith(60));
     render(
       <StrictMode>

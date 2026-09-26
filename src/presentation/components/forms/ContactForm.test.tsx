@@ -107,7 +107,7 @@ describe("ContactPage", () => {
     render(await ContactPage({ searchParams: Promise.resolve({}) }));
     expect(screen.getByRole("heading", { level: 1, name: "Contacto" })).toBeInTheDocument();
     expect(screen.getByText("Tienes 30 días desde la entrega para devolver tu pedido.")).toBeInTheDocument();
-    expect(screen.getByText("Enviamos solo a direcciones de España.")).toBeInTheDocument();
+    expect(screen.getByText("Enviamos a la España peninsular y a las islas Baleares.")).toBeInTheDocument();
     expect(screen.getByText(/Envío estándar gratis a partir de 75,00\s€/)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /@/ })).not.toBeInTheDocument();
     expect(screen.getByText("¿Hacéis pedidos para empresas o grupos?")).toBeInTheDocument();

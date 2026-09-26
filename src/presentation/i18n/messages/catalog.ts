@@ -13,6 +13,7 @@ export const catalog = {
 
   list: {
     metaTitle: 'Productos',
+    saleMetaTitle: 'Ofertas',
     metaDescription:
       'Mochilas y kits de supervivencia listos para usar, además de comida, agua y material de primeros auxilios para emergencias.',
     title: 'Productos',
@@ -72,7 +73,7 @@ export const catalog = {
   delivery: {
     title: 'Envío y devoluciones',
     standard: (price: string, min: number, max: number) =>
-      min === max ? `Envío estándar: ${price}, entrega en ${min} ${min === 1 ? 'día' : 'días'}` : `Envío estándar: ${price}, entrega en ${min}–${max} días`,
+      min === max ? `Envío estándar: ${price}, entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}` : `Envío estándar: ${price}, entrega en ${min}–${max} días laborables`,
     freeFrom: (threshold: string) => `Envío estándar gratis en pedidos desde ${threshold}`,
     returns: (days: number) => `Tienes ${days} días para devolver tu pedido`,
     moreInfo: 'Más información sobre envíos y devoluciones',
@@ -84,14 +85,14 @@ export const catalog = {
     heroTitle: 'Prepárate para lo inesperado',
     heroSubtitle: (tagline: string) =>
       `${tagline}: kits completos y listos para usar, para que tú y los tuyos tengáis a mano lo esencial cuando más falta hace.`,
-    heroPrimary: 'Ver la mochila 72H',
+    heroPrimary: 'Ver nuestro kit más completo',
     heroSecondary: 'Ver todos los productos',
     heroTrust: (average: string, count: string) => `Valoración media de ${average} sobre 5 en ${count} opiniones de clientes`,
 
     valuePropsTitle: 'Por qué Bugout',
     readyTitle: 'Kits listos para usar',
     readyText: 'Cada mochila llega preparada con lo esencial. Solo tienes que dejarla a mano en casa, en el coche o en la oficina.',
-    shippingTitle: (min: number, max: number) => (min === max ? `Entrega en ${min} ${min === 1 ? 'día' : 'días'}` : `Entrega en ${min}–${max} días`),
+    shippingTitle: (min: number, max: number) => (min === max ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}` : `Entrega en ${min}–${max} días laborables`),
     shippingTitleFallback: 'Envío a domicilio',
     shippingFree: (threshold: string) => `Envío estándar gratis en pedidos desde ${threshold}.`,
     shippingPaid: (price: string) => `Envío estándar por ${price}.`,
@@ -102,9 +103,8 @@ export const catalog = {
     featuredDescription: 'Nuestros kits más completos para empezar a prepararte.',
     viewCatalog: 'Ver todo el catálogo',
 
-    kitTitle: 'Qué incluye la mochila 72H',
-    kitDescription: 'Todo lo necesario para que una persona resista tres días en una emergencia, organizado en una sola mochila.',
-    kitLink: 'Ver la mochila 72H',
+    kitTitle: (name: string) => `Qué incluye: ${name}`,
+    kitLink: (name: string) => `Ver ${name}`,
 
     newsletterTitle: 'Consejos de preparación en tu correo',
     newsletterText: 'Recibe guías prácticas para preparar tu kit, novedades del catálogo y ofertas.',

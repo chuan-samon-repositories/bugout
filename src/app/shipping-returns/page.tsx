@@ -25,8 +25,8 @@ export default function ShippingReturnsPage() {
     <LegalPage title={copy.title} updatedAt={LEGAL_UPDATED_AT}>
       <h2>Zona de envío</h2>
       <p>
-        Enviamos pedidos a direcciones de España. Por ahora no realizamos envíos a otros países. Durante el proceso de
-        compra solo podrás indicar una dirección de entrega en España.
+        Enviamos pedidos a la España peninsular y a las islas Baleares. Por ahora no realizamos envíos a Canarias, Ceuta,
+        Melilla ni a otros países, porque nuestros precios incluyen el IVA, que no se aplica en esos territorios.
       </p>
 
       <h2>Tarifas y plazos de entrega</h2>

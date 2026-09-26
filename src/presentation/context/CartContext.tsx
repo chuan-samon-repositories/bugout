@@ -33,7 +33,8 @@ export interface CartContextValue {
   /** Removes the whole line. */
   removeItem(productId: string): Promise<void>;
   clearCart(): Promise<void>;
-  checkout(): Promise<void>;
+  /** Resolves true once navigation to the checkout has started, false if it could not start. */
+  checkout(): Promise<boolean>;
   /** Reloads the cart from the repository (e.g. after an order is placed). */
   refresh(): Promise<void>;
 }
@@ -255,7 +256,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     () =>
       enqueue(async () => {
         const current = cartRef.current;
-        if (!current || current.isEmpty()) return;
+        if (!current || current.isEmpty()) return false;
         try {
           const session = await createCheckout.execute();
           analytics.track({
@@ -268,9 +269,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
           } else {
             router.push(session.url);
           }
+          return true;
         } catch (error) {
           notify({ tone: "error", message: messages.errors.checkoutUnavailable });
           analytics.captureException(error, { area: "cart", action: "checkout" });
+          return false;
         }
       }, true),
     [enqueue, createCheckout, analytics, closeCart, router, notify],

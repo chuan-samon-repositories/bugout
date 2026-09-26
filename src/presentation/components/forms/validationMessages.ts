@@ -18,6 +18,8 @@ export function validationMessage(code: ValidationCode, options: ValidationMessa
       return copy.invalidPhone;
     case "invalidPostalCode":
       return copy.invalidPostalCode;
+    case "unsupportedRegion":
+      return copy.unsupportedRegion;
     case "tooShort":
       return copy.tooShort(options.minLength);
     case "tooLong":

@@ -7,16 +7,35 @@ import { CatalogView } from "@/presentation/components/catalog/CatalogView";
 import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
 import { AlertCircleIcon, buttonClasses, Container, PageHeader, Spinner } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
-import { routes } from "@/presentation/routes";
-
-export const metadata: Metadata = {
-  title: messages.catalog.list.metaTitle,
-  description: messages.catalog.list.metaDescription,
-  alternates: { canonical: routes.products },
-};
+import { catalogUrl, routes } from "@/presentation/routes";
+import { categoryLabel } from "@/presentation/components/catalog/categoryLabel";
 
 interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
+}
+
+/** Category and offer views get their own title and canonical URL; other filters share the catalog's. */
+export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
+  const { category, onSaleOnly } = parseCatalogSearchParams(await searchParams);
+  if (category) {
+    return {
+      title: categoryLabel(category),
+      description: messages.catalog.list.metaDescription,
+      alternates: { canonical: catalogUrl({ category }) },
+    };
+  }
+  if (onSaleOnly) {
+    return {
+      title: messages.catalog.list.saleMetaTitle,
+      description: messages.catalog.list.metaDescription,
+      alternates: { canonical: catalogUrl({ onSale: "1" }) },
+    };
+  }
+  return {
+    title: messages.catalog.list.metaTitle,
+    description: messages.catalog.list.metaDescription,
+    alternates: { canonical: routes.products },
+  };
 }
 
 const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];

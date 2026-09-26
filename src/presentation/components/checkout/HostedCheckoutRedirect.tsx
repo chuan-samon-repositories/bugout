@@ -5,8 +5,8 @@ import { Button, Spinner } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 
 export interface HostedCheckoutRedirectProps {
-  /** useCart().checkout: navigates to the hosted checkout, or shows an error toast. */
-  checkout(): Promise<void>;
+  /** useCart().checkout: resolves true once the browser is navigating to the hosted checkout. */
+  checkout(): Promise<boolean>;
 }
 
 const copy = messages.checkout.hosted;
@@ -18,11 +18,9 @@ export function HostedCheckoutRedirect({ checkout }: HostedCheckoutRedirectProps
 
   const start = useCallback(async () => {
     setRedirecting(true);
-    try {
-      await checkout();
-    } finally {
-      setRedirecting(false);
-    }
+    // On success the page is unloading, so keep the spinner instead of flashing the retry prompt.
+    const navigating = await checkout().catch(() => false);
+    if (!navigating) setRedirecting(false);
   }, [checkout]);
 
   useEffect(() => {

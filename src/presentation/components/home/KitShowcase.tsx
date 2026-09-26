@@ -16,15 +16,15 @@ export function KitShowcase({ product }: { product: Product }) {
         </div>
         <div className="min-w-0">
           <h2 id="kit-title" className="text-3xl font-bold tracking-tight text-ink">
-            {t.kitTitle}
+            {t.kitTitle(product.name)}
           </h2>
-          <p className="mt-3 text-muted">{t.kitDescription}</p>
+          <p className="mt-3 text-muted">{product.description}</p>
           <div className="mt-6">
             <KitContentsList product={product} />
           </div>
           <div className="mt-6 flex flex-wrap items-center gap-4">
             <PriceTag price={product.price} originalPrice={product.originalPrice} size="lg" />
-            <ButtonLink href={routes.product(product.slug)}>{t.kitLink}</ButtonLink>
+            <ButtonLink href={routes.product(product.slug)}>{t.kitLink(product.name)}</ButtonLink>
           </div>
         </div>
       </Container>

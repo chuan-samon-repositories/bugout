@@ -22,14 +22,14 @@ Imports use the `@/` alias. `domain` imports nothing outside itself, and `applic
 
 | Concern | `local` | `shopify` |
 |---|---|---|
-| Catalog | `JsonProductAdapter` (`infrastructure/data/products.json`) | `ShopifyProductAdapter` (Storefront API) |
-| Cart | `LocalStorageCartAdapter` (key `bugout.cart`: ids and quantities, re-priced from the catalog on load; migrates the legacy `shopping-cart` key) | `ShopifyCartAdapter` (Shopify cart, line mutations; cart id in `bugout.shopify-cart-id`) |
+| Catalog | `JsonProductAdapter` (`infrastructure/data/products.json`) | `ShopifyProductAdapter` (Storefront API; products that can't be mapped are skipped with a warning) |
+| Cart | `LocalStorageCartAdapter` (key `bugout.cart`: ids and quantities, re-priced from the catalog on load; migrates the legacy `shopping-cart` key) | `ShopifyCartAdapter` (Shopify cart, line mutations; cart id in `bugout.shopify-cart-id`; a line priced in another currency throws `ShopifyApiError`) |
 | Checkout | `LocalCheckoutAdapter` → in-app `/checkout` (demo, no payment) | `ShopifyCheckoutAdapter` → hosted Shopify checkout URL |
 | Orders | `LocalOrderGateway` (simulated, generates `BUG-XXXXXXXX` numbers) | Shopify (hosted checkout) |
 
-Shopify env: `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN`, `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` (public Storefront token) and optional `NEXT_PUBLIC_SHOPIFY_API_VERSION` (default `DEFAULT_SHOPIFY_API_VERSION` = `2026-07`). Selecting `shopify` without the first two throws `ConfigurationError` when the container is first built.
+Shopify env: `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN`, `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` (public Storefront token) and optional `NEXT_PUBLIC_SHOPIFY_API_VERSION` (default `DEFAULT_SHOPIFY_API_VERSION` = `2026-07`). Selecting `shopify` without the first two throws `ConfigurationError` when the container is first built. `ShopifyClient` sends every query and mutation with `@inContext(country: ES, language: ES)`. Catalog queries are cached by Next.js with `revalidate: 300` seconds (`CATALOG_REVALIDATE_SECONDS`), and cart calls use `cache: 'no-store'`.
 
-Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use local adapters under both providers. They only simulate delivery until a mail/CRM backend is connected.
+Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use local adapters under both providers. They only simulate delivery until a mail/CRM backend is connected. `AppContainer.isMessagingSimulated()` returns `true` so the forms can show a demo notice and non-committal success copy.
 
 ## Dependency container
 
@@ -43,37 +43,38 @@ Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use lo
 | `getPricingPolicy()` | `PricingPolicy` (`storePricingPolicy`: currency, shipping rates, tax) |
 | `getGetProductsUseCase()` | `execute(): Promise<Product[]>` |
 | `getGetProductBySlugUseCase()` | `execute(slug): Promise<Product>` (throws `NotFoundError`) |
-| `getManageCartUseCase()` | `getCart / addToCart / setQuantity / removeFromCart (one unit) / deleteFromCart (whole line) / clearCart`, all resolving to the updated `Cart`. `addToCart` re-reads the product so the current price and stock apply |
-| `getCreateCheckoutUseCase()` | `execute(): Promise<CheckoutSession>` (`dtos/Checkout.ts`: `{ url, type: 'local' \| 'hosted' }`). Throws if Shopify returns a non-absolute URL |
+| `getManageCartUseCase()` | `getCart / addToCart / setQuantity / deleteFromCart (whole line) / clearCart`, all resolving to the updated `Cart`. `addToCart` re-reads the product so the current price and stock apply |
+| `getCreateCheckoutUseCase()` | `execute(): Promise<CheckoutSession>` (`dtos/Checkout.ts`: `{ url, type: 'local' \| 'hosted' }`). Throws `ValidationError` for an empty cart. `hosted` must be an absolute `https://` URL (required for Shopify) and `local` a single-slash in-app path; anything else throws |
 | `getPlaceOrderUseCase()` | `execute(details: CheckoutDetails): Promise<OrderConfirmation>` (`dtos/Order.ts`). Throws `FormValidationError` for invalid fields and `ValidationError` for an empty cart; clears the cart on success |
 | `getSubscribeNewsletterUseCase()` | `execute(email): Promise<void>` (throws `FormValidationError`) |
 | `getSendContactMessageUseCase()` | `execute(message: ContactMessage): Promise<void>` (throws `FormValidationError`) |
+| `isMessagingSimulated()` | `true` while newsletter and contact use the simulated local adapters |
 | `getAnalyticsService()` | `AnalyticsService` (`PostHogAnalyticsAdapter` when `NEXT_PUBLIC_POSTHOG_KEY` is set, otherwise `NoopAnalyticsAdapter`) |
 | `getConsentRepository()` | `ConsentRepository` (`LocalStorageConsentRepository`, key `bugout.consent`) |
 
 Pure helpers:
 - `application/catalog/`: `applyFilterCriteria(products, criteria)`, `summarizeCategories(products)` and `priceBounds(products)`. Sort options are `featured | price-asc | price-desc | rating | reviews`.
-- `application/checkout/`: `validateCheckoutDetails(details, 'contact' | 'shipping' | 'all')`, `isValidSpanishPhone`, `isShippablePostalCode`, `NON_SHIPPABLE_POSTAL_PREFIXES` and `SHIPPING_COUNTRY` (`'ES'`).
+- `application/checkout/`: `validateCheckoutDetails(details, 'contact' | 'shipping' | 'all')`, `isValidSpanishPhone`, `isShippablePostalCode`, `NON_SHIPPABLE_POSTAL_PREFIXES`, `SHIPPING_COUNTRY` (`'ES'`), and `SHIPPABLE_PROVINCES` / `provinceForPostalCode(code)` (`provinces.ts`).
 
-`FormValidationError` (`application/errors.ts`) carries `fieldErrors: Record<string, ValidationCode>`, keyed by field path (e.g. `customer.email`). `ValidationCode` is `'required' | 'invalidEmail' | 'invalidPhone' | 'invalidPostalCode' | 'unsupportedRegion' | 'tooShort' | 'tooLong'`. The UI maps codes to copy (`presentation/components/forms/validationMessages.ts`).
+`FormValidationError` (`application/errors.ts`) carries `fieldErrors: Record<string, ValidationCode>`, keyed by field path (e.g. `customer.email`). `ValidationCode` is `'required' | 'invalidEmail' | 'invalidPhone' | 'invalidPostalCode' | 'unsupportedRegion' | 'postalCodeMismatch' | 'tooShort' | 'tooLong'`. The UI maps codes to copy (`presentation/components/forms/validationMessages.ts`).
 
 ## Domain rules
 
-- `Money` is integer minor units plus an ISO currency. Never do arithmetic on `amount` (major units, for display and analytics); use `add`, `subtract`, `multiply` and so on.
-- `Cart` holds at most `MAX_QUANTITY_PER_ITEM` (99) per product and rejects out-of-stock products and mixed currencies. Violations throw `BusinessRuleError` with a `code` (`MAX_QUANTITY_EXCEEDED`, `OUT_OF_STOCK`, `CURRENCY_MISMATCH`).
+- `Money` is integer minor units plus an ISO currency. Never do arithmetic on `amount` (major units, for display and analytics); use `add`, `subtract`, `multiply` and so on. `discountPercentage(price, original)` (same file) is the one discount calculation, used by `Product.discountPercentage()` and `PriceTag`.
+- `Cart` (`addItem`, `setQuantity`, `deleteItem`, `clear`) holds at most `MAX_QUANTITY_PER_ITEM` (99) per product and rejects out-of-stock products and mixed currencies. Violations throw `BusinessRuleError` with a `code` (`MAX_QUANTITY_EXCEEDED`, `OUT_OF_STOCK`, `CURRENCY_MISMATCH`).
 - `Product.slug` is the URL handle. `Product.id` is the backend id (a Shopify variant GID when Shopify is active).
-- `rating` is `null` when there is no review data; hide ratings in that case.
+- `rating` is `null` when there is no review data, which is true of every product in the demo catalog. `RatingStars`, the JSON-LD `aggregateRating` and the rating and reviews sort options appear only when a product has reviews (`hasReviews()`), for example from Shopify `reviews.*` metafields.
 - Shipping and tax come only from `PricingPolicy` (`calculateOrderTotals`, `shippingCost`, `freeShippingThreshold` in `domain/entities/order/OrderPricing.ts`). The store policy (`infrastructure/config/pricingPolicy.ts`) has three rates and 21 % IVA included:
   - standard 4,95 €, free from 75 €
   - express 9,95 €
   - overnight 14,95 €
 
   Never hardcode thresholds in UI copy.
-- Shipping region: Spain only, meaning the peninsula and the Balearics. Postal codes starting with a prefix in `NON_SHIPPABLE_POSTAL_PREFIXES` (`35`, `38`, `51`, `52`: Las Palmas, Santa Cruz de Tenerife, Ceuta, Melilla) fail validation with `unsupportedRegion`, because prices include IVA.
+- Shipping region: Spain only, meaning the peninsula and the Balearics. Postal codes starting with a prefix in `NON_SHIPPABLE_POSTAL_PREFIXES` (`35`, `38`, `51`, `52`: Las Palmas, Santa Cruz de Tenerife, Ceuta, Melilla) fail validation with `unsupportedRegion`, because prices include IVA. Postal-code checks run in the order `required` → `invalidPostalCode` → `unsupportedRegion` → `postalCodeMismatch`; the last means the code belongs to a different province than the one selected.
 
 ## Presentation conventions
 
-- **Copy:** all user-visible strings live in `presentation/i18n/messages/<area>.ts` (Spanish). Components read `messages.<area>.<key>`. Format prices with `formatMoney` and map errors with `toUserMessage`.
+- **Copy:** all user-visible strings live in `presentation/i18n/messages/<area>.ts` (Spanish). Components read `messages.<area>.<key>`. Shipping-method names come only from `messages.common.shippingMethods`. Format prices with `formatMoney` and map errors with `toUserMessage`.
 - **Routes:** build links with `presentation/routes.ts` (`routes`, `catalogUrl`). Don't link to pages that don't exist.
 - **Colors:** use theme tokens from `globals.css` (`bg-navy`, `text-accent`, `bg-accent`, `border-sand`, …), not raw hex.
   - Orange buttons use `bg-accent`; white text on it passes WCAG AA.
@@ -81,10 +82,20 @@ Pure helpers:
   - `orange` is decorative only.
 - **Components:** reuse the primitives in `presentation/components/ui`: Button, ButtonLink, IconButton, Container, PageHeader, Breadcrumbs, Drawer, TextField, TextAreaField, SelectField, CheckboxField, RadioGroupField, PriceTag, RatingStars, ProductBadge, Spinner, VisuallyHidden and icons. Feature components live in `presentation/components/<feature>/`.
 - **State:** three providers are mounted once in `app/Providers.tsx`:
-  - `CartProvider` (`useCart`): `addItem(...)` and `checkout()` both resolve `Promise<boolean>`. `checkout()` returns true once navigation to the local route or hosted URL has started.
+  - `CartProvider` (`useCart`):
+    - `addItem(...)` and `checkout()` both resolve `Promise<boolean>`; `checkout()` returns true once navigation to the local route or hosted URL has started.
+    - `loadError` flags a failed cart restore.
+    - `runExclusive(task)` runs work inside the cart mutation queue and then reloads the cart; the local checkout places orders this way.
+    - Only visitor-initiated opens track `cart_viewed`.
+    - `storage` events reload the cart only for its own keys (`bugout.cart`, `bugout.shopify-cart-id`).
   - `NotificationProvider` (`useNotifications`).
-  - `AnalyticsProvider` (`useAnalytics`, `useConsent`).
-- **Server first:** pages are Server Components that load data via the container; only interactive parts are Client Components. Entities can't cross into Client Components, so pages pass a plain `ProductSnapshot` (`toProductSnapshot`) and the client rebuilds the entity with `fromProductSnapshot` (`presentation/components/catalog/productSnapshot.ts`).
+  - `AnalyticsProvider` (`useAnalytics`, `useConsent`) restores the stored consent in a `useLayoutEffect`, so mount-time events such as `product_viewed` are not dropped. It also applies consent changes made in other tabs.
+- **Server first:** pages are Server Components that load data via the container; only interactive parts are Client Components. Entities can't cross into Client Components, so pages pass a plain `ProductSnapshot` (`toProductSnapshot`) and the client rebuilds the entity with `fromProductSnapshot` (`presentation/components/catalog/productSnapshot.ts`). Other server-side behaviour:
+  - The home page, product pages and `sitemap.ts` export `revalidate = 300`.
+  - The root layout loads the catalog once and passes its categories to the header, mobile menu and footer.
+  - The catalog view syncs filters to the URL with `window.history.replaceState` (no navigation).
+  - `CopyrightNotice` is a small client component that updates the year after hydration.
+  - `siteConfig.url` resolves to `NEXT_PUBLIC_SITE_URL`, then `https://$VERCEL_PROJECT_PRODUCTION_URL`, then `http://localhost:3000`, and warns in production builds when it falls back. It is only correct on the server.
 - **Accessibility:**
   - Every control has an accessible name.
   - Dialogs trap focus, close on Escape and restore focus.
@@ -95,16 +106,21 @@ Pure helpers:
 
 ## Analytics
 
-Events are typed in `application/analytics/events.ts` and sent only through `AnalyticsService`.
+Events are typed in `application/analytics/events.ts` and sent only through `AnalyticsService` (`track`, `captureException`, `setConsent`). There is no `identify`: events never carry personal data. Checkout containers that show customer data have the `ph-no-capture` class, so autocapture skips them.
 
 `PostHogAnalyticsAdapter` does nothing on the server and drops every call until `setConsent(true)`. Consent is granted when the visitor accepts analytics cookies in the banner, or when a stored decision is restored. After consent, the adapter:
-- imports `posthog-js` on demand;
+- imports `posthog-js` on demand and initialises it with `opt_out_persistence_by_default`, `disable_session_recording` and `advanced_disable_flags`;
 - queues up to 100 calls while the SDK loads and replays them after init;
 - never throws into callers.
 
-Withdrawing consent clears the queue and calls `opt_out_capturing()` and `reset()`. Before consent nothing is sent and no analytics cookies are written. The consent decision is versioned (`CONSENT_VERSION`); stored decisions from another version count as undecided.
+Withdrawing consent:
+1. clears the queue;
+2. calls `reset()` and then `opt_out_capturing()`, in that order, because `reset()` also clears the stored opt-out;
+3. removes every leftover PostHog cookie and `ph_*` / `__ph_opt_in_out_*` storage entry, except `__ph_opt_in_out_<key>` = `"0"`, which keeps later inits opted out.
 
-PostHog is proxied through `/ingest` to the EU region (see `next.config.ts`). Env: `NEXT_PUBLIC_POSTHOG_KEY`, optional `NEXT_PUBLIC_POSTHOG_HOST` (default `/ingest`).
+Before consent nothing is sent and no analytics cookies are written. The consent decision is versioned (`CONSENT_VERSION`); stored decisions from another version count as undecided. `PostHogAnalyticsAdapter.sdk.test.ts` checks this against the real SDK.
+
+PostHog is proxied through `/ingest` to the EU region (see `next.config.ts`). The production Content-Security-Policy allows only same-origin scripts and connections, plus the Shopify store domain and a non-proxy PostHog host when configured. Third-party toolbars (Vercel, PostHog) don't load in production. Env: `NEXT_PUBLIC_POSTHOG_KEY`, optional `NEXT_PUBLIC_POSTHOG_HOST` (default `/ingest`).
 
 `order_completed` is tracked client-side by the local checkout only. Server-side tracking of Shopify orders (webhooks → PostHog) is not built yet.
 

@@ -3,6 +3,8 @@ import { StrictMode } from "react";
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { ValidationError } from "@/domain/errors";
+import { messages } from "@/presentation/i18n";
 import type { OrderConfirmation } from "@/application/dtos/Order";
 import { Cart } from "@/domain/entities/cart/Cart";
 import { buildProduct } from "@/domain/testing/buildProduct";
@@ -41,6 +43,7 @@ const mocks = vi.hoisted(() => {
     afterExclusive: vi.fn((): void => undefined),
     push: vi.fn(),
     analytics: { track: vi.fn(), identify: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() },
+    notify: vi.fn(),
   };
 });
 
@@ -50,6 +53,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 vi.mock("@/presentation/context/AnalyticsContext", () => ({ useAnalytics: () => mocks.analytics }));
+vi.mock("@/presentation/context/NotificationContext", () => ({ useNotifications: () => ({ notify: mocks.notify, dismiss: vi.fn() }) }));
 
 vi.mock("@/presentation/context/CartContext", async () => {
   const { useSyncExternalStore } = await import("react");
@@ -362,6 +366,20 @@ describe("CheckoutFlow", () => {
     const city = await screen.findByRole("textbox", { name: "Localidad" });
     await waitFor(() => expect(city).toHaveFocus());
     expect(city).toHaveAccessibleDescription("Este campo es obligatorio.");
+  });
+
+  it("explains, instead of failing silently, when the cart was emptied before confirming", async () => {
+    setCart(cartWith(60));
+    vi.spyOn(getContainer().getPlaceOrderUseCase(), "execute").mockRejectedValue(new ValidationError("Cart is empty"));
+    render(<CheckoutFlow provider="local" />);
+    await fillContact();
+    await fillShipping();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar pedido" }));
+
+    await waitFor(() =>
+      expect(mocks.notify).toHaveBeenCalledWith({ tone: "info", message: messages.cart.checkoutEmpty }),
+    );
+    expect(mocks.analytics.captureException).not.toHaveBeenCalled();
   });
 
   it("offers a retry when placing the order fails", async () => {

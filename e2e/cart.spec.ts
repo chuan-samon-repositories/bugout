@@ -8,6 +8,7 @@ import {
   cartButtonName,
   cartDrawer,
   cartLine,
+  consentBanner,
   openCartDrawer,
   openPage,
   readStorage,
@@ -206,8 +207,10 @@ test.describe('cart', () => {
     await page.goto(`/products/${PRODUCTS.food.id}`);
     await other.goto('/about');
     // The banner renders once each tab has hydrated and subscribed to storage events.
+    await expect(consentBanner(other)).toBeVisible();
     await rejectConsent(page);
-    await rejectConsent(other);
+    // The consent decision is shared across tabs, so the other tab's banner closes too.
+    await expect(consentBanner(other)).toBeHidden();
     await expect(cartButton(other)).toHaveAccessibleName(cartButtonName(0));
 
     await addToCartButton(page).click();

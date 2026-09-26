@@ -99,12 +99,14 @@ test.describe('axe (WCAG 2.1 A/AA)', () => {
       await expectNoViolations(page);
     });
 
-    test('review step with an order error', async ({ page }) => {
+    test('cart emptied elsewhere before confirming', async ({ page }) => {
       const review = await completeCheckoutSteps(page);
-      // Empty the stored cart behind the page's back so placing the order fails.
+      // Empty the stored cart behind the page's back (as another tab would): the order is not placed,
+      // the visitor is told why and the checkout falls back to its empty state.
       await page.evaluate(() => window.localStorage.removeItem('bugout.cart'));
       await review.getByRole('button', { name: 'Confirmar pedido' }).click();
-      await expect(review.getByRole('alert')).toContainText('No hemos podido confirmar tu pedido');
+      await expect(page.getByText('Tu carrito está vacío. Añade algún producto para finalizar la compra.')).toBeVisible();
+      await expect(page.getByRole('heading', { name: 'Tu carrito está vacío' })).toBeVisible();
       await expectNoViolations(page);
     });
 

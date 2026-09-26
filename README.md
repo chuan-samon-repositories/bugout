@@ -58,20 +58,24 @@ NEXT_PUBLIC_SHOPIFY_API_VERSION=2026-07
   - Categories come from the product type.
   - Products tagged `featured` are featured.
   - `custom.badge`, `custom.features`, `custom.specifications` and `custom.contents` metafields provide merchandising content.
-  - `reviews.rating` and `reviews.rating_count` metafields provide ratings.
+  - `reviews.rating` and `reviews.rating_count` metafields provide ratings. Ratings and rating-based sorting appear only when real review data exists; the demo catalog has none.
+  - Products that can't be mapped are skipped with a warning in the server log.
+- All Storefront API calls use the Spain context (`@inContext(country: ES, language: ES)`), so the Shopify market for Spain must sell in EUR. A cart priced in another currency fails with an error.
+- Catalog responses are cached for 300 seconds. Cart calls are never cached.
 - The cart is a Shopify cart; its id is kept in `localStorage`.
 - Checkout redirects to Shopify's hosted checkout, which handles payment and order placement.
 - If the store domain or token is missing, the app fails at startup with a `ConfigurationError`.
 
-The storefront token is a public token meant to be exposed to browsers. Never put an Admin API token in these variables. Shipping rates shown in the storefront come from `src/infrastructure/config/pricingPolicy.ts` in both modes, so keep Shopify's shipping settings in line with it.
+The storefront token is a public token meant to be exposed to browsers. Never put an Admin API token in these variables. Shipping rates and taxes shown in the storefront come from `src/infrastructure/config/pricingPolicy.ts` in both modes. Configure Shopify's shipping zones and rates to match it, including excluding Canarias, Ceuta and Melilla.
 
-Newsletter sign-up and the contact form are not connected to a backend yet. They simulate success and send nothing.
+Newsletter sign-up and the contact form are not connected to a backend yet. They send nothing, show a demo notice and use non-committal success copy.
 
 ## Analytics and consent
 
 - Product analytics use PostHog and are enabled only when `NEXT_PUBLIC_POSTHOG_KEY` is set.
 - The PostHog SDK is loaded only after the visitor accepts analytics cookies in the consent banner. Before that, no events are sent and no analytics cookies are written. Visitors can change their choice from the footer or the cookie policy page.
-- Events are a typed catalogue in `src/application/analytics/events.ts`.
+- Events are a typed catalogue in `src/application/analytics/events.ts`. No personal data is sent: there is no `identify` call, and checkout sections with customer data are excluded from autocapture (`ph-no-capture`). Session recording and feature flags are disabled.
+- Withdrawing consent opts PostHog out and deletes its cookies and storage, keeping only its opt-out marker.
 - Requests go through a first-party reverse proxy at `/ingest` to PostHog's EU region (`next.config.ts`). `NEXT_PUBLIC_POSTHOG_HOST` overrides the ingestion host (default `/ingest`).
 
 ## Testing
@@ -80,17 +84,22 @@ Newsletter sign-up and the contact form are not connected to a backend yet. They
 - `npm run e2e` runs Playwright specs from `e2e/` against a production build.
   - Playwright starts `next start` on port 3100 (`E2E_PORT`).
   - Set `E2E_SKIP_SERVER=1` to target an already running server.
-  - It runs desktop and mobile (Pixel 7) projects.
+  - It runs desktop and mobile (Pixel 7) projects. Specs cover smoke, navigation, catalog, cart, purchase, forms, consent and accessibility (axe).
   - Install browsers once with `npx playwright install chromium`.
 - CI (`.github/workflows/ci.yml`) runs on pushes to `master` and on pull requests: lint, typecheck, unit tests, build and E2E.
 
 ## Deployment notes
 
-- Set `NEXT_PUBLIC_SITE_URL` to the production origin. It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data, and defaults to `http://localhost:3000`.
+- Set `NEXT_PUBLIC_SITE_URL` to the production origin. It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data. Without it, the app uses `https://$VERCEL_PROJECT_PRODUCTION_URL` (set automatically on Vercel), then `http://localhost:3000`. A production build logs a warning when it falls back to localhost.
 - Set the seller identity required by Spanish law (LSSI) before launch: `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Optionally set `NEXT_PUBLIC_CONTACT_EMAIL`. Fields left unset are hidden on the legal and contact pages.
-- `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY` and a restrictive `Permissions-Policy`. It also disables `X-Powered-By`.
+- `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.
+  - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain (and a custom PostHog host if set).
+  - The CSP blocks third-party scripts, so the Vercel and PostHog toolbars don't load in production.
+- Home, product pages and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
+- Shopify product images from `cdn.shopify.com` are allowed in `images.remotePatterns`.
 - The `/ingest/*` PostHog proxy is a Next.js rewrite, so it works on any host that runs the Next.js server.
 - `/checkout` is excluded in `robots.txt` and marked `noindex`.
+- Pricing law: strike-through "before" prices (`originalPrice`) must be the lowest price of the previous 30 days (EU/Spanish price-reduction rule). The business is responsible for this when setting prices.
 
 ## Project structure
 

@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { provinceForPostalCode, validateCheckoutDetails } from "@/application/checkout";
 import type { CheckoutDetails, CustomerDetails, OrderConfirmation, ShippingAddress } from "@/application/dtos/Order";
 import { FormValidationError, type FieldErrors } from "@/application/errors";
+import { ValidationError } from "@/domain/errors";
 import type { Cart } from "@/domain/entities/cart/Cart";
 import { calculateOrderTotals, type PricingPolicy } from "@/domain/entities/order/OrderPricing";
 import { Money } from "@/domain/value-objects/Money";
@@ -11,6 +12,7 @@ import { getContainer } from "@/infrastructure/config";
 import { focusFirstInvalidField } from "@/presentation/components/forms/focusField";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
 import { useCart } from "@/presentation/context/CartContext";
+import { useNotifications } from "@/presentation/context/NotificationContext";
 import { messages } from "@/presentation/i18n";
 import {
   CHECKOUT_STEPS,
@@ -41,6 +43,7 @@ const hasErrors = (errors: FieldErrors) => Object.keys(errors).length > 0;
 
 /** The in-app (demo) checkout: contact, shipping and review steps. No payment data is collected. */
 export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProps) {
+  const { notify } = useNotifications();
   const analytics = useAnalytics();
   const { runExclusive } = useCart();
   const [details, setDetails] = useState<CheckoutDetails>(() => emptyCheckoutDetails(policy));
@@ -152,6 +155,11 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
           showErrors(stepErrors, owner);
           return;
         }
+      }
+      if (error instanceof ValidationError) {
+        // The cart was emptied meanwhile (e.g. in another tab); the flow falls back to the empty state.
+        notify({ tone: "info", message: messages.cart.checkoutEmpty });
+        return;
       }
       analytics.captureException(error, { area: "checkout", action: "place_order" });
       setPlaceError(messages.checkout.review.placeError);

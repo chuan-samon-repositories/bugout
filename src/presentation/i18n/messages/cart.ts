@@ -1,2 +1,31 @@
-/** Copy for the cart area. Owned by the cart UI; add keys as needed. */
-export const cart = {} as const;
+/** Copy for the cart area: provider notifications and the cart drawer. */
+export const cart = {
+  title: 'Tu carrito',
+  added: 'Añadido al carrito',
+  empty: 'Tu carrito está vacío.',
+  emptyHint: 'Echa un vistazo a nuestros kits y accesorios.',
+  browseProducts: 'Ver productos',
+  lines: 'Productos en tu carrito',
+  unitPrice: 'Precio por unidad',
+  quantity: 'Cantidad',
+  lineSubtotal: 'Total de la línea',
+  decrease: (name: string) => `Reducir cantidad de ${name}`,
+  increase: (name: string) => `Aumentar cantidad de ${name}`,
+  remove: (name: string) => `Eliminar ${name} del carrito`,
+  subtotal: 'Subtotal',
+  freeShippingRemaining: (amount: string, method: string) => `Te faltan ${amount} para el envío ${method} gratis`,
+  freeShippingReached: (method: string) => `Tienes envío ${method} gratis`,
+  shippingMethods: {
+    standard: 'estándar',
+    express: 'exprés',
+    overnight: 'urgente',
+  },
+  taxIncluded: 'IVA incluido. El envío se calcula al finalizar la compra.',
+  taxExcluded: 'Los impuestos y el envío se calculan al finalizar la compra.',
+  checkout: 'Finalizar compra',
+  continueShopping: 'Seguir comprando',
+  clear: 'Vaciar carrito',
+  clearConfirm: '¿Seguro que quieres vaciar el carrito?',
+  clearConfirmYes: 'Sí, vaciar',
+  clearConfirmNo: 'Cancelar',
+} as const;

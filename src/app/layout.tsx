@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Header } from "../components/Header";
-import { Footer } from "../components/Footer";
+import { ConsentBanner } from "@/presentation/components/consent/ConsentBanner";
+import { Footer } from "@/presentation/components/layout/Footer";
+import { Header } from "@/presentation/components/layout/Header";
+import { siteConfig } from "@/presentation/config/site";
+import { HTML_LANG, messages } from "@/presentation/i18n";
 import { Providers } from "./Providers";
 
 const geistSans = Geist({
@@ -15,26 +18,38 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const defaultTitle = messages.shell.metadata.defaultTitle;
+
 export const metadata: Metadata = {
-  title: "Bugout",
-  description:
-    "La revolución de las mochilas de supervivencia para todos los publicos",
+  metadataBase: new URL(siteConfig.url),
+  title: { default: defaultTitle, template: `%s · ${siteConfig.name}` },
+  description: messages.common.tagline,
+  openGraph: {
+    type: "website",
+    locale: "es_ES",
+    siteName: siteConfig.name,
+    title: defaultTitle,
+    description: messages.common.tagline,
+  },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[80px] min-h-dvh flex flex-col`}
-      >
+    <html lang={HTML_LANG}>
+      <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-dvh flex-col font-sans antialiased`}>
+        <a
+          href="#main-content"
+          className="sr-only rounded-lg bg-white px-4 py-3 font-semibold text-navy shadow-lg focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:outline-none focus:ring-2 focus:ring-accent"
+        >
+          {messages.shell.skipToContent}
+        </a>
         <Providers>
           <Header />
-          {children}
+          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+            {children}
+          </main>
           <Footer />
+          <ConsentBanner />
         </Providers>
       </body>
     </html>

@@ -238,7 +238,8 @@ describe("CheckoutFlow", () => {
     expect(screen.getByText("Total").nextElementSibling).toHaveTextContent(/89,95\s€/);
     expect(screen.queryByText("Tu carrito está vacío")).not.toBeInTheDocument();
 
-    expect(mocks.analytics.identify).toHaveBeenCalledWith("ana@example.es", { marketing_opt_in: false });
+    expect(mocks.analytics.identify).toHaveBeenCalledWith(expect.stringMatching(/^cust_[0-9a-f]{32}$/), { marketing_opt_in: false });
+    expect(JSON.stringify(mocks.analytics.identify.mock.calls)).not.toContain("ana@example.es");
     expect(mocks.analytics.track).toHaveBeenCalledWith({
       name: "order_completed",
       properties: {

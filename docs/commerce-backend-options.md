@@ -1,5 +1,7 @@
 # Commerce Backend Options
 
+> **Status:** Option B is implemented. The Shopify adapters (catalog, cart, hosted checkout) exist in `src/infrastructure/adapters/` and are enabled with `NEXT_PUBLIC_COMMERCE_PROVIDER=shopify` (see [ARCHITECTURE.md](ARCHITECTURE.md)). A Medusa backend would need a new set of adapters behind the same ports. The comparison below is kept for reference.
+
 ## Option A — Medusa.js (self-hosted, open source)
 
 **Process:** Spin up Medusa server + Postgres + Redis → migrate products → write adapter layer in Next.js → rebuild checkout against real API → deploy backend separately.

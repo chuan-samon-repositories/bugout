@@ -9,6 +9,10 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  images: {
+    // Product photos come from Shopify's CDN when the Shopify provider is active.
+    remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com", pathname: "/**" }],
+  },
   // PostHog calls its API with trailing slashes; don't redirect them.
   skipTrailingSlashRedirect: true,
   // Reverse proxy for PostHog (EU) so analytics requests stay first-party. Order matters.

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { pseudonymousCustomerId } from "@/application/analytics/customerId";
 import { validateCheckoutDetails } from "@/application/checkout";
 import type { CheckoutDetails, CustomerDetails, OrderConfirmation, ShippingAddress } from "@/application/dtos/Order";
 import { FormValidationError, type FieldErrors } from "@/application/errors";
@@ -109,7 +110,8 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
     try {
       const confirmation = await getContainer().getPlaceOrderUseCase().execute(details);
       trackStep("review");
-      analytics.identify(details.customer.email.trim().toLowerCase(), { marketing_opt_in: details.marketingOptIn });
+      const customerId = await pseudonymousCustomerId(details.customer.email);
+      if (customerId) analytics.identify(customerId, { marketing_opt_in: details.marketingOptIn });
       const { totals: placed } = confirmation;
       analytics.track({
         name: "order_completed",

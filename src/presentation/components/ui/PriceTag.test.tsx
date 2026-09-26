@@ -3,7 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Money } from "@/domain/value-objects/Money";
 import { formatMoney } from "@/presentation/i18n";
-import { discountPercent, PriceTag } from "./PriceTag";
+import { PriceTag } from "./PriceTag";
 
 const eur = (amount: number) => Money.fromMajor(amount, "EUR");
 
@@ -37,9 +37,12 @@ describe("PriceTag", () => {
     expect(screen.queryByText(/%/)).toBeNull();
   });
 
-  it("computes rounded discount percentages", () => {
-    expect(discountPercent(eur(79), eur(99))).toBe(20);
-    expect(discountPercent(eur(99), eur(79))).toBe(0);
-    expect(discountPercent(eur(99), Money.fromMajor(120, "USD"))).toBe(0);
+  it("rounds the discount to a whole percentage and ignores other currencies", () => {
+    const { container, rerender } = render(<PriceTag price={eur(10)} originalPrice={eur(30)} />);
+    expect(screen.getByText("-67%")).toBeInTheDocument();
+
+    rerender(<PriceTag price={eur(99)} originalPrice={Money.fromMajor(120, "USD")} />);
+    expect(container.querySelector("s")).toBeNull();
+    expect(screen.queryByText(/%/)).toBeNull();
   });
 });

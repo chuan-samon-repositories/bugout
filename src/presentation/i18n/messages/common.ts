@@ -1,3 +1,5 @@
+import type { ShippingMethodId } from '@/domain/entities/order/OrderPricing';
+
 /** Copy shared across the whole storefront. */
 export const common = {
   brand: 'BUGOUT',
@@ -16,6 +18,12 @@ export const common = {
     PREMIUM: 'Premium',
     SALE: 'Oferta',
   },
+  /** Customer-facing names of the shipping methods (cart, checkout and legal pages). */
+  shippingMethods: {
+    standard: 'Estándar',
+    express: 'Urgente',
+    overnight: '24 horas',
+  } satisfies Record<ShippingMethodId, string>,
   price: {
     current: 'Precio actual',
     previous: 'Precio anterior',

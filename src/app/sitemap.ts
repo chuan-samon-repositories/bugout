@@ -3,6 +3,9 @@ import { getContainer } from "@/infrastructure/config";
 import { siteConfig } from "@/presentation/config/site";
 import { routes } from "@/presentation/routes";
 
+/** Regenerated at most every 5 minutes so new and removed products are listed without a redeploy. */
+export const revalidate = 300;
+
 const staticPaths = [
   routes.home,
   routes.products,

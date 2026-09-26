@@ -5,7 +5,8 @@ import { cn } from "@/presentation/components/ui/cn";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 import { CookieSettingsButton } from "./CookieSettingsButton";
-import { shopLinks, type NavLink } from "./navigation";
+import { CopyrightNotice } from "./CopyrightNotice";
+import { shopLinks, type NavCategory, type NavLink } from "./navigation";
 
 const copy = messages.shell.footer;
 const nav = messages.shell.nav;
@@ -16,29 +17,42 @@ const linkClass = cn(
   "focus-visible:ring-orange-on-navy focus-visible:ring-offset-navy-deep",
 );
 
-const columns: { title: string; links: NavLink[]; cookieSettings?: boolean }[] = [
-  { title: copy.columns.shop, links: shopLinks },
-  {
-    title: copy.columns.help,
-    links: [
-      { href: routes.shippingReturns, label: copy.shippingReturns },
-      { href: routes.contact, label: nav.contact },
-    ],
-  },
-  { title: copy.columns.company, links: [{ href: routes.about, label: nav.about }] },
-  {
-    title: copy.columns.legal,
-    links: [
-      { href: routes.privacy, label: copy.privacy },
-      { href: routes.cookies, label: copy.cookies },
-      { href: routes.terms, label: copy.terms },
-    ],
-    cookieSettings: true,
-  },
-];
+interface FooterColumn {
+  title: string;
+  links: NavLink[];
+  cookieSettings?: boolean;
+}
 
-export function Footer() {
-  const year = new Date().getFullYear();
+function footerColumns(categories: readonly NavCategory[]): FooterColumn[] {
+  return [
+    { title: copy.columns.shop, links: shopLinks(categories) },
+    {
+      title: copy.columns.help,
+      links: [
+        { href: routes.shippingReturns, label: copy.shippingReturns },
+        { href: routes.contact, label: nav.contact },
+      ],
+    },
+    { title: copy.columns.company, links: [{ href: routes.about, label: nav.about }] },
+    {
+      title: copy.columns.legal,
+      links: [
+        { href: routes.privacy, label: copy.privacy },
+        { href: routes.cookies, label: copy.cookies },
+        { href: routes.terms, label: copy.terms },
+      ],
+      cookieSettings: true,
+    },
+  ];
+}
+
+export interface FooterProps {
+  /** Catalog categories for the "Tienda" column, loaded once by the root layout. */
+  categories: readonly NavCategory[];
+}
+
+export function Footer({ categories }: FooterProps) {
+  const columns = footerColumns(categories);
 
   return (
     <footer className="bg-navy-deep text-white">
@@ -82,7 +96,7 @@ export function Footer() {
       </div>
       <div className="border-t border-white/10">
         <Container className="py-6">
-          <p className="text-sm text-sand">{copy.copyright(year)}</p>
+          <CopyrightNotice renderedYear={new Date().getFullYear()} className="text-sm text-sand" />
         </Container>
       </div>
     </footer>

@@ -7,8 +7,6 @@ export type SearchParamsInput =
   | { get(name: string): string | null }
   | Record<string, string | string[] | undefined>;
 
-export const DEFAULT_CRITERIA: FilterCriteria = { sortBy: "featured" };
-
 function read(input: SearchParamsInput, key: string): string | undefined {
   if (typeof (input as URLSearchParams).get === "function") {
     return (input as URLSearchParams).get(key) ?? undefined;

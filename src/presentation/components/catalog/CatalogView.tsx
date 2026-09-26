@@ -1,9 +1,9 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { applyFilterCriteria, priceBounds, summarizeCategories } from "@/application/catalog";
-import { SORT_OPTIONS, type FilterCriteria, type SortOption } from "@/application/dtos/FilterCriteria";
+import type { FilterCriteria, SortOption } from "@/application/dtos/FilterCriteria";
 import { Money } from "@/domain/value-objects/Money";
 import { Button, ChevronDownIcon, PageHeader, SelectField, cn } from "@/presentation/components/ui";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
@@ -21,6 +21,7 @@ import {
 import { categoryLabel } from "./categoryLabel";
 import { ProductGrid } from "./ProductGrid";
 import { fromProductSnapshot, type ProductSnapshot } from "./productSnapshot";
+import { availableSortOptions } from "./sortOptions";
 
 export const PRICE_DEBOUNCE_MS = 400;
 export const ANALYTICS_DEBOUNCE_MS = 800;
@@ -37,7 +38,6 @@ const queryOf = (criteria: FilterCriteria) => serializeCatalogCriteria(criteria)
 /** Catalog listing: filters are applied in memory, so controls never unmount while filtering. */
 export function CatalogView({ products: snapshots, initialCriteria }: CatalogViewProps) {
   const t = messages.catalog;
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const analytics = useAnalytics();
@@ -68,15 +68,19 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
   const syncedQuery = useRef(queryOf(initialCriteria));
   const writtenQueries = useRef(new Set<string>());
 
+  // Filtering happens in memory, so the URL is updated with the native History API: Next.js
+  // (>= 14.1) keeps useSearchParams in sync without a server round-trip or a re-render of the page.
   useEffect(() => {
     const query = queryOf(criteria);
     if (query === syncedQuery.current) return;
     syncedQuery.current = query;
     writtenQueries.current.add(query);
-    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [criteria, pathname, router]);
+    window.history.replaceState(null, "", query ? `${pathname}?${query}` : pathname);
+  }, [criteria, pathname]);
 
   // Adopt URL changes we did not make ourselves (e.g. a header link to another category).
+  // Our own writes come back through useSearchParams too, possibly after a newer write:
+  // those are recognised via writtenQueries and ignored, so the two effects never loop.
   const urlQuery = searchParams?.toString() ?? "";
   useEffect(() => {
     const fromUrl = parseCatalogSearchParams(new URLSearchParams(urlQuery));
@@ -146,7 +150,10 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
       ]
     : [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];
 
-  const sortOptions = SORT_OPTIONS.map((value) => ({ value, label: t.filters.sortOptions[value] }));
+  const sortOptions = availableSortOptions(products, criteria.sortBy).map((value) => ({
+    value,
+    label: t.filters.sortOptions[value],
+  }));
 
   return (
     <>

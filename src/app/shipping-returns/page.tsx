@@ -39,7 +39,7 @@ export default function ShippingReturnsPage() {
         <ul>
           {freeRates.map((rate) => (
             <li key={rate.id}>
-              El envío <strong>{messages.content.shippingMethods[rate.id].toLowerCase()}</strong> es gratuito en los
+              El envío <strong>{messages.common.shippingMethods[rate.id].toLowerCase()}</strong> es gratuito en los
               pedidos cuyo importe de productos, IVA incluido, sea igual o superior a{" "}
               {rate.freeFrom && formatMoney(rate.freeFrom)}.
             </li>

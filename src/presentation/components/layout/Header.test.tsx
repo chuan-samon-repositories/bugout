@@ -14,10 +14,15 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(navigation.search),
 }));
 
-function renderHeader() {
+const categories = [
+  { slug: "survival-kits", label: "Kits de supervivencia" },
+  { slug: "accessories", label: "Accesorios" },
+];
+
+function renderHeader(navCategories: typeof categories = categories) {
   return render(
     <Providers>
-      <Header />
+      <Header categories={navCategories} />
     </Providers>,
   );
 }
@@ -55,6 +60,18 @@ describe("Header", () => {
     expect(within(nav).getByRole("link", { name: "Todos los productos" })).not.toHaveAttribute("aria-current");
   });
 
+  it("lists whatever categories the catalog has, and only the fixed links without a catalog", () => {
+    const { unmount } = renderHeader([{ slug: "camping-gear", label: "Camping" }]);
+    const nav = screen.getByRole("navigation", { name: "Principal" });
+    expect(within(nav).getByRole("link", { name: "Camping" })).toHaveAttribute("href", "/products?category=camping-gear");
+    expect(within(nav).queryByRole("link", { name: "Accesorios" })).toBeNull();
+    unmount();
+
+    renderHeader([]);
+    const fixed = within(screen.getByRole("navigation", { name: "Principal" })).getAllByRole("link");
+    expect(fixed.map((link) => link.textContent)).toEqual(["Todos los productos", "Ofertas", "Sobre nosotros", "Contacto"]);
+  });
+
   it("toggles aria-expanded and opens the menu drawer", async () => {
     const user = userEvent.setup();
     renderHeader();
@@ -66,6 +83,10 @@ describe("Header", () => {
     expect(menuButton).toHaveAttribute("aria-expanded", "true");
     const dialog = screen.getByRole("dialog", { name: "Menú" });
     expect(within(dialog).getByRole("link", { name: "Ofertas" })).toHaveAttribute("href", "/products?sale=1");
+    expect(within(dialog).getByRole("link", { name: "Kits de supervivencia" })).toHaveAttribute(
+      "href",
+      "/products?category=survival-kits",
+    );
 
     const preventNavigation = (event: MouseEvent) => event.preventDefault();
     document.addEventListener("click", preventNavigation);

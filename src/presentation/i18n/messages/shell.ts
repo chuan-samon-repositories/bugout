@@ -8,8 +8,6 @@ export const shell = {
   nav: {
     primary: 'Principal',
     allProducts: 'Todos los productos',
-    survivalKits: 'Kits de supervivencia',
-    accessories: 'Accesorios',
     offers: 'Ofertas',
     about: 'Sobre nosotros',
     contact: 'Contacto',

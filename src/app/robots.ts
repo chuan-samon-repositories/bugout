@@ -5,6 +5,6 @@ import { routes } from "@/presentation/routes";
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: { userAgent: "*", allow: "/", disallow: routes.checkout },
-    sitemap: `${siteConfig.url}/sitemap.xml`,
+    sitemap: new URL("/sitemap.xml", siteConfig.url).toString(),
   };
 }

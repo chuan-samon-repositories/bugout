@@ -24,7 +24,7 @@ export {
   type BreadcrumbsProps,
   type PageHeaderProps,
 } from './PageHeader';
-export { PriceTag, discountPercent, type PriceTagProps, type PriceTagSize } from './PriceTag';
+export { PriceTag, type PriceTagProps, type PriceTagSize } from './PriceTag';
 export { RatingStars, starFills, type RatingStarsProps, type RatingStarsSize } from './RatingStars';
 export { ProductBadge, type ProductBadgeProps } from './ProductBadge';
 export { type FieldBaseProps } from './fieldParts';

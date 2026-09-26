@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { FilterCriteria } from "@/application/dtos/FilterCriteria";
 import { buildProduct } from "@/domain/testing/buildProduct";
 import { parseCatalogSearchParams } from "./catalogSearchParams";
@@ -9,7 +9,6 @@ import { CatalogView } from "./CatalogView";
 import { toProductSnapshot } from "./productSnapshot";
 
 const nav = vi.hoisted(() => ({
-  replace: vi.fn(),
   searchParams: new URLSearchParams(),
 }));
 const analytics = vi.hoisted(() => ({
@@ -20,7 +19,6 @@ const analytics = vi.hoisted(() => ({
 }));
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ replace: nav.replace, push: vi.fn(), refresh: vi.fn(), back: vi.fn(), forward: vi.fn(), prefetch: vi.fn() }),
   usePathname: () => "/products",
   useSearchParams: () => nav.searchParams,
 }));
@@ -52,11 +50,19 @@ function renderCatalog(query = "") {
 const productNames = () => screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
 const radioLabel = (name: RegExp) => screen.getByRole("radio", { name }).closest("label")?.textContent;
 
+/** URL written by the view through window.history.replaceState (the third argument). */
+let replaceState: MockInstance<History["replaceState"]>;
+const lastUrl = () => replaceState.mock.lastCall?.[2];
+
 describe("CatalogView", () => {
   beforeEach(() => {
-    nav.replace.mockReset();
+    replaceState = vi.spyOn(window.history, "replaceState").mockImplementation(() => {});
     nav.searchParams = new URLSearchParams();
     analytics.track.mockReset();
+  });
+
+  afterEach(() => {
+    replaceState.mockRestore();
   });
 
   it("lists every product without touching the URL or analytics on first render", async () => {
@@ -65,7 +71,7 @@ describe("CatalogView", () => {
     expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
     expect(screen.getByText("4 productos")).toHaveAttribute("aria-live", "polite");
     await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(nav.replace).not.toHaveBeenCalled();
+    expect(replaceState).not.toHaveBeenCalled();
     expect(analytics.track).not.toHaveBeenCalled();
   });
 
@@ -77,7 +83,7 @@ describe("CatalogView", () => {
     expect(screen.getByText("2 productos")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Mochila 24H" })).toBeNull();
     expect(screen.getByRole("link", { name: "Comida de emergencia" })).toBeInTheDocument();
-    expect(nav.replace).toHaveBeenLastCalledWith("/products?category=accessories", { scroll: false });
+    expect(lastUrl()).toBe("/products?category=accessories");
   });
 
   it("computes category counts from the full catalog, not the filtered list", async () => {
@@ -89,7 +95,7 @@ describe("CatalogView", () => {
     expect(radioLabel(/Todas/)).toContain("4");
     expect(radioLabel(/Kits de supervivencia/)).toContain("2");
     expect(radioLabel(/Accesorios/)).toContain("2");
-    expect(nav.replace).toHaveBeenLastCalledWith("/products?category=accessories&stock=1", { scroll: false });
+    expect(lastUrl()).toBe("/products?category=accessories&stock=1");
   });
 
   it("keeps focus and value while typing a maximum price, then filters after the debounce", async () => {
@@ -100,7 +106,7 @@ describe("CatalogView", () => {
 
     expect(max).toHaveFocus();
     expect(max).toHaveValue(100);
-    await waitFor(() => expect(nav.replace).toHaveBeenLastCalledWith("/products?max=100", { scroll: false }));
+    await waitFor(() => expect(lastUrl()).toBe("/products?max=100"));
     expect(screen.getByLabelText("Máximo")).toBe(max);
     expect(max).toHaveFocus();
     expect(screen.getByText("2 productos")).toBeInTheDocument();
@@ -124,13 +130,13 @@ describe("CatalogView", () => {
 
     expect(screen.getByText("4 productos")).toBeInTheDocument();
     expect(productNames()).toEqual(["Filtros", "Potabilizador", "Comida de emergencia", "Mochila 24H", "Mochila 72H"]);
-    expect(nav.replace).toHaveBeenLastCalledWith("/products?sort=price-asc", { scroll: false });
+    expect(lastUrl()).toBe("/products?sort=price-asc");
   });
 
   it("sorts with the select and reports the change to analytics", async () => {
     const { user } = renderCatalog();
     await user.selectOptions(screen.getByLabelText("Ordenar por"), "price-desc");
-    expect(nav.replace).toHaveBeenLastCalledWith("/products?sort=price-desc", { scroll: false });
+    expect(lastUrl()).toBe("/products?sort=price-desc");
     await waitFor(() =>
       expect(analytics.track).toHaveBeenCalledWith({
         name: "products_filtered",
@@ -148,7 +154,38 @@ describe("CatalogView", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
     expect(screen.getByLabelText("Máximo")).toHaveValue(250);
     expect(screen.getByText("1 producto")).toBeInTheDocument();
-    expect(nav.replace).not.toHaveBeenCalled();
+    expect(replaceState).not.toHaveBeenCalled();
+  });
+
+  it("ignores its own URL writes when Next.js syncs them back, even if they arrive late", async () => {
+    const { user, rerender } = renderCatalog();
+    const view = () => <CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />;
+    await user.click(screen.getByRole("radio", { name: /Accesorios/ }));
+    await user.click(screen.getByRole("radio", { name: /Kits de supervivencia/ }));
+    expect(replaceState).toHaveBeenCalledTimes(2);
+
+    // The first write reaches useSearchParams after the second one was made: keep the newer state.
+    nav.searchParams = new URLSearchParams("category=accessories");
+    rerender(view());
+    expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
+
+    nav.searchParams = new URLSearchParams("category=survival-kits");
+    rerender(view());
+    expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
+    expect(replaceState).toHaveBeenCalledTimes(2);
+
+    // Once in sync, an external change to a previously written URL is adopted again.
+    nav.searchParams = new URLSearchParams("category=accessories");
+    rerender(view());
+    expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
+    expect(replaceState).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers the rating sorts only when some product has reviews", () => {
+    const unrated = products.map((snapshot) => ({ ...snapshot, rating: null }));
+    render(<CatalogView products={unrated} initialCriteria={{ sortBy: "featured" }} />);
+    const options = within(screen.getByLabelText("Ordenar por")).getAllByRole("option").map((option) => option.textContent);
+    expect(options).toEqual(["Destacados", "Precio: de menor a mayor", "Precio: de mayor a menor"]);
   });
 
   it("toggles the filter panel on small screens with an expanded state", async () => {

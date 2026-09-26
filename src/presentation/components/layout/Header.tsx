@@ -7,15 +7,21 @@ import { routes } from "@/presentation/routes";
 import { CartButton } from "./CartButton";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinkList } from "./NavLinkList";
-import { primaryLinks } from "./navigation";
+import { primaryLinks, type NavCategory } from "./navigation";
 
 const onNavyFocus = cn(focusRing, "focus-visible:ring-orange-on-navy focus-visible:ring-offset-navy");
 
-export function Header() {
+export interface HeaderProps {
+  /** Catalog categories to link to, loaded once by the root layout (empty when the catalog is unavailable). */
+  categories: readonly NavCategory[];
+}
+
+export function Header({ categories }: HeaderProps) {
+  const links = primaryLinks(categories);
   return (
     <header className="sticky top-0 z-40 h-16 bg-navy text-white shadow-md">
       <Container className="flex h-full items-center gap-2">
-        <MobileMenu />
+        <MobileMenu categories={categories} />
         <Link
           href={routes.home}
           aria-label={messages.shell.logoLabel}
@@ -25,7 +31,7 @@ export function Header() {
         </Link>
         <nav aria-label={messages.shell.nav.primary} className="ml-6 hidden min-w-0 lg:block">
           <NavLinkList
-            links={primaryLinks}
+            links={links}
             className="flex items-center gap-1"
             linkClassName={cn(
               "inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium whitespace-nowrap text-white/90 hover:text-orange-on-navy xl:px-3",

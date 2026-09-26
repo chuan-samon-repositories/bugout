@@ -8,6 +8,9 @@ import { NewsletterSection } from "@/presentation/components/home/NewsletterSect
 import { Principles } from "@/presentation/components/home/Principles";
 import { ValueProps } from "@/presentation/components/home/ValueProps";
 
+/** Regenerate at most every 5 minutes so catalog price and stock changes show up without a redeploy. */
+export const revalidate = 300;
+
 async function loadProducts(): Promise<Product[]> {
   try {
     return await getContainer().getGetProductsUseCase().execute();

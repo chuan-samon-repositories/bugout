@@ -1,4 +1,4 @@
-import type { Money } from "@/domain/value-objects/Money";
+import { discountPercentage, type Money } from "@/domain/value-objects/Money";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { cn } from "./cn";
 import { VisuallyHidden } from "./VisuallyHidden";
@@ -19,15 +19,9 @@ const sizeClasses: Record<PriceTagSize, { price: string; original: string; chip:
   lg: { price: "text-3xl", original: "text-lg", chip: "text-sm px-2 py-1" },
 };
 
-/** Whole-number discount percentage, or 0 when `original` is not a higher price in the same currency. */
-export function discountPercent(price: Money, original: Money | null | undefined): number {
-  if (!original || original.currency !== price.currency || !original.greaterThan(price)) return 0;
-  return Math.max(0, Math.round((1 - price.minor / original.minor) * 100));
-}
-
 export function PriceTag({ price, originalPrice, size = "md", className }: PriceTagProps) {
   const onSale = !!originalPrice && originalPrice.currency === price.currency && originalPrice.greaterThan(price);
-  const percent = discountPercent(price, originalPrice);
+  const percent = onSale && originalPrice ? discountPercentage(price, originalPrice) : 0;
   const styles = sizeClasses[size];
 
   return (

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cache } from "react";
 import "./globals.css";
+import { getContainer } from "@/infrastructure/config";
 import { ConsentBanner } from "@/presentation/components/consent/ConsentBanner";
 import { Footer } from "@/presentation/components/layout/Footer";
 import { Header } from "@/presentation/components/layout/Header";
+import { navCategories, type NavCategory } from "@/presentation/components/layout/navigation";
 import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
 import { Providers } from "./Providers";
@@ -33,7 +36,23 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+/**
+ * Categories for the header, mobile menu and footer, read from the catalog once per render
+ * (React cache dedupes calls within a request). A catalog failure must not break every page,
+ * so it falls back to an empty list and the navigation keeps only its fixed links.
+ */
+const loadNavCategories = cache(async (): Promise<NavCategory[]> => {
+  try {
+    return navCategories(await getContainer().getGetProductsUseCase().execute());
+  } catch (error) {
+    console.error("Could not load catalog categories for the navigation", error);
+    return [];
+  }
+});
+
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const categories = await loadNavCategories();
+
   return (
     <html lang={HTML_LANG}>
       <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-dvh flex-col font-sans antialiased`}>
@@ -44,11 +63,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           {messages.shell.skipToContent}
         </a>
         <Providers>
-          <Header />
+          <Header categories={categories} />
           <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
             {children}
           </main>
-          <Footer />
+          <Footer categories={categories} />
           <ConsentBanner />
         </Providers>
       </body>

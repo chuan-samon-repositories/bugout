@@ -1,5 +1,3 @@
-import type { ShippingMethodId } from '@/domain/entities/order/OrderPricing';
-
 /** Date of the current version of every legal page (ISO calendar date). */
 export const LEGAL_UPDATED_AT = '2026-09-26';
 
@@ -80,11 +78,6 @@ const cookieItems: readonly CookieItem[] = [
 export const content = {
   legalUpdatedAt: LEGAL_UPDATED_AT,
   updatedAt: 'Última actualización:',
-  shippingMethods: {
-    standard: 'Estándar',
-    express: 'Urgente',
-    overnight: '24 horas',
-  } satisfies Record<ShippingMethodId, string>,
   pricingTable: {
     caption: 'Tarifas de envío (IVA incluido)',
     method: 'Modalidad',

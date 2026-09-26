@@ -28,6 +28,9 @@ import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { catalogUrl, routes } from "@/presentation/routes";
 
+/** Product pages are prerendered and regenerated at most every 5 minutes (price and stock changes). */
+export const revalidate = 300;
+/** Products added after the build are rendered on first request. */
 export const dynamicParams = true;
 
 interface ProductPageProps {

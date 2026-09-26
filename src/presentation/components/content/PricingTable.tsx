@@ -25,7 +25,7 @@ export function PricingTable({ policy = getContainer().getPricingPolicy() }: Pri
         <tbody>
           {policy.shippingRates.map((rate) => (
             <tr key={rate.id}>
-              <th scope="row" className={tableClasses.rowHeader}>{messages.content.shippingMethods[rate.id]}</th>
+              <th scope="row" className={tableClasses.rowHeader}>{messages.common.shippingMethods[rate.id]}</th>
               <td className={tableClasses.cell}>
                 <span className="block">{formatMoney(rate.price)}</span>
                 {rate.freeFrom && (

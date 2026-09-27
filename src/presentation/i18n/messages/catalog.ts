@@ -171,12 +171,44 @@ export const catalog = {
     crossSellTitle: 'Añade productos',
     crossSellDescription: 'Completa tu kit con material suelto del catálogo.',
     compareLink: 'Ver la comparativa de kits',
-    buildYourOwnTitle: '¿Cómo funciona el Kit Custom?',
-    buildYourOwnText:
-      'Elige la mochila base y añádele los productos sueltos que necesites del catálogo: cada uno se añade al carrito por separado, así pagas solo lo que te falta.',
-    buildYourOwnCta: 'Ver los productos sueltos',
+    /** Gallery label of a build-your-own kit, whose linked contents are the base backpacks to choose from. */
+    galleryBases: 'Mochilas base',
+    buildYourOwnCta: 'Montar mi kit',
     quickAdd: 'Añadir',
     quickAddLabel: (name: string) => `Añadir ${name} al carrito`,
+  },
+
+  /** The kit builder on a build-your-own kit's page (Kit Custom). */
+  builder: {
+    title: 'Monta tu kit',
+    intro:
+      'Elige la mochila y marca lo que necesitas. Cada producto va al carrito por separado, así pagas solo lo que te falta.',
+    baseStep: 'Paso 1 · Elige la mochila',
+    itemsStep: 'Paso 2 · Añade lo que necesites',
+    itemsStepAlone: 'Añade lo que necesites',
+    baseNone: 'Ya tengo mochila',
+    baseNoneHint: 'Solo añadiremos los productos que elijas.',
+    presetsLabel: '¿Prefieres partir de un kit?',
+    preset: (kit: string) => `Partir del ${kit}`,
+    presetApplied: (kit: string) =>
+      `Hemos marcado el contenido del ${kit} (cantidades para 1 persona). Quita lo que ya tengas.`,
+    presetUnavailable: (items: string) => `No se venden por separado o están agotados: ${items}.`,
+    reset: 'Vaciar la selección',
+    decrease: (name: string) => `Quitar una unidad de ${name}`,
+    increase: (name: string) => `Añadir una unidad de ${name}`,
+    quantityOf: (name: string) => `Unidades de ${name}:`,
+    variant: (name: string) => `Versión de ${name}`,
+    outOfStock: 'Agotado',
+    summaryTitle: 'Tu kit',
+    summaryEmpty: 'Todavía no has elegido nada.',
+    summaryCount: (lines: number, units: number) =>
+      `${lines === 1 ? '1 producto' : `${lines} productos`} · ${units === 1 ? '1 unidad' : `${units} unidades`}`,
+    total: 'Total',
+    add: 'Añadir al carrito',
+    addHint: 'Elige al menos un producto para añadirlo al carrito.',
+    added: (lines: number) =>
+      lines === 1 ? 'Hemos añadido 1 producto al carrito.' : `Hemos añadido ${lines} productos al carrito.`,
+    unavailable: 'Ahora mismo no podemos mostrar los productos. Vuelve a intentarlo en unos minutos.',
   },
 
   home: {

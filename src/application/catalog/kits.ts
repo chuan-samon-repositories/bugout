@@ -14,12 +14,15 @@ export function looseProductsIn(products: readonly Product[]): Product[] {
 
 /** Kits that can be compared line by line: every kit except build-your-own ones. */
 export function comparableKits(products: readonly Product[]): Product[] {
-  return kitsIn(products).filter((kit) => !kit.details?.kit?.buildYourOwn);
+  return kitsIn(products).filter((kit) => !kit.isBuildYourOwn());
 }
 
-/** Kits whose contents include the product with this slug ("Incluido en el Kit 24h"). */
+/**
+ * Kits whose contents include the product with this slug ("Incluido en el Kit 24h"). Build-your-own
+ * kits are left out: their linked lines are the base backpacks to choose from, not what they include.
+ */
 export function kitsContaining(slug: string, products: readonly Product[]): Product[] {
-  return kitsIn(products).filter(
+  return comparableKits(products).filter(
     (kit) => kit.slug !== slug && (kit.details?.contents ?? []).some((line) => line.productSlug === slug),
   );
 }
@@ -30,7 +33,8 @@ export function kitsContaining(slug: string, products: readonly Product[]): Prod
  */
 export function includedInIndex(products: readonly Product[]): Record<string, string[]> {
   const index: Record<string, string[]> = {};
-  for (const kit of kitsIn(products)) {
+  // Like kitsContaining, without build-your-own kits.
+  for (const kit of comparableKits(products)) {
     for (const { productSlug } of kit.details?.contents ?? []) {
       if (!productSlug || productSlug === kit.slug) continue;
       const names = (index[productSlug] ??= []);

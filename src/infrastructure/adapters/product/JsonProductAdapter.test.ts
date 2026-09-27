@@ -90,7 +90,7 @@ describe('JsonProductAdapter with the bundled catalog', () => {
   it('derives "included in" from kit contents', async () => {
     const products = await adapter.findAll();
     expect(kitsContaining('manta-termica', products).map((kit) => kit.slug)).toEqual(['kit-24h', 'kit-72h']);
-    expect(kitsContaining('mochila-30l', products).map((kit) => kit.slug)).toEqual(['kit-72h', 'kit-custom']);
+    expect(kitsContaining('mochila-30l', products).map((kit) => kit.slug)).toEqual(['kit-72h']);
     expect(kitsContaining('mochila-65l', products)).toEqual([]);
   });
 

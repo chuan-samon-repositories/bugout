@@ -12,7 +12,8 @@ export const FEATURED_LIMIT = 8;
  */
 export function pickFlagship(products: readonly Product[]): Product | null {
   const contentsCount = (product: Product) => product.details?.contents.length ?? 0;
-  const kits = products.filter((product) => product.inStock && contentsCount(product) > 0);
+  // A build-your-own kit's contents are the backpacks to choose from, not a kit to showcase.
+  const kits = products.filter((product) => product.inStock && !product.isBuildYourOwn() && contentsCount(product) > 0);
   const pool = kits.some((product) => product.isFeatured()) ? kits.filter((product) => product.isFeatured()) : kits;
   return pool.reduce<Product | null>(
     (best, product) =>

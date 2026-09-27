@@ -30,7 +30,8 @@ Typed in `src/application/analytics/events.ts` (browser events: `AnalyticsEvent`
 | `$exception` | SDK / `captureException` | Uncaught errors, failed cart and checkout operations | `area`, `action` |
 | `product_viewed` | `ProductViewTracker` | Product page | product + variant, `badge`, `in_stock` |
 | `product_variant_selected` | `PurchasePanel` | Visitor picks another variant | product + variant |
-| `product_added_to_cart` | `CartContext` | Units the store really added | product, cart totals, `quantity`, `source` |
+| `product_added_to_cart` | `CartContext` | Units the store really added | product, cart totals, `quantity`, `source` (`product_page`, `product_card`, `cart_drawer`, `kit_builder`) |
+| `kit_builder_added_to_cart` | `KitBuilder` (Kit Custom page) | The builder put the selection in the cart (each line is also a `product_added_to_cart`) | cart totals, `kit_slug`, `line_count`, `unit_count`, `base_slug`, `preset_slug` |
 | `product_removed_from_cart` | `CartContext` | Line removed or quantity lowered | product, cart totals, `quantity` |
 | `add_to_cart_failed` | `CartContext` | Add failed | `product_id`, `reason` |
 | `cart_adjusted` | `CartContext` | Shopify lowered or dropped a line for stock (lost sale) | `product_id`, `product_name`, `reason`, `quantity_requested`, `quantity_kept` |

@@ -9,6 +9,7 @@ import { getContainer } from "@/infrastructure/config";
 const cart = vi.hoisted(() => ({
   cart: null,
   addItem: vi.fn<(product: Product, quantity: number) => Promise<boolean>>(async () => true),
+  addItems: vi.fn(async () => ({ addedLines: 0, addedUnits: 0, failedLines: 0, cart: null })),
   pending: false,
 }));
 
@@ -105,12 +106,42 @@ describe("/products/[slug]", () => {
     expect(screen.queryByText(/próximamente/i)).toBeNull();
   });
 
-  it("explains the build-your-own kit and prices it as a starting point", async () => {
+  it("turns the build-your-own kit page into a builder instead of selling the kit itself", async () => {
     await renderProduct("kit-custom");
-    expect(screen.getByRole("heading", { level: 2, name: "¿Cómo funciona el Kit Custom?" })).toBeInTheDocument();
+    expect(screen.getByText("Desde 59,00 €")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Montar mi kit" })).toHaveAttribute("href", "#kit-builder");
+    const builder = screen.getByRole("region", { name: "Monta tu kit" });
+    expect(builder).toHaveAttribute("id", "kit-builder");
+
+    // Step 1: the backpacks the kit links to, plus "Ya tengo mochila"; the first in stock is chosen.
+    const bases = within(builder).getByRole("group", { name: "Paso 1 · Elige la mochila" });
+    const labelText = (radio: HTMLElement) => radio.closest("label")?.textContent?.replace(/\s+/g, " ");
+    expect(within(bases).getAllByRole("radio").map(labelText)).toEqual([
+      "Mochila de supervivencia 30L59,00 €",
+      "Mochila de supervivencia 65L89,00 €",
+      "Ya tengo mochilaSolo añadiremos los productos que elijas.",
+    ]);
+    expect(within(bases).getByRole("radio", { name: /30L/ })).toBeChecked();
+
+    // Step 2: every other loose product, by category, with presets from the ready-made kits.
+    const items = within(builder).getByRole("region", { name: "Paso 2 · Añade lo que necesites" });
+    expect(within(items).getByRole("button", { name: "Partir del Kit 24h" })).toBeInTheDocument();
+    expect(within(items).getByRole("button", { name: "Partir del Kit 72h" })).toBeInTheDocument();
+    expect(within(items).getByRole("region", { name: "Luz y energía" })).toBeInTheDocument();
+    expect(within(items).getByRole("button", { name: "Añadir una unidad de Frontal" })).toBeInTheDocument();
+    expect(within(items).queryByText("Mochila de supervivencia 30L")).toBeNull();
+
+    // The kit itself is never added: one "Añadir al carrito", the builder's, starting with the backpack.
+    expect(screen.getAllByRole("button", { name: "Añadir al carrito" })).toHaveLength(1);
+    expect(within(builder).getByRole("complementary", { name: "Tu kit" })).toHaveTextContent("59,00 €");
     expect(screen.queryByRole("group", { name: "Número de personas" })).toBeNull();
     expect(screen.queryByRole("region", { name: "Contenido completo" })).toBeNull();
-    expect(screen.getByText("Desde")).toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "Añade productos" })).toBeNull();
+    expect(screen.getByRole("list", { name: "Mochilas base" })).toBeInTheDocument();
+
+    const [jsonLd] = JSON.parse(document.querySelector('script[type="application/ld+json"]')?.textContent ?? "[]");
+    expect(jsonLd).toMatchObject({ "@type": "Product", name: "Kit Custom" });
+    expect(jsonLd).not.toHaveProperty("offers");
   });
 
   it("links a loose product to the kits that include it", async () => {

@@ -50,6 +50,15 @@ describe("navData", () => {
     });
   });
 
+  it("prefers a ready-made kit as flagship over a build-your-own one, and falls back to it", () => {
+    const custom = buildProduct({
+      id: "kit-custom",
+      details: { ...details(30), kit: { label: "CUSTOM", buildYourOwn: true } },
+    });
+    expect(navData([...catalog.slice(0, 3), custom]).flagshipSlug).toBe("kit-72h");
+    expect(navData([custom]).flagshipSlug).toBe("kit-custom");
+  });
+
   it(`caps the kits at ${MAX_NAV_KITS} and copes with a catalog without kits`, () => {
     const many = Array.from({ length: 6 }, (_, index) => buildProduct({ id: `kit-${index}`, details: details(1) }));
     expect(navData(many).kits).toHaveLength(MAX_NAV_KITS);

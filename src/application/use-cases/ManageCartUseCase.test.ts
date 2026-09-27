@@ -53,6 +53,63 @@ describe('ManageCartUseCase', () => {
     expect(carts.saves).toBe(0);
   });
 
+  describe('addManyToCart', () => {
+    it('adds every line in a single save, on top of what the cart holds', async () => {
+      await useCase.addToCart(id('food'), qty(1));
+      const saves = carts.saves;
+      const { cart, notices, failures } = await useCase.addManyToCart([
+        { productId: id('kit'), quantity: qty(1) },
+        { productId: id('food'), quantity: qty(2) },
+      ]);
+      expect(failures).toEqual([]);
+      expect(notices).toEqual([]);
+      expect(cart.quantityOf(id('kit'))).toBe(1);
+      expect(cart.quantityOf(id('food'))).toBe(3);
+      expect(carts.saves).toBe(saves + 1);
+    });
+
+    it('leaves out and lists the lines that cannot be added, and adds the rest', async () => {
+      const { cart, failures } = await useCase.addManyToCart([
+        { productId: id('nope'), quantity: qty(1) },
+        { productId: id('sold-out'), quantity: qty(1) },
+        { productId: id('food'), quantity: qty(2) },
+      ]);
+      expect(failures.map((failure) => failure.productId)).toEqual(['nope', 'sold-out']);
+      expect(failures[0].error).toBeInstanceOf(NotFoundError);
+      expect(failures[1].error).toBeInstanceOf(BusinessRuleError);
+      expect(cart.getItems()).toHaveLength(1);
+      expect((await useCase.getCart()).cart.quantityOf(id('food'))).toBe(2);
+    });
+
+    it('lists a line that would go over the per-line limit', async () => {
+      await useCase.addToCart(id('food'), qty(98));
+      const { cart, failures } = await useCase.addManyToCart([
+        { productId: id('food'), quantity: qty(2) },
+        { productId: id('kit'), quantity: qty(1) },
+      ]);
+      expect(failures).toEqual([{ productId: 'food', error: expect.objectContaining({ code: 'MAX_QUANTITY_EXCEEDED' }) }]);
+      expect(cart.quantityOf(id('food'))).toBe(98);
+      expect(cart.quantityOf(id('kit'))).toBe(1);
+    });
+
+    it('does not save when no line could be added', async () => {
+      const { cart, failures } = await useCase.addManyToCart([{ productId: id('sold-out'), quantity: qty(1) }]);
+      expect(failures).toHaveLength(1);
+      expect(cart.isEmpty()).toBe(true);
+      expect(carts.saves).toBe(0);
+    });
+
+    it('reports what the backend lowered to the stock', async () => {
+      carts.stock = { food: 1 };
+      const { cart, notices } = await useCase.addManyToCart([
+        { productId: id('food'), quantity: qty(3) },
+        { productId: id('kit'), quantity: qty(1) },
+      ]);
+      expect(cart.quantityOf(id('food'))).toBe(1);
+      expect(notices).toEqual([expect.objectContaining({ kind: 'quantityReduced', productId: 'food', requested: 3, quantity: 1 })]);
+    });
+  });
+
   it('setQuantity sets the exact quantity', async () => {
     await useCase.addToCart(id('kit'), qty(1));
     const { cart } = await useCase.setQuantity(id('kit'), qty(7));

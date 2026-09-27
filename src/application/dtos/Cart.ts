@@ -16,3 +16,14 @@ export interface CartUpdate {
   cart: Cart;
   notices: readonly CartNotice[];
 }
+
+/** A line `ManageCartUseCase.addManyToCart` could not add, with the error adding it alone would have thrown. */
+export interface CartAddFailure {
+  productId: string;
+  error: unknown;
+}
+
+/** The result of adding several lines at once: the lines that could not be added are left out and listed. */
+export interface CartBulkUpdate extends CartUpdate {
+  failures: readonly CartAddFailure[];
+}

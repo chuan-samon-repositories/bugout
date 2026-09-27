@@ -315,6 +315,11 @@
           "item": "Mochila de supervivencia 30L",
           "quantity": "1",
           "productSlug": "mochila-30l"
+        },
+        {
+          "item": "Mochila de supervivencia 65L",
+          "quantity": "1",
+          "productSlug": "mochila-65l"
         }
       ],
       "kit": {

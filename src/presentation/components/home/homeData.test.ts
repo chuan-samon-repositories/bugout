@@ -60,6 +60,17 @@ describe("pickFlagship", () => {
     expect(pickFlagship([small, big, unfeatured])?.slug).toBe("big");
   });
 
+  it("never showcases a build-your-own kit, whose contents are only its backpack choices", () => {
+    const custom = buildProduct({
+      id: "custom",
+      featured: true,
+      details: { ...contents(12), kit: { label: "CUSTOM", buildYourOwn: true } },
+    });
+    const kit = buildProduct({ id: "kit", details: contents(3) });
+    expect(pickFlagship([custom, kit])?.slug).toBe("kit");
+    expect(pickFlagship([custom])).toBeNull();
+  });
+
   it("falls back to non-featured kits and skips products without contents or stock", () => {
     const empty = buildProduct({ id: "empty", featured: true, details: null });
     const soldOut = buildProduct({ id: "sold-out", details: contents(9), inStock: false });

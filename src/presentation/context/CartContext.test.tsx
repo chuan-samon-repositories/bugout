@@ -333,6 +333,35 @@ describe("CartProvider", () => {
     });
   });
 
+  it("adds several lines at once, opening the drawer once, and reports a failed save without adding anything", async () => {
+    const manageCart = getContainer().getManageCartUseCase();
+    const captureException = vi.spyOn(getContainer().getAnalyticsService(), "captureException");
+    const [backpack, blanket] = await Promise.all([product("mochila-30l"), product("manta-termica")]);
+    const { result } = await renderCart();
+
+    let outcome: Awaited<ReturnType<typeof result.current.addItems>> | undefined;
+    await act(async () => {
+      outcome = await result.current.addItems([
+        { product: backpack, quantity: 1 },
+        { product: blanket, quantity: 3 },
+      ]);
+    });
+    expect(outcome).toMatchObject({ addedLines: 2, addedUnits: 4, failedLines: 0 });
+    expect(result.current.itemCount).toBe(4);
+    expect(result.current.isOpen).toBe(true);
+
+    act(() => result.current.closeCart());
+    vi.spyOn(manageCart, "addManyToCart").mockRejectedValueOnce(new Error("offline"));
+    await act(async () => {
+      outcome = await result.current.addItems([{ product: blanket, quantity: 1 }]);
+    });
+    expect(outcome).toMatchObject({ addedLines: 0, failedLines: 1, cart: null });
+    expect(result.current.itemCount).toBe(4);
+    expect(result.current.isOpen).toBe(false);
+    expect(await screen.findByText("Algo ha salido mal. Inténtalo de nuevo.")).toBeInTheDocument();
+    expect(captureException).toHaveBeenCalledWith(expect.any(Error), { area: "cart", action: "add_many" });
+  });
+
   it("rejects invalid quantities without touching the cart", async () => {
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     const backpack = await product("mochila-65l");

@@ -64,11 +64,12 @@ describe("ProductCard", () => {
     expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
-  it("shows a build-your-own kit base as a starting price, with a decorative placeholder", () => {
+  it("shows a build-your-own kit as a starting price and a link to its builder, never as something to add", () => {
     const custom = buildProduct({
       id: "kit-custom",
       name: "Kit Custom",
       price: 59,
+      inStock: false,
       details: { features: [], specifications: [], contents: [], kit: { label: "CUSTOM", buildYourOwn: true } },
     });
     const { container } = render(<ProductCard product={custom} />);
@@ -76,7 +77,10 @@ describe("ProductCard", () => {
     // The heading names the card: the label box is not a second, redundant image.
     expect(screen.queryByRole("img", { name: "Kit Custom" })).toBeNull();
     expect(container.querySelector("[data-kit-placeholder]")).toHaveAttribute("aria-hidden", "true");
-    expect(screen.getByRole("button", { name: "Añadir Kit Custom al carrito" })).toBeInTheDocument();
+    expect(container.querySelectorAll("button")).toHaveLength(0);
+    // Its own stock is meaningless: the builder sells the products it is made of.
+    expect(screen.queryByText("Agotado")).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Kit Custom" })).toHaveAttribute("href", "/products/kit-custom");
   });
 
   it("supports a level-3 heading for use under a section heading", () => {

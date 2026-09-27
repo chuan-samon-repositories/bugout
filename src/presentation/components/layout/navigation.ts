@@ -28,12 +28,14 @@ const nav = messages.shell.nav;
 const footer = messages.shell.footer;
 
 /**
- * Kits in catalog order (capped at `max`) and the flagship kit: the one with the most
- * contents, which is the most complete kit (the Kit 72h in the demo catalog).
+ * Kits in catalog order (capped at `max`) and the flagship kit: the ready-made kit with the
+ * most contents, which is the most complete kit (the Kit 72h in the demo catalog).
  */
 export function navData(products: readonly Product[], max = MAX_NAV_KITS): NavData {
   const kits = kitsIn(products);
-  const flagship = kits.reduce<Product | null>(
+  // A ready-made kit when there is one; a build-your-own kit's contents are only its backpack choices.
+  const packed = kits.filter((kit) => !kit.isBuildYourOwn());
+  const flagship = (packed.length > 0 ? packed : kits).reduce<Product | null>(
     (best, kit) =>
       best === null || (kit.details?.contents.length ?? 0) > (best.details?.contents.length ?? 0) ? kit : best,
     null,

@@ -1,7 +1,7 @@
 import { Cart } from '@/domain/entities/cart/Cart';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { Quantity } from '@/domain/value-objects/Quantity';
-import type { CartNotice, CartUpdate } from '@/application/dtos/Cart';
+import type { CartAddFailure, CartBulkUpdate, CartNotice, CartUpdate } from '@/application/dtos/Cart';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { ProductRepository } from '@/application/ports/ProductRepository';
 
@@ -48,6 +48,30 @@ export class ManageCartUseCase {
   async addToCart(productId: ProductId, quantity: Quantity): Promise<CartUpdate> {
     const product = await this.productRepository.findById(productId);
     return this.update((cart) => cart.addItem(product, quantity));
+  }
+
+  /**
+   * Adds several products in one save (the kit builder). Each line is looked up and added on its own:
+   * one that cannot be added (unknown, sold out, over the per-line limit) is left out and listed in
+   * `failures` instead of failing the rest. Nothing is saved when no line could be added.
+   */
+  async addManyToCart(items: ReadonlyArray<{ productId: ProductId; quantity: Quantity }>): Promise<CartBulkUpdate> {
+    const lookups = await Promise.allSettled(items.map(({ productId }) => this.productRepository.findById(productId)));
+    const cart = await this.cartRepository.load();
+    const dropped = this.cartRepository.loadNotices();
+    const failures: CartAddFailure[] = [];
+    items.forEach(({ productId, quantity }, index) => {
+      const lookup = lookups[index];
+      try {
+        if (lookup.status === 'rejected') throw lookup.reason;
+        cart.addItem(lookup.value, quantity);
+      } catch (error) {
+        failures.push({ productId: productId.value, error });
+      }
+    });
+    if (failures.length === items.length) return { cart, notices: dropped, failures };
+    const saved = await this.cartRepository.save(cart);
+    return { cart: saved, notices: [...dropped, ...backendChanges(cart, saved)], failures };
   }
 
   setQuantity(productId: ProductId, quantity: Quantity): Promise<CartUpdate> {

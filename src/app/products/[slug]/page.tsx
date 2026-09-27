@@ -2,7 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { includedInIndex, kitsContaining, relatedProducts, resolveContents } from "@/application/catalog";
+import {
+  builderBases,
+  builderGroups,
+  builderPresets,
+  includedInIndex,
+  kitsContaining,
+  relatedProducts,
+  resolveContents,
+} from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { NotFoundError } from "@/domain/errors";
 import { getContainer } from "@/infrastructure/config";
@@ -15,9 +23,12 @@ import { ProductImage } from "@/presentation/components/catalog/ProductImage";
 import { productViewedProperties } from "@/presentation/components/catalog/productAnalytics";
 import { productJsonLd } from "@/presentation/components/catalog/productJsonLd";
 import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
+import { startingPriceLabel } from "@/presentation/components/catalog/startingPrice";
 import { ProductViewTracker } from "@/presentation/components/catalog/ProductViewTracker";
+import { KitBuilder } from "@/presentation/components/kits/KitBuilder";
 import { KitContentsList } from "@/presentation/components/kits/KitContents";
 import { KitGallery } from "@/presentation/components/kits/KitGallery";
+import { KitSpecsTable } from "@/presentation/components/kits/KitSpecsTable";
 import { PurchasePanel } from "@/presentation/components/kits/PurchasePanel";
 import {
   ArrowRightIcon,
@@ -108,6 +119,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   });
 }
 
+/** Anchor of the Kit Custom builder ("Montar mi kit"). */
+const KIT_BUILDER_ID = "kit-builder";
+
 const sectionTitle = "mb-6 text-[clamp(1.5rem,3vw,2rem)] text-navy-deep";
 
 export default async function ProductPage({ params }: ProductPageProps) {
@@ -119,7 +133,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const t = messages.catalog.product;
   const k = messages.catalog.kit;
   const kit = product.details?.kit ?? null;
-  const buildYourOwn = !!kit?.buildYourOwn;
+  const buildYourOwn = product.isBuildYourOwn();
   const lines = resolveContents(product, catalog);
   const containing = kitsContaining(product.slug, catalog);
   const crossSell = relatedProducts(product, catalog);
@@ -150,7 +164,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         <div className="mt-8 mb-20 grid gap-10 lg:grid-cols-2 lg:gap-14">
           {kit ? (
-            <KitGallery kit={product} lines={lines} />
+            <KitGallery kit={product} lines={lines} label={buildYourOwn ? k.galleryBases : undefined} />
           ) : product.images.length > 1 ? (
             <ProductGallery product={snapshot} />
           ) : (
@@ -190,7 +204,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
             )}
 
             {/* Only kits show their specs here; other products list them in ProductDetailSections below. */}
-            <PurchasePanel product={snapshot} fromLabel={buildYourOwn} showSpecs={!!kit} />
+            {buildYourOwn ? (
+              // Not sold as such: the builder below adds the backpack and the products the visitor picks.
+              <div className="flex flex-col gap-6">
+                <p className="text-2xl font-extrabold text-navy-deep">{startingPriceLabel(product)}</p>
+                <ButtonLink href={`#${KIT_BUILDER_ID}`} size="lg" className="self-start">
+                  {k.buildYourOwnCta}
+                  <ArrowRightIcon className="size-4" />
+                </ButtonLink>
+                <KitSpecsTable rows={product.details?.specifications ?? []} />
+              </div>
+            ) : (
+              <PurchasePanel product={snapshot} showSpecs={!!kit} />
+            )}
 
             {kit && !buildYourOwn && (
               <Link href={routes.howToChoose} className={cn(textLinkClasses, "self-start")}>
@@ -203,14 +229,24 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
 
         {buildYourOwn && (
-          <section aria-labelledby="build-your-own-title" className="mb-20 rounded-2xl bg-sand-dim px-7 py-8 sm:px-9">
-            <h2 id="build-your-own-title" className="mb-2.5 text-lg text-navy-deep">
-              {k.buildYourOwnTitle}
+          <section
+            id={KIT_BUILDER_ID}
+            aria-labelledby="kit-builder-title"
+            className="mb-20 scroll-mt-[calc(var(--header-height)+1.5rem)]"
+          >
+            <h2 id="kit-builder-title" className="mb-2.5 text-[clamp(1.5rem,3vw,2rem)] text-navy-deep">
+              {messages.catalog.builder.title}
             </h2>
-            <p className="mb-5 max-w-3xl text-muted">{k.buildYourOwnText}</p>
-            <ButtonLink href={routes.products} variant="secondary" size="sm">
-              {k.buildYourOwnCta}
-            </ButtonLink>
+            <p className="mb-8 max-w-3xl text-muted">{messages.catalog.builder.intro}</p>
+            <KitBuilder
+              kitSlug={product.slug}
+              bases={builderBases(product, catalog).map(toProductSnapshot)}
+              groups={builderGroups(product, catalog).map((group) => ({
+                category: group.category,
+                products: group.products.map(toProductSnapshot),
+              }))}
+              presets={builderPresets(product, catalog)}
+            />
           </section>
         )}
 
@@ -230,7 +266,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </div>
         )}
 
-        {related.length > 0 && (
+        {/* The builder already lists every loose product. */}
+        {related.length > 0 && !buildYourOwn && (
           <section aria-labelledby="related-products-title">
             <h2 id="related-products-title" className={sectionTitle}>
               {kit ? k.crossSellTitle : t.related}

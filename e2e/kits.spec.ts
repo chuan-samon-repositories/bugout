@@ -101,8 +101,52 @@ test.describe('kits', () => {
 
     await page.getByRole('link', { name: `Ver el kit: ${KITS.kitCustom.name}` }).click();
     await expect(page).toHaveURL(`/products/${KITS.kitCustom.slug}`);
-    await expect(page.getByRole('heading', { level: 2, name: '¿Cómo funciona el Kit Custom?' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Monta tu kit' })).toBeVisible();
     await expect(page.getByRole('main').getByRole('group', { name: 'Número de personas' })).toHaveCount(0);
     if (!isMobile) await expect(page.getByRole('banner').getByRole('link', { name: 'Kit Custom' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  test('the Kit Custom builder puts the backpack and the chosen products in the cart at once', async ({ page }) => {
+    await openPage(page, `/products/${KITS.kitCustom.slug}`);
+    const main = page.getByRole('main');
+    // The kit itself is not sold: the page leads to the builder.
+    await main.getByRole('link', { name: 'Montar mi kit' }).click();
+    await expect(page).toHaveURL(/#kit-builder$/);
+    const builder = main.getByRole('region', { name: 'Monta tu kit' });
+    const summary = builder.getByRole('complementary', { name: 'Tu kit' });
+    await expect(builder.getByRole('heading', { level: 2, name: 'Monta tu kit' })).toBeInViewport();
+
+    await builder.getByText(PRODUCTS.backpack65l.name, { exact: true }).click();
+    await expect(builder.getByRole('radio', { name: new RegExp(PRODUCTS.backpack65l.name) })).toBeChecked();
+
+    // The Kit 24h's loose products, without the water and food it also includes.
+    await builder.getByRole('button', { name: `Partir del ${KITS.kit24h.name}` }).click();
+    await expect(builder.getByText(/No se venden por separado o están agotados: Barritas energéticas/)).toBeVisible();
+    await builder.getByRole('button', { name: `Quitar una unidad de ${PRODUCTS.firstAid.name}` }).click();
+    await builder.getByRole('button', { name: `Añadir una unidad de ${PRODUCTS.radio.name}` }).click();
+
+    // 65L backpack 89 + manta 6 + poncho 9 + silbato 5 + frontal 14 + cantimplora 12 + radio 24
+    await expect(summary).toContainText('7 productos · 7 unidades');
+    await expect(summary.getByText(eur(159), { exact: true })).toBeVisible();
+
+    const add = summary.getByRole('button', { name: 'Añadir al carrito' });
+    await add.click();
+    const drawer = cartDrawer(page);
+    await expect(drawer).toBeVisible();
+    for (const name of [PRODUCTS.backpack65l.name, PRODUCTS.headlamp.name, PRODUCTS.radio.name, PRODUCTS.canteen.name]) {
+      await expect(cartLine(drawer, name)).toHaveCount(1);
+    }
+    await expect(cartLine(drawer, PRODUCTS.firstAid.name)).toHaveCount(0);
+    await expect(cartButton(page)).toHaveAccessibleName(cartButtonName(7));
+    const stored = (await readStorage(page, CART_KEY)) as { items: unknown[] } | null;
+    expect(stored?.items).toHaveLength(7);
+
+    // Closing the drawer returns focus to the builder, which starts over without a second backpack.
+    await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+    await expect(add).toBeFocused();
+    await expect(summary).toContainText('Hemos añadido 7 productos al carrito.');
+    await expect(builder.getByRole('radio', { name: /Ya tengo mochila/ })).toBeChecked();
+    await expect(add).toHaveAttribute('aria-disabled', 'true');
   });
 });

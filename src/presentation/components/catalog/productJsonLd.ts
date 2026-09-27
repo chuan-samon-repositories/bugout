@@ -40,7 +40,7 @@ const sku = (variant: ProductVariant) => (isShopifyGid(variant.id.value) ? {} : 
 /**
  * schema.org data for a product page. A product sold in several variants (a kit for 1, 2 or 4 people) is a
  * ProductGroup whose variants differ by size (the number of people), each with its own Offer; any other
- * product is a Product with one Offer.
+ * product is a Product with one Offer, except a build-your-own kit, which has none.
  */
 export function productJsonLd(product: Product, { origin, policy }: ProductJsonLdContext): JsonLdObject {
   const url = absoluteUrl(routes.product(product.slug), origin);
@@ -70,7 +70,8 @@ export function productJsonLd(product: Product, { origin, policy }: ProductJsonL
       ...image,
       ...sku(product.selectedVariant()),
       ...rating,
-      offers: offer(product.selectedVariant(), url, policy),
+      // A build-your-own kit is not sold as such (its page adds loose products), so it has no offer.
+      ...(product.isBuildYourOwn() ? {} : { offers: offer(product.selectedVariant(), url, policy) }),
     };
   }
 

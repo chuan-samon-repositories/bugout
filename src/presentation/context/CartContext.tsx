@@ -15,7 +15,21 @@ import { messages, toUserMessage } from "@/presentation/i18n";
 import { useAnalytics } from "./AnalyticsContext";
 import { useNotifications } from "./NotificationContext";
 
-export type AddToCartSource = "product_page" | "product_card" | "cart_drawer";
+export type AddToCartSource = "product_page" | "product_card" | "cart_drawer" | "kit_builder";
+
+export interface CartLineRequest {
+  product: Product;
+  quantity: number;
+}
+
+/** What `addItems` did: the lines and units the cart took, and how many lines it could not add. */
+export interface AddItemsResult {
+  addedLines: number;
+  addedUnits: number;
+  failedLines: number;
+  /** The cart after the change, or null when nothing was saved. */
+  cart: Cart | null;
+}
 
 export interface CheckoutOptions {
   /** Replace the current history entry when handing off to a hosted checkout. Default false. */
@@ -41,6 +55,11 @@ export interface CartContextValue {
    * confirmation; no success toast that could cover its buttons), or shows an error toast.
    */
   addItem(product: Product, quantity: number, source?: AddToCartSource): Promise<boolean>;
+  /**
+   * Adds several lines in one change (the kit builder). Opens the drawer once when any line was added;
+   * each line that could not be added gets its own error toast. Never rejects.
+   */
+  addItems(lines: readonly CartLineRequest[], source?: AddToCartSource): Promise<AddItemsResult>;
   setItemQuantity(productId: string, quantity: number): Promise<void>;
   /** Removes the whole line. */
   removeItem(productId: string): Promise<void>;
@@ -280,6 +299,58 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [manageCart, apply]);
 
+  const addItems = useCallback(
+    (lines: readonly CartLineRequest[], source: AddToCartSource = "kit_builder") =>
+      enqueue(async (): Promise<AddItemsResult> => {
+        const trackFailure = (product: Product, quantity: number, reason: FailureReason) =>
+          analytics.track({
+            name: "add_to_cart_failed",
+            properties: { product_id: product.id.value, variant_title: product.variantTitle, quantity, reason },
+          });
+        try {
+          const update = await manageCart.addManyToCart(
+            lines.map(({ product, quantity }) => ({ productId: product.id, quantity: new Quantity(quantity) })),
+          );
+          apply(update);
+          let addedLines = 0;
+          let addedUnits = 0;
+          for (const { product, quantity } of lines) {
+            const failure = update.failures.find((candidate) => candidate.productId === product.id.value);
+            if (failure) {
+              const reason = failureReason(failure.error);
+              notify({ tone: "error", message: toUserMessage(failure.error, { productName: product.displayName }) });
+              trackFailure(product, quantity, reason);
+              if (reason === "unknown") analytics.captureException(failure.error, { area: "cart", action: "add_many" });
+              continue;
+            }
+            const added = unitsAdded(product.id.value, quantity, update.notices);
+            if (added === 0) {
+              // The store had no stock left for it; the info toast says so.
+              trackFailure(product, quantity, "out_of_stock");
+              continue;
+            }
+            addedLines += 1;
+            addedUnits += added;
+            analytics.track({
+              name: "product_added_to_cart",
+              properties: { ...productProperties(product), ...cartProperties(update.cart), quantity: added, source },
+            });
+          }
+          // The drawer opening (a labelled dialog that takes focus) is the confirmation.
+          if (addedLines > 0) showDrawer();
+          return { addedLines, addedUnits, failedLines: lines.length - addedLines, cart: addedLines > 0 ? update.cart : null };
+        } catch (error) {
+          // Loading or saving the cart failed: nothing was added.
+          notify({ tone: "error", message: toUserMessage(error) });
+          for (const { product, quantity } of lines) trackFailure(product, quantity, failureReason(error));
+          if (!isExpectedError(error)) analytics.captureException(error, { area: "cart", action: "add_many" });
+          await recover();
+          return { addedLines: 0, addedUnits: 0, failedLines: lines.length, cart: null };
+        }
+      }, true),
+    [enqueue, manageCart, apply, showDrawer, notify, analytics, recover],
+  );
+
   const setItemQuantity = useCallback(
     (productId: string, quantity: number) =>
       enqueue(async () => {
@@ -401,6 +472,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       openCart,
       closeCart,
       addItem,
+      addItems,
       setItemQuantity,
       removeItem,
       clearCart,
@@ -417,6 +489,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       openCart,
       closeCart,
       addItem,
+      addItems,
       setItemQuantity,
       removeItem,
       clearCart,

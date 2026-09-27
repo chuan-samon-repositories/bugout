@@ -56,7 +56,8 @@ const custom = buildProduct({
   id: 'kit-custom',
   category: 'kits',
   price: 59,
-  details: details({ kit: { label: 'CUSTOM', buildYourOwn: true } }),
+  // Its linked line is a base to choose from, not something it includes.
+  details: details({ kit: { label: 'CUSTOM', buildYourOwn: true }, contents: [{ item: 'Manta', quantity: '1', productSlug: 'manta' }] }),
 });
 const catalog = [kit24, kit72, custom, manta, radio];
 

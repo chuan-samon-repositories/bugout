@@ -12,7 +12,16 @@ const copy = messages.catalog.kit;
  * navy box with the kit label, as on the cards, never a stand-in photo), then a grid with
  * the photo of every content line sold separately.
  */
-export function KitGallery({ kit, lines }: { kit: Product; lines: readonly ResolvedContentLine[] }) {
+export function KitGallery({
+  kit,
+  lines,
+  label = copy.galleryContents,
+}: {
+  kit: Product;
+  lines: readonly ResolvedContentLine[];
+  /** Accessible name of the content photo grid. */
+  label?: string;
+}) {
   const pictured = lines.flatMap((line) => (line.product?.images[0] ? [{ product: line.product, image: line.product.images[0] }] : []));
   const unique = pictured.filter((entry, index) => pictured.findIndex((other) => other.product.slug === entry.product.slug) === index);
 
@@ -35,7 +44,7 @@ export function KitGallery({ kit, lines }: { kit: Product; lines: readonly Resol
         </div>
       )}
       {unique.length > 0 && (
-        <ul aria-label={copy.galleryContents} className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <ul aria-label={label} className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {unique.map(({ product, image }) => (
             <li key={product.slug} className="relative aspect-square overflow-hidden rounded-lg bg-navy">
               <Image src={image.url} alt={image.alt} fill sizes="(min-width: 1024px) 140px, 25vw" className="object-cover" />

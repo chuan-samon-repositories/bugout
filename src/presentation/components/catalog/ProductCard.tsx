@@ -25,7 +25,7 @@ export interface ProductCardProps {
  * The partner design's shop card: photo on navy, name, "Incluido en" badges, price and
  * a quick "Añadir" button. The name is the card's link and stretches over the whole
  * surface; the button sits above it. Products with variants (kits) have no quick add:
- * the visitor picks the variant on the product page.
+ * the visitor picks the variant on the product page. Nor does the Kit Custom, which is built there.
  */
 export function ProductCard({
   product,
@@ -36,7 +36,9 @@ export function ProductCard({
   className,
 }: ProductCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
-  const quickAdd = product.inStock && !product.hasVariants();
+  // A build-your-own kit is not sold as such: its page is the builder, so the card only links there.
+  const buildYourOwn = product.isBuildYourOwn();
+  const quickAdd = product.inStock && !product.hasVariants() && !buildYourOwn;
 
   return (
     <article
@@ -63,7 +65,7 @@ export function ProductCard({
           <ProductImage product={product} sizes={sizes} priority={priority} />
         )}
         {product.badge && <ProductBadge badge={product.badge} className="absolute top-2.5 left-2.5" />}
-        {!product.inStock && (
+        {!product.inStock && !buildYourOwn && (
           <div className="absolute inset-0 flex items-center justify-center bg-navy-deep/60">
             <span className="rounded-full bg-white px-4 py-1.5 text-sm font-bold text-navy-deep">
               {messages.catalog.card.outOfStock}

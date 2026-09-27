@@ -68,7 +68,10 @@ export type AnalyticsEvent =
   | { name: 'product_variant_selected'; properties: ProductProperties & { in_stock: boolean } }
   | {
       name: 'product_added_to_cart';
-      properties: ProductProperties & CartProperties & { quantity: number; source: 'product_page' | 'product_card' | 'cart_drawer' };
+      properties: ProductProperties & CartProperties & {
+        quantity: number;
+        source: 'product_page' | 'product_card' | 'cart_drawer' | 'kit_builder';
+      };
     }
   | { name: 'product_removed_from_cart'; properties: ProductProperties & CartProperties & { quantity: number } }
   | {
@@ -78,6 +81,20 @@ export type AnalyticsEvent =
         variant_title: string | null;
         quantity: number;
         reason: 'out_of_stock' | 'max_quantity' | 'not_found' | 'unknown';
+      };
+    }
+  | {
+      /** The kit builder (Kit Custom page) put the visitor's selection in the cart; each line is also a product_added_to_cart. */
+      name: 'kit_builder_added_to_cart';
+      properties: CartProperties & {
+        kit_slug: string;
+        /** Lines and units the cart really took (lines that failed are left out). */
+        line_count: number;
+        unit_count: number;
+        /** The chosen base backpack, or null for "Ya tengo mochila". */
+        base_slug: string | null;
+        /** The kit the selection started from ("Partir del Kit 72h"), or null. */
+        preset_slug: string | null;
       };
     }
   | { name: 'cart_viewed'; properties: CartProperties }

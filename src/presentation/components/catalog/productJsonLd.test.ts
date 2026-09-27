@@ -18,6 +18,17 @@ type Offer = {
 type Variant = { name: string; size: string; sku?: string; offers: Offer };
 
 describe("productJsonLd", () => {
+  it("gives a build-your-own kit, which is not sold as such, no offer", () => {
+    const custom = buildProduct({
+      id: "kit-custom",
+      name: "Kit Custom",
+      details: { features: [], specifications: [], contents: [], kit: { label: "CUSTOM", buildYourOwn: true } },
+    });
+    const data = productJsonLd(custom, context);
+    expect(data.name).toBe("Kit Custom");
+    expect(data).not.toHaveProperty("offers");
+  });
+
   it("describes the product with absolute URLs and a two-decimal price", () => {
     const product = buildProduct({
       id: "kit-24h",

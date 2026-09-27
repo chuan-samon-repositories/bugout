@@ -254,6 +254,14 @@ export class Product {
     return this.details?.kit !== undefined;
   }
 
+  /**
+   * A build-your-own kit (the Kit Custom): not sold as such. Its page is a builder that adds
+   * the base backpack and the loose products the visitor picks, each as its own cart line.
+   */
+  isBuildYourOwn(): boolean {
+    return this.details?.kit?.buildYourOwn === true;
+  }
+
   isOnSale(): boolean {
     return this.originalPrice !== null && this.originalPrice.greaterThan(this.price);
   }

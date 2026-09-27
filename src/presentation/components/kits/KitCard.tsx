@@ -75,9 +75,9 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
         </ul>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-xl font-extrabold text-navy-deep">{kitPriceLabel(kit)}</p>
-          <Link href={routes.product(kit.slug)} className={buttonClasses({ size: "sm" })}>
+          {/* The label starts with the visible text, so voice control users can say "Ver el kit". */}
+          <Link href={routes.product(kit.slug)} aria-label={`${copy.view}: ${kit.name}`} className={buttonClasses({ size: "sm" })}>
             {copy.view}
-            <span className="sr-only">: {kit.name}</span>
           </Link>
         </div>
       </div>

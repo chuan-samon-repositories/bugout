@@ -1,21 +1,27 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './support/fixtures';
-import { CATALOG_SIZE, PRODUCTS, openPage, primaryNav } from './support/site';
+import { CATALOG_SIZE, CATEGORY_COUNTS, KITS, PRODUCTS, cartDrawer, cartLine, openPage, primaryNav } from './support/site';
 
-const ALL = Object.values(PRODUCTS);
-const ACCESSORIES = [PRODUCTS.food, PRODUCTS.water, PRODUCTS.firstAid];
-const KITS = [PRODUCTS.backpack24h, PRODUCTS.backpack72h, PRODUCTS.customKit];
-const ON_SALE = [PRODUCTS.backpack24h, PRODUCTS.backpack72h, PRODUCTS.customKit, PRODUCTS.firstAid];
+const LIGHT = ['Radio solar', 'Frontal', 'Lámpara de camping'];
 
-/** The filter sidebar; on mobile it is collapsed behind the "Filtros" toggle and gets expanded. */
-async function filters(page: Page, isMobile: boolean): Promise<Locator> {
-  const aside = page.getByRole('complementary', { name: 'Filtros' });
-  if (isMobile) {
-    const toggle = aside.getByRole('button', { name: /^Filtros/ });
-    if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
-    await expect(toggle).toHaveAttribute('aria-expanded', 'true');
-  }
-  return aside;
+/** The filter area: category chips, result count, sort and the "Más filtros" panel. */
+function filterArea(page: Page): Locator {
+  return page.getByRole('complementary', { name: 'Filtros' });
+}
+
+/** Opens the "Más filtros" panel (price and availability) if it is closed. */
+async function moreFilters(page: Page): Promise<Locator> {
+  const area = filterArea(page);
+  const toggle = area.getByRole('button', { name: /^Más filtros/ });
+  if ((await toggle.getAttribute('aria-expanded')) !== 'true') await toggle.click();
+  await expect(toggle).toHaveAttribute('aria-expanded', 'true');
+  return area;
+}
+
+function chip(page: Page, label: string): Locator {
+  return filterArea(page)
+    .getByRole('navigation', { name: 'Categorías' })
+    .getByRole('link', { name: new RegExp(`^${label} \\(\\d+\\)$`) });
 }
 
 function cards(page: Page): Locator {
@@ -26,24 +32,24 @@ function resultCount(page: Page): Locator {
   return page.getByRole('main').getByText(/^\d+ productos?$/);
 }
 
-async function expectProducts(page: Page, expected: readonly { name: string }[]) {
-  await expect(resultCount(page)).toHaveText(`${expected.length} ${expected.length === 1 ? 'producto' : 'productos'}`);
+async function expectProducts(page: Page, expected: readonly string[] | number) {
+  const count = typeof expected === 'number' ? expected : expected.length;
+  await expect(resultCount(page)).toHaveText(`${count} ${count === 1 ? 'producto' : 'productos'}`);
   const names = cards(page).getByRole('heading');
-  await expect(names).toHaveCount(expected.length);
-  expect([...(await names.allInnerTexts())].sort()).toEqual(expected.map((product) => product.name).sort());
+  await expect(names).toHaveCount(count);
+  if (typeof expected !== 'number') {
+    expect([...(await names.allInnerTexts())].sort()).toEqual([...expected].sort());
+  }
 }
 
-function categoryRadio(scope: Locator, label: string): Locator {
-  return scope.getByRole('radio', { name: new RegExp(`^${label}\\b`) });
+async function expectChipCounts(page: Page) {
+  await expect(chip(page, 'Todas')).toHaveAccessibleName(`Todas (${CATALOG_SIZE})`);
+  for (const [label, count] of Object.entries(CATEGORY_COUNTS)) {
+    await expect(chip(page, label)).toHaveAccessibleName(`${label} (${count})`);
+  }
 }
 
-async function expectFullCatalogCounts(panel: Locator) {
-  await expect(categoryRadio(panel, 'Todas')).toHaveAccessibleName(`Todas ${CATALOG_SIZE}`);
-  await expect(categoryRadio(panel, 'Kits de supervivencia')).toHaveAccessibleName(`Kits de supervivencia ${KITS.length}`);
-  await expect(categoryRadio(panel, 'Accesorios')).toHaveAccessibleName(`Accesorios ${ACCESSORIES.length}`);
-}
-
-/** Current price of each card in display order (the first euro amount in the card). */
+/** Price of each card in display order (the first euro amount in the card, "Desde" included). */
 async function cardPrices(page: Page): Promise<number[]> {
   const texts = await cards(page).allInnerTexts();
   return texts.map((text) => {
@@ -54,122 +60,113 @@ async function cardPrices(page: Page): Promise<number[]> {
 }
 
 test.describe('catalog', () => {
-  test('category filter updates the URL and the results; counts come from the full catalog', async ({ page, isMobile }) => {
+  test('category chips filter in place, update the URL and keep the full-catalog counts', async ({ page }) => {
     await openPage(page, '/products');
-    await expectProducts(page, ALL);
-    const panel = await filters(page, isMobile);
-    await expectFullCatalogCounts(panel);
+    await expectProducts(page, CATALOG_SIZE);
+    await expectChipCounts(page);
+    await expect(chip(page, 'Todas')).toHaveAttribute('aria-current', 'page');
 
-    await categoryRadio(panel, 'Accesorios').check();
-    await expect(page).toHaveURL('/products?category=accessories');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Accesorios');
-    await expectProducts(page, ACCESSORIES);
-    await expectFullCatalogCounts(panel);
+    await chip(page, 'Luz y energía').click();
+    await expect(page).toHaveURL('/products?category=luz-y-energia');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Luz y energía');
+    await expect(chip(page, 'Luz y energía')).toHaveAttribute('aria-current', 'page');
+    await expectProducts(page, LIGHT);
+    await expectChipCounts(page);
 
     // Narrowing further by price leaves the category counts untouched.
-    await panel.getByRole('spinbutton', { name: 'Máximo' }).fill('60');
-    await expect(page).toHaveURL('/products?category=accessories&max=60');
-    await expectProducts(page, [PRODUCTS.food, PRODUCTS.water]);
-    await expectFullCatalogCounts(panel);
+    const panel = await moreFilters(page);
+    await panel.getByRole('spinbutton', { name: 'Máximo' }).fill('20');
+    await expect(page).toHaveURL('/products?category=luz-y-energia&max=20');
+    await expectProducts(page, ['Frontal', 'Lámpara de camping']);
+    await expectChipCounts(page);
 
-    await categoryRadio(panel, 'Kits de supervivencia').check();
-    await expect(page).toHaveURL('/products?category=survival-kits&max=60');
+    await chip(page, 'Kits').click();
+    await expect(page).toHaveURL('/products?category=kits&max=20');
     await expect(page.getByRole('heading', { name: 'No hay productos que coincidan con estos filtros' })).toBeVisible();
     await expect(resultCount(page)).toHaveText('0 productos');
   });
 
-  test('typing in "Máximo" keeps value and focus and updates ?max= after the debounce', async ({ page, isMobile }) => {
+  test('typing in "Máximo" keeps value and focus and updates ?max= after the debounce', async ({ page }) => {
     await openPage(page, '/products');
-    const panel = await filters(page, isMobile);
+    const panel = await moreFilters(page);
     const max = panel.getByRole('spinbutton', { name: 'Máximo' });
 
     await max.click();
-    await max.pressSequentially('100', { delay: 60 });
-    await expect(max).toHaveValue('100');
+    await max.pressSequentially('10', { delay: 60 });
+    await expect(max).toHaveValue('10');
     await expect(max).toBeFocused();
 
-    await expect(page).toHaveURL('/products?max=100');
-    await expectProducts(page, ACCESSORIES);
+    await expect(page).toHaveURL('/products?max=10');
+    await expectProducts(page, ['Manta térmica', 'Poncho térmico', 'Cuerda de paracaidismo', 'Silbato', 'Bolsa hermética para documentos', 'Cinta adhesiva táctica']);
     // The URL write must not reset or blur the field the visitor is typing in.
-    await expect(max).toHaveValue('100');
+    await expect(max).toHaveValue('10');
     await expect(max).toBeFocused();
 
     await max.press('Backspace');
-    await expect(page).toHaveURL('/products?max=10');
-    await expect(max).toHaveValue('10');
+    await expect(page).toHaveURL('/products?max=1');
+    await expect(max).toHaveValue('1');
     await expect(max).toBeFocused();
     await expect(resultCount(page)).toHaveText('0 productos');
   });
 
-  test('filters survive a reload', async ({ page, isMobile }) => {
+  test('filters survive a reload', async ({ page }) => {
     await openPage(page, '/products');
-    let panel = await filters(page, isMobile);
-    await categoryRadio(panel, 'Kits de supervivencia').check();
-    await panel.getByRole('checkbox', { name: 'Solo ofertas' }).check();
-    await panel.getByRole('spinbutton', { name: 'Máximo' }).fill('250');
-    await page.getByRole('main').getByRole('combobox', { name: 'Ordenar por' }).selectOption({ label: 'Precio: de mayor a menor' });
-    await expect(page).toHaveURL('/products?category=survival-kits&sort=price-desc&max=250&sale=1');
-    await expectProducts(page, [PRODUCTS.backpack24h, PRODUCTS.customKit]);
+    await chip(page, 'Herramientas').click();
+    let panel = await moreFilters(page);
+    await panel.getByRole('spinbutton', { name: 'Máximo' }).fill('20');
+    await panel.getByRole('combobox', { name: 'Ordenar por' }).selectOption({ label: 'Precio: de mayor a menor' });
+    await expect(page).toHaveURL('/products?category=herramientas&sort=price-desc&max=20');
+    await expectProducts(page, 6);
+    expect(await cardPrices(page)).toEqual([19, 15, 8, 8, 6, 5]);
 
     await page.reload();
-    panel = await filters(page, isMobile);
-    await expect(categoryRadio(panel, 'Kits de supervivencia')).toBeChecked();
-    await expect(panel.getByRole('checkbox', { name: 'Solo ofertas' })).toBeChecked();
-    await expect(panel.getByRole('spinbutton', { name: 'Máximo' })).toHaveValue('250');
-    await expect(page.getByRole('main').getByRole('combobox', { name: 'Ordenar por' })).toHaveValue('price-desc');
-    await expectProducts(page, [PRODUCTS.backpack24h, PRODUCTS.customKit]);
-    expect(await cardPrices(page)).toEqual([PRODUCTS.backpack24h.price, PRODUCTS.customKit.price]);
+    await expect(chip(page, 'Herramientas')).toHaveAttribute('aria-current', 'page');
+    panel = await moreFilters(page);
+    await expect(panel.getByRole('spinbutton', { name: 'Máximo' })).toHaveValue('20');
+    await expect(panel.getByRole('combobox', { name: 'Ordenar por' })).toHaveValue('price-desc');
+    expect(await cardPrices(page)).toEqual([19, 15, 8, 8, 6, 5]);
   });
 
-  test('"Limpiar filtros" resets every filter but keeps the sort order', async ({ page, isMobile }) => {
-    await openPage(page, '/products?category=accessories&min=40&max=60&sale=1&stock=1&sort=price-asc');
-    const panel = await filters(page, isMobile);
-    if (isMobile) {
-      await expect(panel.getByRole('button', { name: /^Filtros/ })).toHaveAccessibleName(/4 filtros activos/);
-    }
-    await expect(resultCount(page)).toHaveText('0 productos');
+  test('"Limpiar filtros" resets every filter but keeps the sort order', async ({ page }) => {
+    await openPage(page, '/products?category=herramientas&min=40&max=60&stock=1&sort=price-asc');
+    const toggle = filterArea(page).getByRole('button', { name: /^Más filtros/ });
+    await expect(toggle).toHaveAccessibleName(/2 filtros activos/);
+    await expectProducts(page, [PRODUCTS.backpack30l.name]);
 
+    const panel = await moreFilters(page);
     await panel.getByRole('button', { name: 'Limpiar filtros' }).click();
     await expect(page).toHaveURL('/products?sort=price-asc');
-    await expectProducts(page, ALL);
-    await expect(categoryRadio(panel, 'Todas')).toBeChecked();
+    await expectProducts(page, CATALOG_SIZE);
+    await expect(chip(page, 'Todas')).toHaveAttribute('aria-current', 'page');
     await expect(panel.getByRole('spinbutton', { name: 'Mínimo' })).toHaveValue('');
     await expect(panel.getByRole('spinbutton', { name: 'Máximo' })).toHaveValue('');
-    await expect(panel.getByRole('checkbox', { name: 'Solo ofertas' })).not.toBeChecked();
     await expect(panel.getByRole('checkbox', { name: 'Solo en stock' })).not.toBeChecked();
     await expect(panel.getByRole('button', { name: 'Limpiar filtros' })).toHaveCount(0);
   });
 
-  test('sorting by price ascending orders the prices', async ({ page }) => {
+  test('sorting by price orders the cards, kits by their starting price', async ({ page }) => {
     await openPage(page, '/products');
-    await page.getByRole('main').getByRole('combobox', { name: 'Ordenar por' }).selectOption({ label: 'Precio: de menor a mayor' });
+    const sort = filterArea(page).getByRole('combobox', { name: 'Ordenar por' });
+    await sort.selectOption({ label: 'Precio: de menor a mayor' });
     await expect(page).toHaveURL('/products?sort=price-asc');
     await expect(cards(page)).toHaveCount(CATALOG_SIZE);
     const prices = await cardPrices(page);
-    expect(prices).toEqual(ALL.map((product) => product.price).sort((a, b) => a - b));
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    expect(prices).toContain(KITS.kit72h.variants[0].price);
 
-    await page.getByRole('main').getByRole('combobox', { name: 'Ordenar por' }).selectOption({ label: 'Precio: de mayor a menor' });
+    await sort.selectOption({ label: 'Precio: de mayor a menor' });
     await expect(page).toHaveURL('/products?sort=price-desc');
     await expect.poll(() => cardPrices(page)).toEqual([...prices].reverse());
   });
 
-  test('the header "Ofertas" link shows only discounted products', async ({ page, isMobile }) => {
+  test('the "Productos" navigation link opens the catalog and is marked current', async ({ page, isMobile }) => {
     await openPage(page, '/');
     const nav = await primaryNav(page, isMobile);
-    await nav.getByRole('link', { name: 'Ofertas' }).click();
-
-    await expect(page).toHaveURL('/products?sale=1');
-    await expect(page).toHaveTitle('Ofertas · Bugout');
-    await expectProducts(page, ON_SALE);
-    for (const card of await cards(page).all()) {
-      await expect(card).toContainText('Precio anterior');
-      await expect(card).toContainText(/\d+ % de descuento/);
-    }
-    const panel = await filters(page, isMobile);
-    await expect(panel.getByRole('checkbox', { name: 'Solo ofertas' })).toBeChecked();
-
+    await nav.getByRole('link', { name: 'Productos' }).click();
+    await expect(page).toHaveURL('/products');
+    await expect(page).toHaveTitle('Productos · Bugout');
     const current = await primaryNav(page, isMobile);
-    await expect(current.getByRole('link', { name: 'Ofertas' })).toHaveAttribute('aria-current', 'page');
+    await expect(current.getByRole('link', { name: 'Productos' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('an unknown category in the URL is ignored and never echoed into the page', async ({ page }) => {
@@ -177,29 +174,43 @@ test.describe('catalog', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Productos');
     await expect(page).toHaveTitle('Productos · Bugout');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
-    await expectProducts(page, ALL);
+    await expectProducts(page, CATALOG_SIZE);
     await expect(page.getByRole('main')).not.toContainText('llama');
   });
 
-  test('a product card is a single link to its detail page', async ({ page }) => {
+  test('each card has one link to its page; the whole card surface is clickable', async ({ page }) => {
     await openPage(page, '/products');
     await expect(cards(page)).toHaveCount(CATALOG_SIZE);
     for (const card of await cards(page).all()) {
       const links = card.getByRole('link');
       await expect(links).toHaveCount(1);
-      const name = await card.getByRole('heading').innerText();
-      const product = ALL.find((candidate) => candidate.name === name);
-      expect(product, `known product "${name}"`).toBeDefined();
-      await expect(links).toHaveAttribute('href', `/products/${product!.id}`);
-      await expect(links).toHaveAccessibleName(product!.name);
+      await expect(links).toHaveAttribute('href', /^\/products\/[a-z0-9-]+$/);
+      await expect(links).toHaveAccessibleName(await card.getByRole('heading').innerText());
     }
 
-    // The whole card surface is clickable, not just the title.
-    const card = cards(page).filter({ has: page.getByRole('link', { name: PRODUCTS.water.name }) });
+    const card = cards(page).filter({ has: page.getByRole('link', { name: PRODUCTS.canteen.name }) });
     const box = await card.boundingBox();
     expect(box).not.toBeNull();
     await card.click({ position: { x: box!.width / 2, y: 40 } });
-    await expect(page).toHaveURL(`/products/${PRODUCTS.water.id}`);
-    await expect(page.getByRole('heading', { level: 1, name: PRODUCTS.water.name })).toBeVisible();
+    await expect(page).toHaveURL(`/products/${PRODUCTS.canteen.id}`);
+    await expect(page.getByRole('heading', { level: 1, name: PRODUCTS.canteen.name })).toBeVisible();
+  });
+
+  test('cards show the kits a product belongs to and add loose products in one click', async ({ page }) => {
+    await openPage(page, '/products');
+    const blanket = cards(page).filter({ has: page.getByRole('link', { name: 'Manta térmica' }) });
+    await expect(blanket.getByRole('list', { name: 'Incluido en' }).getByRole('listitem')).toHaveText([
+      'Incluido en el Kit 24h',
+      'Incluido en el Kit 72h',
+    ]);
+
+    const kit = cards(page).filter({ has: page.getByRole('link', { name: KITS.kit72h.name, exact: true }) });
+    await expect(kit).toContainText('Desde 119,00');
+    await expect(kit.getByRole('button')).toHaveCount(0);
+
+    await page.getByRole('button', { name: `Añadir ${PRODUCTS.radio.name} al carrito` }).click();
+    const drawer = cartDrawer(page);
+    await expect(drawer).toBeVisible();
+    await expect(cartLine(drawer, PRODUCTS.radio.name)).toHaveCount(1);
   });
 });

@@ -74,7 +74,7 @@ test.describe('axe (WCAG 2.1 A/AA)', () => {
   test.describe('checkout', () => {
     test.beforeEach(async ({ page }) => {
       await openPage(page, '/');
-      await seedCart(page, [{ productId: PRODUCTS.backpack24h.id, quantity: 1 }]);
+      await seedCart(page, [{ productId: PRODUCTS.backpack65l.id, quantity: 1 }]);
       await page.goto('/checkout');
     });
 

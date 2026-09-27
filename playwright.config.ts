@@ -16,6 +16,8 @@ export default defineConfig({
   use: {
     baseURL,
     locale: 'es-ES',
+    // Scroll reveals, the frog sprite and drawer slides are decorative; reduced motion keeps runs deterministic.
+    contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

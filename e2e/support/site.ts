@@ -4,8 +4,12 @@ import { expect, type Locator, type Page } from '@playwright/test';
 export const ROUTES = [
   { path: '/', title: 'Bugout — Mochilas y kits de supervivencia' },
   { path: '/products', title: 'Productos · Bugout' },
-  { path: '/products/24h-survival-backpack', title: 'Mochila de supervivencia 24H · Bugout' },
-  { path: '/products/emergency-food-pack', title: 'Pack de comida de emergencia · Bugout' },
+  { path: '/products/kit-72h', title: 'Kit 72h · Bugout' },
+  { path: '/products/kit-custom', title: 'Kit Custom · Bugout' },
+  { path: '/products/radio-solar', title: 'Radio solar · Bugout' },
+  { path: '/how-to-choose', title: 'Cómo elegir tu kit · Bugout' },
+  { path: '/why-prepare', title: 'Por qué prepararse · Bugout' },
+  { path: '/faq', title: 'Preguntas frecuentes · Bugout' },
   { path: '/checkout', title: 'Finalizar compra · Bugout' },
   { path: '/about', title: 'Sobre nosotros · Bugout' },
   { path: '/contact', title: 'Contacto · Bugout' },
@@ -15,17 +19,55 @@ export const ROUTES = [
   { path: '/shipping-returns', title: 'Envíos y devoluciones · Bugout' },
 ] as const;
 
-/** Catalog facts the specs rely on (mirrors src/infrastructure/data/products.json). */
+/** Loose products the specs rely on (mirrors src/infrastructure/data/products.json). */
 export const PRODUCTS = {
-  backpack24h: { id: '24h-survival-backpack', name: 'Mochila de supervivencia 24H', price: 199 },
-  backpack72h: { id: '72h-survival-backpack', name: 'Mochila de supervivencia 72H', price: 299 },
-  customKit: { id: 'custom-survival-kit', name: 'Kit de supervivencia personalizable', price: 149 },
-  food: { id: 'emergency-food-pack', name: 'Pack de comida de emergencia', price: 49 },
-  water: { id: 'water-purification-kit', name: 'Kit de potabilización de agua', price: 39 },
-  firstAid: { id: 'first-aid-pro', name: 'Botiquín de primeros auxilios Pro', price: 89 },
+  backpack65l: { id: 'mochila-65l', name: 'Mochila de supervivencia 65L', price: 89 },
+  backpack30l: { id: 'mochila-30l', name: 'Mochila de supervivencia 30L', price: 59 },
+  radio: { id: 'radio-solar', name: 'Radio solar', price: 24 },
+  canteen: { id: 'cantimplora-1l', name: 'Cantimplora de 1L', price: 12 },
+  firstAid: { id: 'kit-medicina', name: 'Kit de primeros auxilios', price: 18 },
+  lantern: { id: 'lampara-camping', name: 'Lámpara de camping', price: 16 },
+  headlamp: { id: 'frontal', name: 'Frontal', price: 14 },
 } as const;
 
-export const CATALOG_SIZE = Object.keys(PRODUCTS).length;
+/** Kits with their variants: the cart line of a variant is named "<kit> · <variant>". */
+export const KITS = {
+  kit24h: {
+    slug: 'kit-24h',
+    name: 'Kit 24h',
+    variants: [
+      { id: 'kit-24h-1p', title: '1 persona', price: 39 },
+      { id: 'kit-24h-2p', title: '2 personas', price: 69 },
+      { id: 'kit-24h-4p', title: '4 personas', price: 129 },
+    ],
+  },
+  kit72h: {
+    slug: 'kit-72h',
+    name: 'Kit 72h',
+    variants: [
+      { id: 'kit-72h-1p', title: '1 persona', price: 119 },
+      { id: 'kit-72h-2p', title: '2 personas', price: 199 },
+      { id: 'kit-72h-4p', title: '4 personas', price: 359 },
+    ],
+  },
+  kitCustom: { slug: 'kit-custom', name: 'Kit Custom', variants: [{ id: 'kit-custom', title: '', price: 59 }] },
+} as const;
+
+/** Name of a kit variant as the cart shows it, e.g. "Kit 72h · 2 personas". */
+export const variantName = (kit: { name: string }, variant: { title: string }) => `${kit.name} · ${variant.title}`;
+
+/** Products per category in the bundled catalog (the chips show these counts). */
+export const CATEGORY_COUNTS = {
+  Kits: 3,
+  Herramientas: 9,
+  'Refugio y abrigo': 2,
+  'Luz y energía': 3,
+  Agua: 1,
+  Higiene: 1,
+  'Primeros auxilios': 1,
+} as const;
+
+export const CATALOG_SIZE = Object.values(CATEGORY_COUNTS).reduce((sum, count) => sum + count, 0);
 export const FREE_SHIPPING_FROM = 75;
 export const SHIPPING = { standard: 4.95, express: 9.95, overnight: 14.95 } as const;
 export const MAX_PER_PRODUCT = 99;

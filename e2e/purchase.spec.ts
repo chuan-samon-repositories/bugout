@@ -28,7 +28,7 @@ import {
 } from './support/site';
 
 test('golden path: product page to order confirmation', async ({ page }) => {
-  const product = PRODUCTS.backpack24h;
+  const product = PRODUCTS.backpack65l;
   await openPage(page, `/products/${product.id}`);
   await expect(page.getByRole('heading', { level: 1, name: product.name })).toBeVisible();
 
@@ -92,7 +92,7 @@ test.describe('checkout', () => {
   });
 
   test('reloading /checkout with items stays on the checkout', async ({ page }) => {
-    await seedCart(page, [{ productId: PRODUCTS.food.id, quantity: 2 }]);
+    await seedCart(page, [{ productId: PRODUCTS.radio.id, quantity: 2 }]);
     await page.goto('/checkout');
     await expect(stepForm(page, 'Contacto')).toBeVisible();
     await page.reload();
@@ -108,7 +108,7 @@ test.describe('checkout', () => {
   });
 
   test('submitting empty contact fields shows the error summary and focuses the email', async ({ page }) => {
-    await seedCart(page, [{ productId: PRODUCTS.food.id, quantity: 1 }]);
+    await seedCart(page, [{ productId: PRODUCTS.radio.id, quantity: 1 }]);
     await page.goto('/checkout');
     const form = stepForm(page, 'Contacto');
     await form.getByRole('button', { name: 'Continuar con el envío' }).click();
@@ -125,7 +125,7 @@ test.describe('checkout', () => {
   });
 
   test('a Canarias postal code is rejected', async ({ page }) => {
-    await seedCart(page, [{ productId: PRODUCTS.food.id, quantity: 1 }]);
+    await seedCart(page, [{ productId: PRODUCTS.radio.id, quantity: 1 }]);
     await page.goto('/checkout');
     await fillContact(page);
     const form = await continueToShipping(page);
@@ -144,7 +144,7 @@ test.describe('checkout', () => {
   });
 
   test('standard shipping is free above the threshold', async ({ page }) => {
-    const product = PRODUCTS.backpack24h;
+    const product = PRODUCTS.backpack65l;
     expect(product.price).toBeGreaterThanOrEqual(FREE_SHIPPING_FROM);
     await seedCart(page, [{ productId: product.id, quantity: 1 }]);
     await page.goto('/checkout');
@@ -165,7 +165,7 @@ test.describe('checkout', () => {
   });
 
   test('standard shipping is charged below the threshold', async ({ page }) => {
-    const product = PRODUCTS.food;
+    const product = PRODUCTS.radio;
     expect(product.price).toBeLessThan(FREE_SHIPPING_FROM);
     await seedCart(page, [{ productId: product.id, quantity: 1 }]);
     await page.goto('/checkout');

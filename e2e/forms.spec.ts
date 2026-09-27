@@ -27,7 +27,7 @@ test.describe('newsletter (hidden while messaging is disabled)', () => {
 
   test('the checkout does not offer the marketing opt-in', async ({ page }) => {
     await openPage(page, '/');
-    await seedCart(page, [{ productId: PRODUCTS.backpack24h.id, quantity: 1 }]);
+    await seedCart(page, [{ productId: PRODUCTS.backpack65l.id, quantity: 1 }]);
     await page.goto('/checkout');
     await expect(stepForm(page, 'Contacto')).toBeVisible();
     await expect(page.getByRole('main').getByRole('checkbox')).toHaveCount(0);

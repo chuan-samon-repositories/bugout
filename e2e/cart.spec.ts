@@ -81,7 +81,7 @@ test.describe('cart', () => {
 
   test('Escape closes the drawer and returns focus to the cart button', async ({ page }) => {
     await openPage(page, '/');
-    await seedCart(page, [{ productId: PRODUCTS.water.id, quantity: 1 }]);
+    await seedCart(page, [{ productId: PRODUCTS.canteen.id, quantity: 1 }]);
 
     const trigger = cartButton(page);
     await trigger.focus();
@@ -98,14 +98,14 @@ test.describe('cart', () => {
   test('removing a line keeps the other lines', async ({ page }) => {
     await openPage(page, '/');
     await seedCart(page, [
-      { productId: PRODUCTS.water.id, quantity: 1 },
+      { productId: PRODUCTS.canteen.id, quantity: 1 },
       { productId: PRODUCTS.firstAid.id, quantity: 2 },
     ]);
     const drawer = await openCartDrawer(page);
 
-    await cartLine(drawer, PRODUCTS.water.name).getByRole('button', { name: `Eliminar ${PRODUCTS.water.name} del carrito` }).click();
+    await cartLine(drawer, PRODUCTS.canteen.name).getByRole('button', { name: `Eliminar ${PRODUCTS.canteen.name} del carrito` }).click();
 
-    await expect(cartLine(drawer, PRODUCTS.water.name)).toHaveCount(0);
+    await expect(cartLine(drawer, PRODUCTS.canteen.name)).toHaveCount(0);
     await expect(cartLine(drawer, PRODUCTS.firstAid.name)).toHaveCount(1);
     await expect(cartButton(page)).toHaveAccessibleName(cartButtonName(2));
     await expect.poll(() => readStorage(page, CART_KEY)).toEqual({
@@ -117,8 +117,8 @@ test.describe('cart', () => {
   test('"Vaciar carrito" asks for confirmation first', async ({ page }) => {
     await openPage(page, '/');
     await seedCart(page, [
-      { productId: PRODUCTS.water.id, quantity: 1 },
-      { productId: PRODUCTS.food.id, quantity: 3 },
+      { productId: PRODUCTS.canteen.id, quantity: 1 },
+      { productId: PRODUCTS.radio.id, quantity: 3 },
     ]);
     const drawer = await openCartDrawer(page);
     const lines = drawer.getByRole('list', { name: 'Productos en tu carrito' }).getByRole('listitem');
@@ -144,12 +144,12 @@ test.describe('cart', () => {
   });
 
   test('localStorage keeps only product ids and quantities', async ({ page }) => {
-    await openPage(page, `/products/${PRODUCTS.backpack24h.id}`);
+    await openPage(page, `/products/${PRODUCTS.backpack65l.id}`);
     await addToCartButton(page).click();
     await expect(cartDrawer(page)).toBeVisible();
     await closeDrawer(page);
 
-    await page.goto(`/products/${PRODUCTS.water.id}`);
+    await page.goto(`/products/${PRODUCTS.canteen.id}`);
     // The restored count only appears once the page has hydrated.
     await expect(cartButton(page)).toHaveAccessibleName(cartButtonName(1));
     await quantityInput(page).fill('3');
@@ -159,8 +159,8 @@ test.describe('cart', () => {
     expect(await readStorage(page, CART_KEY)).toStrictEqual({
       version: 2,
       items: [
-        { productId: PRODUCTS.backpack24h.id, quantity: 1 },
-        { productId: PRODUCTS.water.id, quantity: 3 },
+        { productId: PRODUCTS.backpack65l.id, quantity: 1 },
+        { productId: PRODUCTS.canteen.id, quantity: 3 },
       ],
     });
   });
@@ -204,7 +204,7 @@ test.describe('cart', () => {
 
   test('two tabs stay in sync', async ({ page, context }) => {
     const other = await context.newPage();
-    await page.goto(`/products/${PRODUCTS.food.id}`);
+    await page.goto(`/products/${PRODUCTS.radio.id}`);
     await other.goto('/about');
     // The banner renders once each tab has hydrated and subscribed to storage events.
     await expect(consentBanner(other)).toBeVisible();
@@ -219,7 +219,7 @@ test.describe('cart', () => {
 
     // And back: emptying the cart in the other tab updates the first one.
     const drawer = await openCartDrawer(other);
-    await cartLine(drawer, PRODUCTS.food.name).getByRole('button', { name: `Eliminar ${PRODUCTS.food.name} del carrito` }).click();
+    await cartLine(drawer, PRODUCTS.radio.name).getByRole('button', { name: `Eliminar ${PRODUCTS.radio.name} del carrito` }).click();
     await expect(cartButton(other)).toHaveAccessibleName(cartButtonName(0));
     await expect(cartButton(page)).toHaveAccessibleName(cartButtonName(0));
   });
@@ -228,7 +228,7 @@ test.describe('cart', () => {
     await openPage(page, '/');
     const other = await page.context().newPage();
     await other.goto('/');
-    await writeStorage(other, CART_KEY, { version: 2, items: [{ productId: PRODUCTS.water.id, quantity: 2 }] });
+    await writeStorage(other, CART_KEY, { version: 2, items: [{ productId: PRODUCTS.canteen.id, quantity: 2 }] });
     await expect(cartButton(page)).toHaveAccessibleName(cartButtonName(2));
   });
 });

@@ -2,8 +2,8 @@ import type { Locator } from '@playwright/test';
 import { expect, test } from './support/fixtures';
 import { menuButton, mobileMenu, openPage, primaryNav } from './support/site';
 
-// Category links are derived from the catalog, so compare the set of labels, not their order.
-const NAV_LINKS = ['Accesorios', 'Contacto', 'Kits de supervivencia', 'Ofertas', 'Sobre nosotros', 'Todos los productos'];
+// Kit links are derived from the catalog, so compare the set of labels, not their order.
+const NAV_LINKS = ['Cómo elegir', 'Kit 24h', 'Kit 72h', 'Kit Custom', 'Prepárate', 'Productos', 'Sobre nosotros'];
 
 async function linkLabels(scope: Locator): Promise<string[]> {
   return (await scope.getByRole('link').allInnerTexts()).map((label) => label.trim()).sort((a, b) => a.localeCompare(b, 'es'));
@@ -34,15 +34,15 @@ test.describe('navigation', () => {
     await expect(nav.getByRole('link', { name: 'Sobre nosotros' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
 
-    await page.goto('/products?category=accessories&sort=price-asc');
+    await page.goto('/products/kit-72h');
     nav = await primaryNav(page, isMobile);
-    await expect(nav.getByRole('link', { name: 'Accesorios' })).toHaveAttribute('aria-current', 'page');
-    await expect(nav.getByRole('link', { name: 'Todos los productos' })).not.toHaveAttribute('aria-current', /.*/);
+    await expect(nav.getByRole('link', { name: 'Kit 72h' })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.getByRole('link', { name: 'Productos' })).not.toHaveAttribute('aria-current', /.*/);
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
 
-    await page.goto('/products');
+    await page.goto('/products?sort=price-asc');
     nav = await primaryNav(page, isMobile);
-    await expect(nav.getByRole('link', { name: 'Todos los productos' })).toHaveAttribute('aria-current', 'page');
+    await expect(nav.getByRole('link', { name: 'Productos' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
   });
 
@@ -65,7 +65,8 @@ test.describe('navigation', () => {
     await expect(menu).toBeVisible();
     await expect(menu).toHaveAttribute('aria-modal', 'true');
     await expect(button).toHaveAttribute('aria-expanded', 'true');
-    await expect.poll(() => linkLabels(menu)).toEqual(NAV_LINKS);
+    await expect.poll(() => linkLabels(menu.getByRole('navigation', { name: 'Principal' }))).toEqual(NAV_LINKS);
+    await expect(menu.getByRole('link', { name: 'Compra ahora' })).toHaveAttribute('href', '/products/kit-72h');
 
     await page.keyboard.press('Escape');
     await expect(menu).toBeHidden();
@@ -74,17 +75,37 @@ test.describe('navigation', () => {
 
     await button.click();
     await expect(menu).toBeVisible();
-    await menu.getByRole('link', { name: 'Contacto' }).click();
-    await expect(page).toHaveURL('/contact');
-    await expect(page.getByRole('heading', { level: 1, name: 'Contacto' })).toBeVisible();
+    await menu.getByRole('link', { name: 'Sobre nosotros' }).click();
+    await expect(page).toHaveURL('/about');
+    await expect(page.getByRole('heading', { level: 1, name: 'Sobre nosotros' })).toBeVisible();
     await expect(menu).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
 
     await button.click();
-    await menu.getByRole('link', { name: 'Kits de supervivencia' }).click();
-    await expect(page).toHaveURL('/products?category=survival-kits');
-    await expect(page.getByRole('heading', { level: 1, name: 'Kits de supervivencia' })).toBeVisible();
+    await menu.getByRole('link', { name: 'Kit 24h' }).click();
+    await expect(page).toHaveURL('/products/kit-24h');
+    await expect(page.getByRole('heading', { level: 1, name: 'Kit 24h' })).toBeVisible();
     await expect(menu).toBeHidden();
+  });
+
+  test('the header is transparent over the home hero and turns solid on scroll', async ({ page }) => {
+    await openPage(page, '/');
+    const header = page.getByRole('banner');
+    await expect(header).toHaveAttribute('data-transparent', 'true');
+    await page.mouse.wheel(0, 600);
+    await expect(header).not.toHaveAttribute('data-transparent', /.*/);
+
+    await page.goto('/about');
+    await expect(page.getByRole('banner')).not.toHaveAttribute('data-transparent', /.*/);
+  });
+
+  test('"Compra ahora" opens the flagship kit', async ({ page, isMobile }) => {
+    await openPage(page, '/about');
+    if (isMobile) await menuButton(page).click();
+    const scope = isMobile ? mobileMenu(page) : page.getByRole('banner');
+    await scope.getByRole('link', { name: 'Compra ahora' }).click();
+    await expect(page).toHaveURL('/products/kit-72h');
+    await expect(page.getByRole('heading', { level: 1, name: 'Kit 72h' })).toBeVisible();
   });
 
   test('the close button of the mobile menu restores focus', async ({ page, isMobile }) => {

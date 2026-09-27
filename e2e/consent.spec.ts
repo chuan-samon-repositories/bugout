@@ -114,7 +114,7 @@ test.describe('consent banner', () => {
     expect(analyticsRequests, 'before a choice').toEqual([]);
 
     await consentBanner(page).getByRole('button', { name: 'Aceptar' }).click();
-    await page.goto('/products/24h-survival-backpack');
+    await page.goto('/products/kit-72h');
     await page.getByRole('main').getByRole('button', { name: 'Añadir al carrito' }).click();
     await expect(page.getByRole('dialog', { name: 'Tu carrito' })).toBeVisible();
     await page.waitForLoadState('networkidle');

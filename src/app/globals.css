@@ -131,16 +131,19 @@ body {
   }
 }
 
-.frog-breathe {
-  --frog-size: 240px;
-  --frog-cell: calc(148 * var(--frog-size) / 144);
-  width: var(--frog-size);
-  height: var(--frog-size);
-  background-image: url(/images/mascot/frog-breathe-strip.png);
-  background-repeat: no-repeat;
-  background-size: calc(var(--frog-cell) * 8) var(--frog-size);
-  image-rendering: pixelated;
-  animation: frog-breathe 0.65s steps(8) infinite;
+/* In the components layer so size utilities such as [--frog-size:140px] override the default. */
+@layer components {
+  .frog-breathe {
+    --frog-size: 240px;
+    --frog-cell: calc(148 * var(--frog-size) / 144);
+    width: var(--frog-size);
+    height: var(--frog-size);
+    background-image: url(/images/mascot/frog-breathe-strip.png);
+    background-repeat: no-repeat;
+    background-size: calc(var(--frog-cell) * 8) var(--frog-size);
+    image-rendering: pixelated;
+    animation: frog-breathe 0.65s steps(8) infinite;
+  }
 }
 
 /* Scroll reveal, driven by <Reveal>. Content is only hidden once JavaScript opted in. */

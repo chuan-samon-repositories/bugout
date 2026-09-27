@@ -51,8 +51,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const nav = await loadNavData();
 
   return (
-    <html lang={HTML_LANG}>
-      <body className={`${montserrat.variable} flex min-h-dvh flex-col font-sans antialiased`}>
+    // The font variable sits on <html> because the theme's --font-sans (declared on :root) refers to it.
+    <html lang={HTML_LANG} className={montserrat.variable}>
+      <body className="flex min-h-dvh flex-col font-sans antialiased">
         <a
           href="#main-content"
           className="sr-only rounded-lg bg-white px-4 py-3 font-semibold text-navy shadow-lg focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:outline-none focus:ring-2 focus:ring-accent"

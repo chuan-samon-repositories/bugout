@@ -48,7 +48,19 @@ export function ProductCard({
       )}
     >
       <div className="relative mb-3.5 aspect-square overflow-hidden rounded-lg bg-navy">
-        <ProductImage product={product} sizes={sizes} priority={priority} />
+        {product.details?.kit && product.images.length === 0 ? (
+          <div
+            role="img"
+            aria-label={product.name}
+            className="absolute inset-0 flex items-center justify-center bg-linear-135 from-navy to-navy-darker after:absolute after:inset-0 after:bg-[repeating-linear-gradient(115deg,rgb(255_255_255/0.05)_0_2px,transparent_2px_40px)]"
+          >
+            <span className="relative z-10 rounded-full bg-orange px-4 py-2 text-sm font-extrabold tracking-[0.08em] text-navy-deep">
+              {product.details.kit.label}
+            </span>
+          </div>
+        ) : (
+          <ProductImage product={product} sizes={sizes} priority={priority} />
+        )}
         {product.badge && <ProductBadge badge={product.badge} className="absolute top-2.5 left-2.5" />}
         {!product.inStock && (
           <div className="absolute inset-0 flex items-center justify-center bg-navy-deep/60">

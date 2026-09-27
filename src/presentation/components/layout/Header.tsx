@@ -37,9 +37,12 @@ export function Header({ nav }: HeaderProps) {
         </nav>
         <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:gap-3.5">
           <CartButton />
-          <ButtonLink href={ctaHref} size="md" className="hidden sm:inline-flex">
-            {messages.shell.nav.cta}
-          </ButtonLink>
+          {/* Wrapped: cn() does not merge classes, so "hidden" on the link would lose to its inline-flex. */}
+          <div className="hidden sm:block">
+            <ButtonLink href={ctaHref} size="md">
+              {messages.shell.nav.cta}
+            </ButtonLink>
+          </div>
           <MobileMenu kits={nav.kits} ctaHref={ctaHref} />
         </div>
       </Container>

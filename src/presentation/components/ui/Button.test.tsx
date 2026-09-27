@@ -62,7 +62,7 @@ describe("ButtonLink", () => {
     render(<ButtonLink href="/products">Ver productos</ButtonLink>);
     const link = screen.getByRole("link", { name: "Ver productos" });
     expect(link).toHaveAttribute("href", "/products");
-    expect(link.className).toContain("bg-accent");
+    expect(link.className).toContain("bg-orange");
   });
 });
 

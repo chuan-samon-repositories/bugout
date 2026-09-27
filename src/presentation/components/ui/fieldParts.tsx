@@ -41,10 +41,10 @@ export function useFieldIds(
 
 export const controlClasses = (invalid: boolean) =>
   cn(
-    "block w-full min-w-0 rounded-lg border bg-white px-3 py-2.5 text-base text-ink placeholder:text-muted",
+    "block w-full min-w-0 rounded-lg border-[1.5px] bg-white px-4 py-2.5 text-base text-ink placeholder:text-muted",
     "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
     "disabled:cursor-not-allowed disabled:bg-sand/40 disabled:text-muted",
-    invalid ? "border-danger" : "border-muted/70 hover:border-navy",
+    invalid ? "border-danger" : "border-muted/60 hover:border-navy-deep",
   );
 
 /** Asterisk shown next to required labels. Hidden from screen readers: `required` already conveys it. */
@@ -66,7 +66,7 @@ export interface FieldLabelProps {
 
 export function FieldLabel({ htmlFor, required, children, className }: FieldLabelProps) {
   return (
-    <label htmlFor={htmlFor} className={cn("mb-1.5 block text-sm font-medium text-ink", className)}>
+    <label htmlFor={htmlFor} className={cn("mb-1.5 block text-sm font-semibold text-navy-deep", className)}>
       {children}
       <RequiredMarker required={required} />
     </label>

@@ -53,7 +53,7 @@ export function RadioGroupField({
       className={cn("w-full min-w-0", className)}
       {...props}
     >
-      <legend className="mb-2 text-sm font-medium text-ink">
+      <legend className="mb-2 text-sm font-semibold text-navy-deep">
         {label}
         <RequiredMarker required={required} />
       </legend>
@@ -66,11 +66,11 @@ export function RadioGroupField({
               key={option.value}
               htmlFor={optionId}
               className={cn(
-                "flex min-w-0 cursor-pointer items-start gap-3 rounded-lg border bg-white p-4 transition-colors",
+                "flex min-w-0 cursor-pointer items-start gap-3 rounded-xl border-[1.5px] bg-white p-4 transition-colors",
                 "has-checked:border-accent has-checked:bg-accent-soft",
                 "has-focus-visible:ring-2 has-focus-visible:ring-accent has-focus-visible:ring-offset-2",
                 "has-disabled:cursor-not-allowed has-disabled:opacity-60",
-                error ? "border-danger" : "border-muted/40 hover:border-navy",
+                error ? "border-danger" : "border-muted/40 hover:border-navy-deep",
               )}
             >
               <input
@@ -90,7 +90,7 @@ export function RadioGroupField({
                 onChange={(event) => onValueChange?.(event.target.value, event)}
               />
               <span className="min-w-0 flex-1">
-                <span className="block font-medium text-ink">{option.label}</span>
+                <span className="block font-semibold text-navy-deep">{option.label}</span>
                 {option.description && (
                   <span id={descriptionId} className="mt-0.5 block text-sm text-muted">
                     {option.description}

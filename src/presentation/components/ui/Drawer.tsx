@@ -23,6 +23,8 @@ export interface DrawerProps {
   footer?: ReactNode;
   /** Element to focus when the drawer opens (defaults to the first focusable element). */
   initialFocusRef?: RefObject<HTMLElement | null>;
+  /** "dark": navy panel with sand text (the mobile menu). */
+  tone?: "light" | "dark";
   className?: string;
 }
 
@@ -41,7 +43,18 @@ function useIsClient(): boolean {
  * Modal side panel rendered in a portal on document.body. Traps focus, closes on
  * Escape or backdrop click, locks page scroll and restores focus on close.
  */
-export function Drawer({ open, onClose, side = "right", title, children, footer, initialFocusRef, className }: DrawerProps) {
+export function Drawer({
+  open,
+  onClose,
+  side = "right",
+  title,
+  children,
+  footer,
+  initialFocusRef,
+  tone = "light",
+  className,
+}: DrawerProps) {
+  const dark = tone === "dark";
   const isClient = useIsClient();
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -68,22 +81,25 @@ export function Drawer({ open, onClose, side = "right", title, children, footer,
         aria-labelledby={titleId}
         tabIndex={-1}
         className={cn(
-          "relative flex h-full w-full max-w-md flex-col bg-white shadow-2xl outline-none",
-          "transition-transform duration-300 ease-out",
+          "relative flex h-full w-full max-w-md flex-col shadow-2xl outline-none",
+          dark ? "bg-navy-darker text-sand" : "bg-white",
+          "transition-transform duration-300 ease-brand",
           side === "right" ? "ml-auto starting:translate-x-full" : "mr-auto starting:-translate-x-full",
           className,
         )}
       >
-        <div className="flex items-center justify-between gap-4 border-b border-sand px-4 py-2 sm:px-6">
-          <h2 id={titleId} className="min-w-0 text-lg font-semibold text-ink">
+        <div className={cn("flex items-center justify-between gap-4 border-b px-4 py-2 sm:px-6", dark ? "border-white/10" : "border-sand-line")}>
+          <h2 id={titleId} className={cn("min-w-0 text-lg", dark ? "text-sand" : "text-navy-deep")}>
             {title}
           </h2>
-          <IconButton label={messages.common.close} onClick={onClose} className="-mr-2">
+          <IconButton label={messages.common.close} onClick={onClose} variant={dark ? "inverse" : "ghost"} className="-mr-2">
             <CloseIcon className="size-6" />
           </IconButton>
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4 sm:px-6">{children}</div>
-        {footer && <div className="border-t border-sand px-4 py-4 sm:px-6">{footer}</div>}
+        {footer && (
+          <div className={cn("border-t px-4 py-4 sm:px-6", dark ? "border-white/10" : "border-sand-line")}>{footer}</div>
+        )}
       </div>
     </div>,
     document.body,

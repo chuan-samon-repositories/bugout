@@ -34,3 +34,7 @@ export { SelectField, type SelectFieldProps, type SelectOption } from './SelectF
 export { CheckboxField, type CheckboxFieldProps } from './CheckboxField';
 export { RadioGroupField, type RadioGroupFieldProps, type RadioOption } from './RadioGroupField';
 export { Drawer, type DrawerProps, type DrawerSide } from './Drawer';
+export { Eyebrow, type EyebrowProps } from './Eyebrow';
+export { SectionHeading, type SectionHeadingProps } from './SectionHeading';
+export { Reveal, type RevealProps } from './Reveal';
+export { FrogMascot, type FrogMascotProps } from './FrogMascot';

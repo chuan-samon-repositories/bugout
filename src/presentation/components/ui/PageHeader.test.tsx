@@ -20,4 +20,13 @@ describe("PageHeader", () => {
     expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
     expect(screen.getByText("Kits para cualquier emergencia")).toBeInTheDocument();
   });
+
+  it("renders the hero tone as a full-width banner and the plain tone as a compact header", () => {
+    const { rerender } = render(<PageHeader title="Sobre nosotros" />);
+    expect(screen.getByRole("banner").className).toContain("bg-linear-135");
+    rerender(<PageHeader title="Finalizar compra" tone="plain" />);
+    expect(screen.getByRole("banner").className).not.toContain("bg-linear-135");
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
 });
+

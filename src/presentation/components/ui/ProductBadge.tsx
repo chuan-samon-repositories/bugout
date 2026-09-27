@@ -4,7 +4,7 @@ import { cn } from "./cn";
 type KnownBadge = keyof typeof messages.common.badges;
 
 const badgeStyles: Record<KnownBadge, string> = {
-  BESTSELLER: "bg-accent text-white",
+  BESTSELLER: "bg-orange text-navy-deep",
   PREMIUM: "bg-navy text-white",
   SALE: "bg-danger text-white",
 };
@@ -30,7 +30,7 @@ export function ProductBadge({ badge, className }: ProductBadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide",
+        "inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-extrabold uppercase tracking-[0.06em]",
         known ? badgeStyles[key] : neutralStyle,
         className,
       )}

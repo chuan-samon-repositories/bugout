@@ -26,7 +26,7 @@ export function PriceTag({ price, originalPrice, size = "md", className }: Price
 
   return (
     <span className={cn("inline-flex flex-wrap items-baseline gap-x-2 gap-y-1", className)}>
-      <span className={cn("font-bold text-ink", styles.price)}>
+      <span className={cn("font-extrabold text-navy-deep", styles.price)}>
         {onSale && <VisuallyHidden>{messages.common.price.current}: </VisuallyHidden>}
         {formatMoney(price)}
       </span>
@@ -37,7 +37,7 @@ export function PriceTag({ price, originalPrice, size = "md", className }: Price
         </span>
       )}
       {percent > 0 && (
-        <span className={cn("self-center rounded-md bg-accent-soft font-semibold text-accent", styles.chip)}>
+        <span className={cn("self-center rounded-full bg-accent-soft font-bold text-accent", styles.chip)}>
           <span aria-hidden="true">-{percent}%</span>
           <VisuallyHidden>{messages.common.price.discount(percent)}</VisuallyHidden>
         </span>

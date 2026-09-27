@@ -1,40 +1,70 @@
 @import "tailwindcss";
 
 /*
- * Brand tokens. Use these utilities (bg-navy, text-accent, border-sand, ...)
- * instead of raw hex values so the palette stays consistent.
- * - orange:  decorative brand orange; not for text on white (2.6:1 contrast)
- * - accent:  AA-compliant orange for buttons (white text 5.1:1) and links on white
- * - orange-on-navy: AA orange for text on navy backgrounds (4.8:1)
+ * Bugout design tokens (see docs/DESIGN_SYSTEM.md). Use these utilities
+ * (bg-navy, text-accent, bg-sand, max-w-site, rounded-kit, shadow-card, ease-brand...)
+ * instead of raw values so the palette stays consistent.
+ *
+ * Contrast rules (WCAG AA, enforced by src/app/contrast.test.ts):
+ * - orange: brand orange. Button/badge background with navy-deep text (5.6:1), and
+ *   text on navy-deep / navy-darker. Never text on light backgrounds, never white text on it.
+ * - orange-on-navy: orange text on navy (#243c58) and for hover states of orange buttons.
+ * - accent: orange-family text and links on light backgrounds (white, sand, sand-dim).
+ * - muted: secondary text on white, sand and sand-dim.
  */
 @theme {
   --color-navy: #243c58;
-  --color-navy-deep: #1a2d42;
+  --color-navy-deep: #172938;
+  --color-navy-darker: #0f1c27;
   --color-sand: #eee8ce;
+  --color-sand-dim: #ddd6b8;
+  --color-sand-line: #e4dcbc;
   --color-orange: #ff780c;
+  --color-orange-hover: #ff8a2b;
   --color-orange-on-navy: #ff8a2b;
-  --color-accent: #b84d00;
-  --color-accent-hover: #9a4000;
-  --color-accent-soft: #fff1e6;
-  --color-ink: #1b2430;
-  --color-muted: #5b6573;
-  --color-danger: #b42318;
-  --color-success: #1f7a4d;
+  --color-accent: #8f3c00;
+  --color-accent-hover: #7d3400;
+  --color-accent-soft: #ffe8d4;
+  --color-ink: #14212e;
+  --color-muted: #4a586c;
+  --color-danger: #a51f16;
+  --color-success: #176040;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-  --header-height: 4rem;
+  --container-site: 73.75rem;
+
+  --radius-kit: 1.75rem;
+
+  --shadow-card: 0 2px 6px rgb(20 33 46 / 0.06);
+  --shadow-lift: 0 26px 46px -20px rgb(20 33 46 / 0.24);
+  --shadow-cta: 0 8px 24px -8px rgb(255 120 12 / 0.6);
+  --shadow-float: 0 30px 60px -20px rgb(0 0 0 / 0.5);
+
+  --ease-brand: cubic-bezier(0.16, 0.84, 0.44, 1);
+
+  --header-height: 4.5rem;
 }
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: var(--header-height);
+  scroll-padding-top: calc(var(--header-height) + 1rem);
 }
 
 body {
-  background: #ffffff;
-  color: var(--color-ink);
+  background: var(--color-sand);
+  color: var(--color-navy-deep);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
 }
 
 @keyframes fade-in {
@@ -52,6 +82,81 @@ body {
   animation: fade-in 0.3s ease-out;
 }
 
+/* Hero background: a slow brightness drift. */
+@keyframes hero-drift {
+  from {
+    filter: brightness(1);
+  }
+  to {
+    filter: brightness(1.08);
+  }
+}
+
+@utility animate-hero-drift {
+  animation: hero-drift 22s ease-in-out infinite alternate;
+}
+
+/* The dot inside the hero's scroll cue. */
+@keyframes scroll-dot {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  70% {
+    opacity: 0;
+    transform: translate(-50%, 14px);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, 0);
+  }
+}
+
+@utility animate-scroll-dot {
+  animation: scroll-dot 1.8s ease-in-out infinite;
+}
+
+/*
+ * Frog mascot: the 8 real pixel-art frames of frog-breathe-strip.png. Each 144px frame is
+ * followed by a 4px transparent gutter (148px cell) so scaling never samples a column of
+ * the next frame. --frog-size sets the rendered size.
+ */
+@keyframes frog-breathe {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: calc(var(--frog-cell) * -8);
+  }
+}
+
+.frog-breathe {
+  --frog-size: 240px;
+  --frog-cell: calc(148 * var(--frog-size) / 144);
+  width: var(--frog-size);
+  height: var(--frog-size);
+  background-image: url(/images/mascot/frog-breathe-strip.png);
+  background-repeat: no-repeat;
+  background-size: calc(var(--frog-cell) * 8) var(--frog-size);
+  image-rendering: pixelated;
+  animation: frog-breathe 0.65s steps(8) infinite;
+}
+
+/* Scroll reveal, driven by <Reveal>. Content is only hidden once JavaScript opted in. */
+[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(28px);
+}
+
+[data-reveal="shown"] {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.8s var(--ease-brand),
+    transform 0.8s var(--ease-brand);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -62,5 +167,13 @@ body {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+  .frog-breathe {
+    animation: none;
+    background-position-x: 0;
+  }
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
   }
 }

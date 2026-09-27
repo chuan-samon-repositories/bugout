@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Montserrat } from "next/font/google";
 import { cache } from "react";
 import "./globals.css";
 import { getContainer } from "@/infrastructure/config";
@@ -11,14 +11,11 @@ import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
 import { Providers } from "./Providers";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+/** The brand typeface; next/font self-hosts it, so no request leaves the site (CSP font-src 'self'). */
+const montserrat = Montserrat({
+  variable: "--font-montserrat",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
 });
 
 const defaultTitle = messages.shell.metadata.defaultTitle;
@@ -55,7 +52,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
 
   return (
     <html lang={HTML_LANG}>
-      <body className={`${geistSans.variable} ${geistMono.variable} flex min-h-dvh flex-col font-sans antialiased`}>
+      <body className={`${montserrat.variable} flex min-h-dvh flex-col font-sans antialiased`}>
         <a
           href="#main-content"
           className="sr-only rounded-lg bg-white px-4 py-3 font-semibold text-navy shadow-lg focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[80] focus:outline-none focus:ring-2 focus:ring-accent"

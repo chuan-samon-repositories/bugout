@@ -2,7 +2,7 @@
 
 Online shop for survival backpacks and emergency gear (*"La revolución de las mochilas de supervivencia para todos los públicos"*). The storefront UI is in Spanish (`es-ES`), prices are in euros with 21 % IVA included, and orders ship within Spain: the peninsula and the Balearic Islands.
 
-Built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4, following Clean Architecture (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). The shop is organised around three kits (Kit 24h and Kit 72h, each for 1, 2 or 4 people, and the build-your-own Kit Custom) plus the loose products they contain. The visual design (Montserrat, sand/navy/orange palette, the pixel-art frog) is documented in [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+Built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4, following Clean Architecture (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). The shop is organised around three kits (Kit 24h and Kit 72h, each for 1, 2 or 4 people, and the build-your-own Kit Custom) plus the loose products they contain. The visual design (Montserrat, sand/navy/orange palette; a pixel-art frog mascot that is currently hidden) is documented in [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
 ## Requirements
 

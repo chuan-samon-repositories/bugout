@@ -10,7 +10,8 @@ The prototype's Catalan/English copy, language switcher, "TODO" placeholders and
 - **Surfaces:** a sand page (`bg-sand`) with white cards (`bg-white shadow-card`, `rounded-2xl`; kit cards are `rounded-kit`). Dark sections are navy: `navy` (tables, trust bar), `navy-deep` ("Qué hay dentro", consent banner) and `navy-darker` (hero, header, footer). Teasers use `bg-sand-dim`.
 - **Buttons:** pills. The main call to action is `primary` (orange with navy text, lifted shadow `shadow-cta`). `secondary` is a navy outline. On dark backgrounds use `inverse` or `outline-inverse`.
 - **Eyebrows:** small uppercase kickers above headings (`Eyebrow`, `SectionHeading`): `text-accent` on light backgrounds, `text-orange-on-navy` on dark ones.
-- **Motion:** `ease-brand` (`cubic-bezier(.16,.84,.44,1)`), card hover lifts, scroll reveals (`Reveal`) and the breathing frog (`FrogMascot`). Everything is decorative and stops under `prefers-reduced-motion`.
+- **Motion:** `ease-brand` (`cubic-bezier(.16,.84,.44,1)`), card hover lifts, scroll reveals (`Reveal`) and the breathing frog (`FrogMascot`, currently hidden). Everything is decorative and stops under `prefers-reduced-motion`.
+- **The frog mascot is hidden.** It doesn't react to or guide the visitor, so it is decoration only. `isMascotEnabled()` (`presentation/config/mascot.ts`, `MASCOT_ENABLED = false`) gates it in the home hero, the "Por qué prepararse" teaser (a centred text column without it) and the 404 page. Set the flag to `true` to bring it back, ideally once it has a role. `mascot.test.tsx` covers both states.
 - **Mascot and brand art** live in `public/images/brand/` (mark and wordmark, flat and stacked, in cream, navy and orange) and `public/images/mascot/` (`frog.png` and the 8-frame `frog-breathe-strip.png`). Use `brandAssets` (`presentation/config/brand.ts`) for their paths and sizes. The favicon (`app/icon.png`) is the orange mark (`mark-orange.png`, as in the prototype) on a 512px navy-deep rounded square: the mark is about 2.2:1, so on a transparent square it would fill under half of a 16px tab icon.
 - **Product photos** are 900×900, shot on the brand navy, in `public/images/products/<slug>.jpg`. Product media areas are `bg-navy`, so a missing photo still looks intentional.
 
@@ -36,11 +37,11 @@ Plus `max-w-site` (1180px container), `rounded-kit` (28px), `shadow-card`, `shad
 | `.nav`, `.nav.scrolled`, `.progress-bar` | `layout/Header.tsx`, `HeaderShell.tsx`, `BrandLogo.tsx` | `fixed`; transparent over the home hero until 40px of scroll (`data-transparent`), solid navy with blur elsewhere; `main` has `pt-(--header-height)` |
 | `.nav__burger` dropdown | `layout/MobileMenu.tsx` | Dark `Drawer` with the nav and "Compra ahora" |
 | `.lang-switch` | — | Not ported: the site is Spanish only |
-| `.hero`, `.hero__frog`, `.hero__scroll` | `home/HomeHero.tsx`, `ui/FrogMascot.tsx` | Slides under the header with `-mt-(--header-height)` |
+| `.hero`, `.hero__frog`, `.hero__scroll` | `home/HomeHero.tsx`, `ui/FrogMascot.tsx` | Slides under the header with `-mt-(--header-height)`; the frog renders only when `isMascotEnabled()` |
 | `.kitcard-grid` / `.kitcard` | `kits/KitCard.tsx` (`KitCard`, `KitCardGrid`) | Label from `details.kit.label`, "Desde" from `priceRange()` |
 | `.compare-table` | `kits/KitComparisonTable.tsx` | Rows from `compareKits()`; the home page omits the long expiry row |
 | `.interior` + `.contents-grid` | `home/HomeKits.tsx` (`HomeInside`), `kits/KitContents.tsx` (`KitContentsGrid`) | The flagship kit (most contents) |
-| `.why` | `home/WhyPrepareTeaser.tsx` | |
+| `.why` | `home/WhyPrepareTeaser.tsx` | Frog column only when `isMascotEnabled()` |
 | `.shop-grid` / `.shop-card`, `.included-badge` | `catalog/ProductGrid.tsx`, `catalog/ProductCard.tsx`, `catalog/QuickAddButton.tsx` | Badges from `includedInIndex()`; quick add only for single-variant, in-stock products |
 | `.trust` | `home/TrustBar.tsx` | Facts from the pricing policy and `siteConfig.returnWindowDays` only |
 | `.page-hero` | `ui/PageHeader.tsx` (`tone="hero"`, the default) | Render it outside any `Container`; checkout uses `tone="plain"` |

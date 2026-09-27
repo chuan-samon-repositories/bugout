@@ -6,7 +6,7 @@ Keep this file accurate: update it in the same change as the code it describes. 
 
 Bugout is a Spanish online shop for survival backpacks and emergency gear, built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4. The UI and all copy are Spanish (`es-ES`), prices are in EUR and include 21 % IVA. It ships to Spain only, meaning the peninsula and the Balearic Islands. Canarias, Ceuta and Melilla are rejected at checkout.
 
-The shop is built around three **kits** (Kit 24h and Kit 72h, each sold for 1, 2 or 4 people as variants, and the build-your-own Kit Custom) plus the **loose products** they contain. The visual design (Montserrat, sand/navy/orange, pill buttons, the pixel-art frog) was ported from a partner's static prototype (`chuan-samon-repositories/bug-out`); this repo is now the source of truth. See [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
+The shop is built around three **kits** (Kit 24h and Kit 72h, each sold for 1, 2 or 4 people as variants, and the build-your-own Kit Custom) plus the **loose products** they contain. The visual design (Montserrat, sand/navy/orange, pill buttons; the pixel-art frog mascot is kept in the code but hidden) was ported from a partner's static prototype (`chuan-samon-repositories/bug-out`); this repo is now the source of truth. See [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
 `NEXT_PUBLIC_COMMERCE_PROVIDER` selects one of two commerce backends:
 - `local` (default): the catalog bundled in `src/infrastructure/data/products.json`, a localStorage cart and an in-app demo checkout that places no real order.
@@ -60,6 +60,7 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header.
   - Brand art and the frog are in `public/images/brand|mascot/` (paths via `brandAssets` in `presentation/config/brand.ts`). Product photos are `public/images/products/<slug>.jpg`, shot on navy.
   - Motion (`Reveal`, `FrogMascot`, hover lifts) is decorative and stops under `prefers-reduced-motion`.
+  - The frog mascot is **hidden**: it has no interaction with the visitor, so it is decoration only. `isMascotEnabled()` in `presentation/config/mascot.ts` (`MASCOT_ENABLED = false`) is the one switch, like `isMessagingEnabled()`. Its component, sprite, CSS and images stay in the code; gate any new use of `FrogMascot` or `brandAssets.frog` on it.
   - `cn()` does not merge Tailwind classes: never override a primitive's display or colour through `className`. Wrap it instead.
 - **Colors:** use the theme tokens in `src/app/globals.css` (`navy`, `navy-deep`, `navy-darker`, `sand`, `sand-dim`, `sand-line`, `orange`, `orange-hover`, `orange-deep`, `orange-on-navy`, `accent`, `accent-hover`, `accent-soft`, `ink`, `muted`, `danger`, `success`), never raw hex.
   - Contrast (WCAG AA) is enforced by `src/app/contrast.test.ts`; add any new text/background pair there.

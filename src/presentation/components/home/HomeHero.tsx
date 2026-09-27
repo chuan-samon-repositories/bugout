@@ -1,4 +1,5 @@
 import { ButtonLink, FrogMascot, cn, focusRing } from "@/presentation/components/ui";
+import { isMascotEnabled } from "@/presentation/config/mascot";
 import type { NavKit } from "@/presentation/components/layout/navigation";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
@@ -14,7 +15,7 @@ export interface HomeHeroProps {
 
 /**
  * Full-height dark hero that slides under the transparent header, with the
- * breathing frog in the corner (partner design section 1).
+ * breathing frog in the corner when the mascot is enabled (partner design section 1).
  */
 export function HomeHero({ kits, scrollTargetId }: HomeHeroProps) {
   const [first, second] = kits;
@@ -57,7 +58,9 @@ export function HomeHero({ kits, scrollTargetId }: HomeHeroProps) {
           )}
         </div>
       </div>
-      <FrogMascot className="absolute right-[4%] -bottom-2 [--frog-size:140px] drop-shadow-[0_20px_30px_rgb(0_0_0/0.45)] md:right-[6%] md:-bottom-[18px] md:[--frog-size:240px]" />
+      {isMascotEnabled() && (
+        <FrogMascot className="absolute right-[4%] -bottom-2 [--frog-size:140px] drop-shadow-[0_20px_30px_rgb(0_0_0/0.45)] md:right-[6%] md:-bottom-[18px] md:[--frog-size:240px]" />
+      )}
       <a
         href={`#${scrollTargetId}`}
         className={cn(

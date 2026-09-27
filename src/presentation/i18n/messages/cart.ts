@@ -6,6 +6,11 @@ export const cart = {
   loadError: 'No hemos podido cargar tu carrito.',
   retryLoad: 'Reintentar',
   checkoutEmpty: 'Tu carrito está vacío. Añade algún producto para finalizar la compra.',
+  /** The store kept fewer units than asked for (not enough stock). */
+  quantityReduced: (name: string, quantity: number) =>
+    `Solo ${quantity === 1 ? 'queda 1 unidad' : `quedan ${quantity} unidades`} de ${name}, así que hemos ajustado la cantidad de tu carrito.`,
+  /** The store dropped the line (sold out or no longer sold). */
+  lineRemoved: (name: string) => `Hemos quitado ${name} de tu carrito porque ya no está disponible.`,
   browseProducts: 'Ver productos',
   lines: 'Productos en tu carrito',
   unitPrice: 'Precio por unidad',

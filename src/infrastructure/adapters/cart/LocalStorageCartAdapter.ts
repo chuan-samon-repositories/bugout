@@ -1,4 +1,5 @@
 import { findByVariantId } from '@/application/catalog/kits';
+import type { CartNotice } from '@/application/dtos/Cart';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { ProductRepository } from '@/application/ports/ProductRepository';
 import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
@@ -50,8 +51,11 @@ const readLegacyLine = (item: Record<string, unknown>) =>
 /**
  * Cart persisted in localStorage as product ids and quantities only. Products are
  * re-read from the catalog on load, so stored prices or stock can never be trusted.
+ * Lines whose product is now out of stock are dropped and reported by loadNotices().
  */
 export class LocalStorageCartAdapter implements CartRepository {
+  private notices: CartNotice[] = [];
+
   constructor(
     private readonly productRepository: ProductRepository,
     private readonly currency: CurrencyCode,
@@ -60,6 +64,7 @@ export class LocalStorageCartAdapter implements CartRepository {
   ) {}
 
   async load(): Promise<Cart> {
+    this.notices = [];
     const cart = new Cart(this.currency);
     const storage = this.resolveStorage();
     if (!storage) return cart;
@@ -70,10 +75,14 @@ export class LocalStorageCartAdapter implements CartRepository {
       for (const line of lines) {
         const product = findByVariantId(products, line.productId);
         if (!product) continue;
+        if (!product.inStock) {
+          this.notices.push({ kind: 'removed', productId: product.id.value, productName: product.displayName });
+          continue;
+        }
         try {
           cart.addItem(product, new Quantity(Math.min(line.quantity, MAX_QUANTITY_PER_ITEM - cart.quantityOf(product.id))));
         } catch {
-          // Out of stock, wrong currency or already at the limit: drop the line.
+          // Wrong currency or already at the limit: drop the line.
         }
       }
       return cart;
@@ -83,12 +92,18 @@ export class LocalStorageCartAdapter implements CartRepository {
     }
   }
 
-  async save(cart: Cart): Promise<void> {
+  /** localStorage keeps exactly what it is given, so the saved cart is `cart` itself. */
+  async save(cart: Cart): Promise<Cart> {
     this.resolveStorage()?.setItem(this.key, JSON.stringify(this.serialize(cart)));
+    return cart;
   }
 
   async clear(): Promise<void> {
     this.resolveStorage()?.removeItem(this.key);
+  }
+
+  loadNotices(): readonly CartNotice[] {
+    return this.notices;
   }
 
   private serialize(cart: Cart): StoredCart {

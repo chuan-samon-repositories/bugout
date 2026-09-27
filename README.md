@@ -110,7 +110,8 @@ src/
                    /checkout, /about, /contact, /shipping-returns, /privacy, /cookies, /terms,
                    sitemap.ts, robots.ts
   presentation/    React components (ui/ design system + feature folders), contexts,
-                   hooks, i18n (Spanish copy and formatting), routes.ts, config/site.ts
+                   hooks, i18n (Spanish copy and formatting), routes.ts,
+                   config/ (site, brand, messaging, mascot)
   application/     Use cases, ports (interfaces), DTOs, analytics event catalogue
   domain/          Entities (Product, Cart, OrderPricing) and value objects (Money, ...)
   infrastructure/  Adapters (JSON catalog, localStorage, Shopify, PostHog), DI container,

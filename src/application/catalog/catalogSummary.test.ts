@@ -30,6 +30,18 @@ describe('priceBounds', () => {
     expect(priceBounds([buildProduct({ price: 49 })])).toEqual({ min: 49, max: 49 });
   });
 
+  it('spans every variant price, not just the selected ones', () => {
+    const kit = buildProduct({
+      id: 'kit',
+      variants: [
+        { id: 'kit-2p', title: '2 personas', price: 69.5 },
+        { id: 'kit-1p', title: '1 persona', price: 39.9 },
+        { id: 'kit-4p', title: '4 personas', price: 129.1 },
+      ],
+    });
+    expect(priceBounds([kit, buildProduct({ id: 'lamp', price: 50 })])).toEqual({ min: 39, max: 130 });
+  });
+
   it('is null for an empty list', () => {
     expect(priceBounds([])).toBeNull();
   });

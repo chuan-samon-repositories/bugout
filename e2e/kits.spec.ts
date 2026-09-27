@@ -28,16 +28,21 @@ test.describe('kits', () => {
     await people.getByText(twoPeople.title, { exact: true }).click();
     await expect(people.getByRole('radio', { name: twoPeople.title })).toBeChecked();
     await expect(main.getByText(eur(twoPeople.price), { exact: true })).toBeVisible();
-    await expect(main.getByRole('table', { name: 'Ficha técnica' }).getByRole('row', { name: /Para/ })).toContainText(
-      twoPeople.title,
-    );
+    // The specs are the 1-person version's whatever is selected, and the caption says so.
+    const specs = main.getByRole('table', { name: `Ficha técnica de la versión para ${onePerson.title}` });
+    await expect(specs).toBeVisible();
+    await expect(specs.getByRole('row', { name: /Para/ })).toHaveCount(0);
 
-    await main.getByRole('button', { name: 'Añadir al carrito' }).click();
+    const add = main.getByRole('button', { name: 'Añadir al carrito' });
+    await add.click();
     const drawer = cartDrawer(page);
     const line = cartLine(drawer, variantName(KITS.kit72h, twoPeople));
     await expect(line).toHaveCount(1);
     await expect(line).toContainText(`Precio por unidad: ${eur(twoPeople.price)}`, { useInnerText: true });
     await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+    // The button stays focusable while adding, so the drawer hands focus back to it.
+    await expect(add).toBeFocused();
 
     // Another size is another cart line.
     await people.getByText(fourPeople.title, { exact: true }).click();

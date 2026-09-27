@@ -41,7 +41,10 @@ describe("Footer", () => {
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     const columns = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
     expect(columns).toEqual(["Tienda", "Empresa", "Ayuda", "Legal"]);
-    expect(screen.getByRole("img", { name: "Bugout" })).toBeInTheDocument();
+    const logo = screen.getByRole("img", { name: "Bugout" });
+    // Requested at its 144px display size (1x/2x), not the 790px source.
+    expect(logo).toHaveAttribute("width", "144");
+    expect(logo.getAttribute("srcset")).not.toMatch(/w=(640|750|828|1080|1200|1920|2048|3840)\b/);
     expect(screen.getByText("Hecho para quien no deja nada al azar.")).toBeInTheDocument();
     expect(screen.getByText(/Todos los derechos reservados/)).toBeInTheDocument();
   });

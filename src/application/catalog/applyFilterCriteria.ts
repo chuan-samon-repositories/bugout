@@ -15,10 +15,13 @@ function descendingNullsLast(key: (product: Product) => number | null): Comparat
   };
 }
 
+/** The price a card shows: the cheapest variant ("Desde …" for kits with several sizes). */
+const fromPrice = (product: Product) => product.priceRange().min.minor;
+
 const COMPARATORS: Record<SortOption, Comparator> = {
   featured: (a, b) => Number(b.featured) - Number(a.featured),
-  'price-asc': (a, b) => a.price.minor - b.price.minor,
-  'price-desc': (a, b) => b.price.minor - a.price.minor,
+  'price-asc': (a, b) => fromPrice(a) - fromPrice(b),
+  'price-desc': (a, b) => fromPrice(b) - fromPrice(a),
   rating: descendingNullsLast((product) => product.rating?.average ?? null),
   reviews: descendingNullsLast((product) => product.rating?.count ?? null),
 };
@@ -33,17 +36,22 @@ function priceRange(criteria: FilterCriteria): { min: number; max: number } {
   return min > max ? { min: max, max: min } : { min, max };
 }
 
+/** True when any variant's price (major units) lies within the inclusive bounds. */
+function hasPriceWithin(product: Product, min: number, max: number): boolean {
+  return product.variants.some(({ price }) => price.amount >= min && price.amount <= max);
+}
+
 /**
  * Filters and sorts a product list. Returns a new array; the input is not modified.
- * Sorting is stable, so ties keep the catalog order.
+ * A product matches a price range when any of its variants does; price sorts use the
+ * cheapest variant (the "Desde" price). Sorting is stable, so ties keep the catalog order.
  */
 export function applyFilterCriteria(products: readonly Product[], criteria: FilterCriteria): Product[] {
   const { min, max } = priceRange(criteria);
   const filtered = products.filter(
     (product) =>
       (!criteria.category || product.category === criteria.category) &&
-      product.price.amount >= min &&
-      product.price.amount <= max &&
+      hasPriceWithin(product, min, max) &&
       (!criteria.inStockOnly || product.inStock) &&
       (!criteria.onSaleOnly || product.isOnSale()),
   );

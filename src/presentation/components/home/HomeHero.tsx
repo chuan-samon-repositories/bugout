@@ -21,10 +21,12 @@ export function HomeHero({ kits, scrollTargetId }: HomeHeroProps) {
   const [first, second] = kits;
   return (
     <section className="relative isolate -mt-(--header-height) flex min-h-svh flex-col items-center justify-center overflow-hidden bg-navy-darker px-6 pt-(--header-height) pb-24 text-center">
-      <div
-        aria-hidden="true"
-        className="animate-hero-drift absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_0%,rgb(255_120_12/0.16),transparent_60%),repeating-linear-gradient(100deg,rgb(238_232_206/0.035)_0px,rgb(238_232_206/0.035)_1px,transparent_1px,transparent_90px),linear-gradient(180deg,var(--color-navy-darker)_0%,var(--color-ink)_45%,var(--color-navy-darker)_100%)]"
-      />
+      {/* Background layers, bottom to top: navy fade, faint sand stripes, orange glow at the top. */}
+      <div aria-hidden="true" className="animate-hero-drift absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-linear-180 from-navy-darker via-ink via-45% to-navy-darker" />
+        <div className="absolute inset-0 bg-[repeating-linear-gradient(100deg,color-mix(in_srgb,var(--color-sand)_3.5%,transparent)_0px_1px,transparent_1px_90px)]" />
+        <div className="absolute inset-0 bg-radial-[ellipse_80%_60%_at_50%_0%] from-orange/16 to-transparent to-60%" />
+      </div>
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 -z-10 shadow-[inset_0_-160px_160px_-80px_rgb(0_0_0/0.6),inset_0_160px_160px_-100px_rgb(0_0_0/0.4)]"

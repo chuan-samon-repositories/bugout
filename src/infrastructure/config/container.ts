@@ -151,7 +151,7 @@ export class AppContainer {
   private productRepository(): ProductRepository {
     return this.once('productRepository', () =>
       this.config.provider === 'shopify'
-        ? new ShopifyProductAdapter(this.shopifyClient())
+        ? new ShopifyProductAdapter(this.shopifyClient(), storePricingPolicy.currency)
         : new JsonProductAdapter({ currency: storePricingPolicy.currency }),
     );
   }

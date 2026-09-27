@@ -50,6 +50,7 @@ export function CatalogView({ products: snapshots, initialCriteria, includedIn }
   const categories = useMemo(() => summarizeCategories(products), [products]);
   const categorySlugs = useMemo(() => categories.map((category) => category.slug), [categories]);
   const bounds = useMemo(() => priceBounds(products), [products]);
+  const anyOnSale = useMemo(() => products.some((product) => product.isOnSale()), [products]);
 
   const [criteria, setCriteria] = useState<FilterCriteria>(initialCriteria);
   const [minText, setMinText] = useState(priceText(initialCriteria.priceMin));
@@ -214,6 +215,7 @@ export function CatalogView({ products: snapshots, initialCriteria, includedIn }
               bounds={bounds}
               rangeHint={rangeHint}
               showSwapHint={showSwapHint}
+              showOnSale={anyOnSale}
               activeCount={activeCount}
               onMinTextChange={setMinText}
               onMaxTextChange={setMaxText}

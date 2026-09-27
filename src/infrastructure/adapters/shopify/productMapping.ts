@@ -1,3 +1,4 @@
+import { isPeopleOption } from '@/application/catalog/variants';
 import {
   Product,
   type KitInfo,
@@ -33,6 +34,8 @@ export const PRODUCT_FIELDS_FRAGMENT = /* GraphQL */ `
     contents: metafield(namespace: "custom", key: "contents") { value }
     kit: metafield(namespace: "custom", key: "kit") { value }
     related: metafield(namespace: "custom", key: "related") { value }
+    longDescription: metafield(namespace: "custom", key: "long_description") { value }
+    position: metafield(namespace: "custom", key: "position") { value }
   }
 `;
 
@@ -78,6 +81,8 @@ export interface ShopifyProductNode {
   contents: ShopifyMetafield;
   kit: ShopifyMetafield;
   related: ShopifyMetafield;
+  longDescription: ShopifyMetafield;
+  position: ShopifyMetafield;
 }
 
 /** Product node as returned with `variants(first: 20) { nodes { ...VariantFields } }`. */
@@ -129,20 +134,30 @@ function parseList<T>(metafield: ShopifyMetafield, read: (item: unknown) => T | 
 
 const readFeature = (item: unknown) => (typeof item === 'string' ? item : null);
 
-const readSpecification = (item: unknown): ProductSpecification | null =>
-  isRecord(item) && typeof item.label === 'string' && typeof item.value === 'string'
-    ? { label: item.label, value: item.value }
-    : null;
+/** A JSON string, or a finite number as its string (`"quantity": 2` reads as "2"). */
+function readText(value: unknown): string | null {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value);
+  return null;
+}
+
+function readSpecification(item: unknown): ProductSpecification | null {
+  if (!isRecord(item) || typeof item.label !== 'string') return null;
+  const value = readText(item.value);
+  return value === null ? null : { label: item.label, value };
+}
 
 /** A `custom.contents` line; `handle` links it to the catalog product it is. */
-const readContent = (item: unknown): ProductContentItem | null =>
-  isRecord(item) && typeof item.item === 'string' && typeof item.quantity === 'string'
-    ? {
-        item: item.item,
-        quantity: item.quantity,
-        ...(typeof item.handle === 'string' && item.handle.trim() ? { productSlug: item.handle.trim() } : {}),
-      }
-    : null;
+function readContent(item: unknown): ProductContentItem | null {
+  if (!isRecord(item) || typeof item.item !== 'string') return null;
+  const quantity = readText(item.quantity);
+  if (quantity === null) return null;
+  return {
+    item: item.item,
+    quantity,
+    ...(typeof item.handle === 'string' && item.handle.trim() ? { productSlug: item.handle.trim() } : {}),
+  };
+}
 
 /** Reads `custom.kit`: {"label":"72H","idealFor":"…","buildYourOwn":false}. */
 function parseKit(metafield: ShopifyMetafield): KitInfo | null {
@@ -155,14 +170,27 @@ function parseKit(metafield: ShopifyMetafield): KitInfo | null {
   };
 }
 
+/**
+ * The `custom.position` metafield (integer): where the product goes in the catalog,
+ * lowest first. Null when unset or not an integer.
+ */
+export function parsePosition(node: Pick<ShopifyProductNode, 'position'>): number | null {
+  const raw = node.position?.value.trim();
+  if (!raw) return null;
+  const value = Number(raw);
+  return Number.isSafeInteger(value) ? value : null;
+}
+
 function parseDetails(node: ShopifyProductNode): ProductDetails | null {
+  const longDescription = node.longDescription?.value.trim() || undefined;
   const features = parseList(node.features, readFeature);
   const specifications = parseList(node.specifications, readSpecification);
   const contents = parseList(node.contents, readContent);
   const kit = parseKit(node.kit);
   const related = parseList(node.related, readFeature);
-  if (!features && !specifications && !contents && !kit && !related) return null;
+  if (!longDescription && !features && !specifications && !contents && !kit && !related) return null;
   return {
+    ...(longDescription ? { longDescription } : {}),
     features: features ?? [],
     specifications: specifications ?? [],
     contents: contents ?? [],
@@ -174,11 +202,27 @@ function parseDetails(node: ShopifyProductNode): ProductDetails | null {
 const isDefaultOption = ({ name, value }: { name: string; value: string }) =>
   name === 'Title' && value === 'Default Title';
 
+/**
+ * The variant's display title. Shopify builds `title` from the option values ("2", or
+ * "2 / Rojo" with several options), so a bare number in a "Personas" option becomes
+ * "2 personas" ("1 persona"), as in the local catalog. Any other title (including values
+ * that already read "2 personas") is kept as Shopify sends it.
+ */
+function variantTitle(variant: ShopifyVariantNode, options: ReadonlyArray<{ name: string; value: string }>): string {
+  if (options.length === 0) return '';
+  const people = options.find(isPeopleOption);
+  if (!people || !/^\d+$/.test(people.value.trim())) return variant.title;
+  const count = Number(people.value.trim());
+  if (!Number.isSafeInteger(count) || count <= 0) return variant.title;
+  const peopleTitle = count === 1 ? '1 persona' : `${count} personas`;
+  return options.map((option) => (option === people ? peopleTitle : option.value)).join(' / ');
+}
+
 function mapVariant(variant: ShopifyVariantNode): ProductVariant {
   const options = variant.selectedOptions.filter((option) => !isDefaultOption(option));
   return {
     id: new ProductId(variant.id),
-    title: options.length === 0 ? '' : variant.title,
+    title: variantTitle(variant, options),
     options: options.map(({ name, value }) => ({ name, value })),
     price: Money.fromMajor(variant.price.amount, variant.price.currencyCode),
     originalPrice: variant.compareAtPrice
@@ -205,7 +249,7 @@ export function mapShopifyProduct(
       name: node.title,
       description: node.description,
       category: slugifyCategory(node.productType),
-        badge: node.badge?.value.trim() || null,
+      badge: node.badge?.value.trim() || null,
       featured: node.tags.some((tag) => tag.toLowerCase() === 'featured'),
       rating: parseRating(node.rating, node.ratingCount),
       images: node.images.nodes.map((image) => ({

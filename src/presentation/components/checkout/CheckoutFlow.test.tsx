@@ -284,7 +284,7 @@ describe("CheckoutFlow", () => {
         currency: "EUR",
         item_count: 1,
         shipping_method: "express",
-        products: [{ product_id: "mochila-72h", quantity: 1, price: 80 }],
+        products: [{ product_id: "mochila-72h", variant_title: null, quantity: 1, price: 80 }],
       },
     });
     expect(confirmations().load()?.orderNumber).toBe("BUG-7K2Q9XA1");
@@ -311,6 +311,39 @@ describe("CheckoutFlow", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "¡Gracias por tu pedido!" })).toBeInTheDocument();
     expect(screen.getByText("BUG-NOANALYT")).toBeInTheDocument();
     expect(mocks.analytics.captureException).toHaveBeenCalledWith(expect.any(Error), { area: "checkout", action: "track_order" });
+  });
+
+  it("reports each ordered variant with its title in order_completed", async () => {
+    const kit = buildProduct({
+      id: "kit-72h",
+      name: "Kit 72h",
+      variants: [
+        { id: "kit-72h-1p", title: "1 persona", price: 119 },
+        { id: "kit-72h-2p", title: "2 personas", price: 199 },
+      ],
+    });
+    const cart = new Cart("EUR");
+    cart.addItem(kit.withVariant("kit-72h-2p"), new Quantity(1));
+    setCart(cart);
+    vi.spyOn(getContainer().getPlaceOrderUseCase(), "execute").mockResolvedValue({
+      orderNumber: "BUG-VARIANT1",
+      placedAt: "2026-09-26T10:00:00.000Z",
+      email: "ana@example.es",
+      lines: [{ productId: "kit-72h-2p", name: "Kit 72h · 2 personas", quantity: 1, unitPriceMinor: 19900, subtotalMinor: 19900 }],
+      totals: { subtotal: eur(199), shipping: eur(0), tax: eur(34.54), total: eur(199) },
+      shippingMethod: "standard",
+    });
+    render(<CheckoutFlow provider="local" />);
+    await fillContact();
+    await fillShipping();
+    await userEvent.click(screen.getByRole("button", { name: "Confirmar pedido" }));
+    await screen.findByRole("heading", { level: 1, name: "¡Gracias por tu pedido!" });
+    expect(mocks.analytics.track).toHaveBeenCalledWith({
+      name: "order_completed",
+      properties: expect.objectContaining({
+        products: [{ product_id: "kit-72h-2p", variant_title: "2 personas", quantity: 1, price: 199 }],
+      }),
+    });
   });
 
   it("does not offer the newsletter opt-in while messaging is disabled, and places the order without it", async () => {

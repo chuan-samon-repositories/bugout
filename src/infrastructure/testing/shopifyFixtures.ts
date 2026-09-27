@@ -1,7 +1,7 @@
 import { vi } from 'vitest';
 import { ShopifyClient, FetchLike } from '@/infrastructure/adapters/shopify/ShopifyClient';
 import { ShopifyProductNode, ShopifyProductWithVariants, ShopifyVariantNode } from '@/infrastructure/adapters/shopify/productMapping';
-import { ShopifyCartNode } from '@/infrastructure/adapters/shopify/cartGraphql';
+import { ShopifyCartNode, ShopifyCartWarning } from '@/infrastructure/adapters/shopify/cartGraphql';
 
 export const variantGid = (n: number) => `gid://shopify/ProductVariant/${n}`;
 
@@ -54,15 +54,19 @@ export function productNode(overrides: Partial<ShopifyProductNode> = {}): Shopif
     contents: null,
     kit: null,
     related: null,
+    longDescription: null,
+    position: null,
     ...overrides,
   };
 }
 
-/** A variant for a "Personas" option, e.g. `peopleVariant(2, 2, '199.0')` → "2 personas". */
+/**
+ * A variant for a "Personas" option as Shopify returns it, e.g. `peopleVariant(2, 2, '199.0')`:
+ * option value "2" and a `title` built from it, "2" (the site shows it as "2 personas").
+ */
 export function peopleVariant(n: number, people: number, amount: string, overrides: Partial<ShopifyVariantNode> = {}) {
-  const title = people === 1 ? '1 persona' : `${people} personas`;
   return variantNode(n, {
-    title,
+    title: String(people),
     selectedOptions: [{ name: 'Personas', value: String(people) }],
     price: { amount, currencyCode: 'EUR' },
     ...overrides,
@@ -83,6 +87,8 @@ export interface LineSpec {
   available?: boolean;
   /** Merchandise variant; defaults to a single "Default Title" variant. */
   merchandise?: ShopifyVariantNode;
+  /** The variant's product; defaults to "Producto <variant>" with handle `producto-<variant>`. */
+  product?: ShopifyProductNode;
 }
 
 export function cartNode(id: string, lines: LineSpec[] = []): ShopifyCartNode {
@@ -96,13 +102,18 @@ export function cartNode(id: string, lines: LineSpec[] = []): ShopifyCartNode {
         merchandise: {
           ...(line.merchandise ?? variantNode(line.variant)),
           availableForSale: line.available ?? true,
-          product: productNode({ handle: `producto-${line.variant}`, title: `Producto ${line.variant}` }),
+          product: line.product ?? productNode({ handle: `producto-${line.variant}`, title: `Producto ${line.variant}` }),
         },
       })),
     },
   };
 }
 
-export function mutationResult(operation: string, cart: ShopifyCartNode | null, userErrors: unknown[] = []) {
-  return { data: { [operation]: { cart, userErrors } } };
+export function mutationResult(
+  operation: string,
+  cart: ShopifyCartNode | null,
+  userErrors: unknown[] = [],
+  warnings: ShopifyCartWarning[] = [],
+) {
+  return { data: { [operation]: { cart, userErrors, warnings } } };
 }

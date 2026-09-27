@@ -14,7 +14,7 @@ export interface MobileMenuProps {
   ctaHref: string;
 }
 
-/** Menu button and dark drawer with the primary navigation, for screens below lg. */
+/** Menu button and dark drawer with the primary navigation, for screens below xl (1280px). */
 export function MobileMenu({ kits, ctaHref }: MobileMenuProps) {
   const [open, setOpen] = useState(false);
   const links = useMemo(() => primaryLinks(kits), [kits]);
@@ -33,7 +33,7 @@ export function MobileMenu({ kits, ctaHref }: MobileMenuProps) {
   const close = () => setOpen(false);
 
   return (
-    <div className="lg:hidden">
+    <div className="xl:hidden">
       <IconButton
         label={messages.shell.menu.open}
         variant="inverse"
@@ -60,7 +60,8 @@ export function MobileMenu({ kits, ctaHref }: MobileMenuProps) {
             links={links}
             onNavigate={close}
             className="-mx-2 flex flex-col gap-1"
-            linkClassName="flex min-h-12 items-center rounded-xl px-3 text-base font-semibold text-sand hover:bg-white/8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-on-navy"
+            linkClassName="flex min-h-12 items-center rounded-xl px-3 text-base font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-on-navy"
+            idleClassName="text-sand hover:bg-white/8"
             currentClassName="bg-white/10 text-orange-on-navy"
           />
         </nav>

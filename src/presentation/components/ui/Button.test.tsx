@@ -37,6 +37,38 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("stays focusable but ignores clicks while loading when focusableWhileLoading is set", async () => {
+    const onClick = vi.fn();
+    const { rerender } = render(
+      <Button onClick={onClick} focusableWhileLoading>
+        Añadir
+      </Button>,
+    );
+    const button = screen.getByRole("button", { name: "Añadir" });
+    button.focus();
+    rerender(
+      <Button loading onClick={onClick} focusableWhileLoading>
+        Añadir
+      </Button>,
+    );
+    expect(button).not.toBeDisabled();
+    expect(button).toHaveFocus();
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button.querySelector("svg.animate-spin")).not.toBeNull();
+    await userEvent.click(button);
+    expect(onClick).not.toHaveBeenCalled();
+
+    rerender(
+      <Button onClick={onClick} focusableWhileLoading>
+        Añadir
+      </Button>,
+    );
+    expect(button).not.toHaveAttribute("aria-disabled");
+    await userEvent.click(button);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
   it("respects disabled without aria-busy", () => {
     render(<Button disabled>Enviar</Button>);
     const button = screen.getByRole("button", { name: "Enviar" });

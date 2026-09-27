@@ -106,6 +106,8 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
 
   const trackOrder = (confirmation: OrderConfirmation) => {
     const { totals: placed } = confirmation;
+    // Order lines carry the display name only; the cart the order was placed from knows each variant.
+    const variantTitles = new Map(cart.getItems().map((item) => [item.product.id.value, item.product.variantTitle]));
     trackStep("review");
     analytics.track({
       name: "order_completed",
@@ -119,6 +121,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
         shipping_method: confirmation.shippingMethod,
         products: confirmation.lines.map((line) => ({
           product_id: line.productId,
+          variant_title: variantTitles.get(line.productId) ?? null,
           quantity: line.quantity,
           price: Money.fromMinor(line.unitPriceMinor, placed.total.currency).amount,
         })),

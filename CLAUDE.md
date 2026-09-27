@@ -33,7 +33,7 @@ Clean Architecture. Dependencies point inward only. For details, container API a
 
 ```
 src/app/            Next.js routes only: load data via the container, render presentation components
-src/presentation/   components/<feature>/ (home, kits, catalog, cart, checkout, layout, ...), components/ui/ (design system), context/, hooks/, i18n/, routes.ts, config/ (site, brand, messaging)
+src/presentation/   components/<feature>/ (home, kits, catalog, cart, checkout, layout, ...), components/ui/ (design system), context/, hooks/, i18n/, routes.ts, config/ (site, brand, messaging, mascot)
 src/application/    use-cases/, ports/ (interfaces), dtos/, catalog/ (filters, kits.ts) + checkout/ (pure helpers), analytics/events.ts, errors.ts
 src/domain/         entities (Product, Cart, CartItem, OrderPricing), value-objects (Money, ProductId, Quantity), errors
 src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simulated services), config/ (AppContainer, env, pricing), data/
@@ -57,7 +57,8 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
 - **Design system:** follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). In short:
   - Montserrat (`next/font`, variable on `<html>`); a sand page (`bg-sand`) with white cards (`rounded-2xl bg-white shadow-card`); navy heroes, header and footer; container `max-w-site` (via `Container`).
   - Pages open with `PageHeader` (default `tone="hero"`, a full-width navy banner rendered outside any `Container`; `tone="plain"` for checkout). Sections open with `SectionHeading` / `Eyebrow`.
-  - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header.
+  - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header. Its nav links show from `xl` (1280px); below that the menu button (`MobileMenu`) takes over, because the links, logo, cart and "Compra ahora" do not fit one row.
+  - `NavLinkList` takes `idleClassName` and `currentClassName` for state-dependent utilities (like the text colour), so a link never carries both.
   - Brand art and the frog are in `public/images/brand|mascot/` (paths via `brandAssets` in `presentation/config/brand.ts`). Product photos are `public/images/products/<slug>.jpg`, shot on navy.
   - Motion (`Reveal`, `FrogMascot`, hover lifts) is decorative and stops under `prefers-reduced-motion`.
   - The frog mascot is **hidden**: it has no interaction with the visitor, so it is decoration only. `isMascotEnabled()` in `presentation/config/mascot.ts` (`MASCOT_ENABLED = false`) is the one switch, like `isMessagingEnabled()`. Its component, sprite, CSS and images stay in the code; gate any new use of `FrogMascot` or `brandAssets.frog` on it.
@@ -76,11 +77,13 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
 - **Catalog model (kits and variants):**
   - `Product.id`, `price`, `originalPrice` and `inStock` describe the **selected variant**; `Product.variants` lists them all (a plain product has one implicit variant). Build multi-variant products with `Product.fromVariants(base, variants, selectedId?)` (default: first in stock) and switch with `withVariant(id)`.
   - Use `variantTitle` ("2 personas", null without options) and `displayName` ("Kit 72h · 2 personas") for cart and order lines, and `hasVariants()` / `priceRange()` / `hasPriceRange()` for chips and "Desde" prices.
-  - Cart lines are keyed by variant id; every `ProductRepository.findById` resolves a variant id to its product with that variant selected (`findByVariantId` in `application/catalog/kits.ts`).
+  - Cart lines are keyed by variant id; every `ProductRepository.findById` resolves a variant id to its product with that variant selected. `JsonProductAdapter` (and `LocalStorageCartAdapter`) do it with `findByVariantId` in `application/catalog/kits.ts`; `ShopifyProductAdapter` does a GraphQL `node` lookup of the variant GID.
+  - To read the number of people of a variant or option value, use `peopleCount(value | variant)` and, for compact lists ("1, 2 o 4"), `variantOptionLabel(variant)` from `application/catalog/variants.ts`. They accept both `"2"` and `"2 personas"`; never read `options[0].value` as the count.
   - A product is a kit when `details.kit` (`KitInfo`: `label`, optional `idealFor`, `buildYourOwn`) is set. `details.contents[].productSlug` links a kit line to a catalog product; `details.related` lists cross-sell slugs. `parseCatalog` rejects references to unknown slugs.
   - Use the helpers in `application/catalog/kits.ts` (`kitsIn`, `looseProductsIn`, `comparableKits`, `kitsContaining`, `includedInIndex`, `resolveContents`, `relatedProducts`, `compareKits`); never store "included in" data.
   - Category slugs are the slugified Spanish Shopify product types: `kits`, `agua`, `comida`, `luz-y-energia`, `primeros-auxilios`, `refugio-y-abrigo`, `herramientas`, `higiene` (labels in `messages.catalog.categories`).
-  - Shopify: variants come from `variants(first: 20)` with `selectedOptions` (option `Personas`), and kits from the `custom.kit` (JSON), `custom.related` (list of handles) and `custom.contents` (`handle` per line) metafields. See docs/SHOPIFY_SETUP.md.
+  - Shopify: variants come from `variants(first: 20)` with `selectedOptions` (option `Personas`; `mapVariant` titles a bare value `2` as "2 personas"), and kits from the `custom.kit` (JSON), `custom.related` (list of handles) and `custom.contents` (`handle` per line) metafields. `custom.long_description` fills `details.longDescription`, and `ShopifyProductAdapter.findAll` sorts by `custom.position` (lowest first, unset last); the local catalog keeps `products.json` order. Products priced in a currency other than `storePricingPolicy.currency` are skipped with a warning. See docs/SHOPIFY_SETUP.md.
+  - Catalog price filters, `priceBounds` and price sorts use every variant (`priceRange()`): a product matches when any variant price is in range, and sorts use the cheapest.
 - **Money:** `Money` holds integer minor units (cents) and a currency. Use `add`, `subtract`, `multiply` and the comparisons; never do arithmetic on `.amount` (major units, for display and analytics only).
   - Build values with `Money.fromMinor` or `Money.fromMajor`.
   - Discounts come from `discountPercentage(price, original)` in `domain/value-objects/Money.ts`.
@@ -99,6 +102,8 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - `Cart` has `addItem`, `setQuantity`, `deleteItem` and `clear`; there is no single-unit removal.
 - **Cart state:** use `useCart()` from `presentation/context/CartContext.tsx`. It is mounted in `app/Providers.tsx` together with `useNotifications()` and `useAnalytics()`/`useConsent()`.
   - `addItem(product, quantity, source?)` resolves `Promise<boolean>`; `product` is resolved to the variant being bought and `source` is `product_page` (default), `product_card` (the card's quick add) or `cart_drawer`. It shows no success toast: the cart drawer opening is the confirmation. Only failures show an error toast.
+  - Buttons that call `addItem` (`AddToCart`, `QuickAddButton`) use `Button`'s `focusableWhileLoading` (aria-disabled, clicks ignored) instead of `disabled` while loading, so the drawer, which opens mid-add, can return focus to them.
+  - `ManageCartUseCase` methods resolve to a `CartUpdate` (`application/dtos/Cart.ts`): `{ cart, notices }`, with the cart the backend really holds (`CartRepository.save` resolves to it; Shopify lowers quantities to the stock and drops sold-out lines) and `CartNotice`s (`quantityReduced`, `removed`) for what it changed on its own. `CartContext` shows each notice as an info toast (`messages.cart.quantityReduced` / `lineRemoved`); when none of the units could be added, `addItem` resolves false without opening the drawer.
   - `checkout({ replace?: boolean })` resolves `Promise<boolean>`, true once navigation has started. `/checkout` hands off to Shopify with `replace: true` (`location.replace`) and recovers when the page is restored from the back/forward cache.
   - `loadError` is true when restoring the cart failed; `refresh()` retries.
   - Any other operation that must not interleave with cart mutations goes through `runExclusive(task)`. For example, the local checkout places its order this way.
@@ -109,7 +114,8 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - `origin` is a `ConsentOrigin`: `'visitor'` for a fresh Accept or Reject (a visitor Accept sends one `$opt_in`), or `'restored'` for a stored or other-tab decision (opts in silently).
   - Never send personal data (names, emails, phones, addresses, free text) in events.
   - Mark containers that show customer data with the `ph-no-capture` class.
-  - Monetary properties are in major units with `currency`. Product events carry `product_id` (the variant id) and `variant_title`.
+  - Monetary properties are in major units with `currency`. Product events carry `product_id` (the variant id) and `variant_title`, and so do `add_to_cart_failed` and each `order_completed.products[]` entry.
+  - `product_variant_selected` is sent by `PurchasePanel` when the visitor picks another variant, never for the initial selection.
 - **Consent:** analytics are gated on consent. `PostHogAnalyticsAdapter` drops every call and loads nothing until `setConsent(true, origin)`: after the visitor accepts the banner, or when a stored grant is restored. Withdrawal resets and opts out, then deletes PostHog storage and cookies (host and parent domains, `cookieDomainsFor`), keeping only `__ph_opt_in_out_<key>="0"`.
   - `AnalyticsProvider` restores a stored decision in a layout effect, before children track on mount, and syncs consent across tabs.
   - `useConsent()` offers `accept`, `reject`, `reopen(returnFocusTo?)`, `dismiss()` and `reopenRequest`. A reopened banner focuses its first button, and Escape closes it without changing the decision.
@@ -126,7 +132,7 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - Give every control an accessible name, use one `<h1>` per page, and associate labels and errors with their fields.
   - Dialogs must trap focus, close on Escape and restore focus.
   - Respect `prefers-reduced-motion`.
-  - No fabricated ratings, reviews, stock figures, statistics, guarantees or success messages. Trust-bar and FAQ facts come from the pricing policy, `siteConfig` or the catalog. The partner prototype's unverified claims (5-year warranty, "24–48h" delivery, "+40.000 kits", "4,9/5") must not come back. The demo catalog has no ratings (`rating: null`), so the rating UI, JSON-LD `aggregateRating` and the rating and reviews sort options appear only when real review data exists (for example, Shopify `reviews.*` metafields).
+  - No fabricated ratings, reviews, stock figures, statistics, guarantees or success messages. Trust-bar and FAQ facts come from the pricing policy, `siteConfig` or the catalog, and never promise a service the code does not provide (there is no expiry reminder: the trust bar's "Caducidad a la vista" only says water and food show their date on each pack). The partner prototype's unverified claims (5-year warranty, "24–48h" delivery, "+40.000 kits", "4,9/5") must not come back. The demo catalog has no ratings (`rating: null`), so the rating UI, JSON-LD `aggregateRating` and the rating and reviews sort options appear only when real review data exists (for example, Shopify `reviews.*` metafields).
   - Product JSON-LD omits `image` when a product has none and omits `sku` for Shopify GIDs.
 
 ## Environment variables
@@ -137,7 +143,7 @@ See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild af
 |---|---|---|---|
 | `NEXT_PUBLIC_COMMERCE_PROVIDER` | `local` | `infrastructure/config/appConfig.ts` | `local` or `shopify`; any other value throws `ConfigurationError` |
 | `NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN` | none | `appConfig.ts`, `next.config.ts` (CSP `connect-src`) | Required for `shopify`, e.g. `store.myshopify.com` |
-| `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` | none | `appConfig.ts` | Required for `shopify`; public Storefront API token |
+| `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN` | none | `appConfig.ts` | Required for `shopify`; public Storefront API token. A value starting with a secret prefix (`shpat_`, `shpss_`, `shpca_`, `shppa_`) throws `ConfigurationError`: private and Admin tokens must never be `NEXT_PUBLIC_` |
 | `NEXT_PUBLIC_SHOPIFY_API_VERSION` | `2026-07` (`DEFAULT_SHOPIFY_API_VERSION` in `adapters/shopify/ShopifyClient.ts`) | `appConfig.ts` | Storefront API version |
 | `NEXT_PUBLIC_POSTHOG_KEY` | none (analytics off, `NoopAnalyticsAdapter`) | `appConfig.ts` | PostHog project key |
 | `NEXT_PUBLIC_POSTHOG_HOST` | `/ingest` (set in `PostHogAnalyticsAdapter`) | `appConfig.ts`, `next.config.ts` (CSP) | PostHog ingestion host. An absolute host is supported: `posthogOrigins()` adds it to CSP `script-src` and `connect-src`, plus the `-assets` host for `*.i.posthog.com` |
@@ -169,10 +175,11 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 - The `local` checkout is a demo (`LocalOrderGateway`): no payment, no real order, nothing leaves the browser. The confirmation is kept in sessionStorage (`bugout.lastOrder`, via `OrderConfirmationStore`).
 - `order_completed` is tracked client-side only, in `LocalCheckout`. Server-side tracking (Shopify order webhooks → PostHog) is pending, so Shopify purchases are not tracked yet.
 - `NEXT_PUBLIC_CONTACT_EMAIL` and the legal identity vars (`NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`) are required before launch (LSSI). Unset fields are simply hidden, so nothing fails loudly if they are missing. Until the contact backend exists, the email is the only real channel.
-- Product photos: every loose product in the local catalog has its own photo (`public/images/products/<slug>.jpg`). The kits have none yet: their pages show a "Foto del kit cerrado próximamente" box plus their contents' photos, and cards show the kit label on a navy gradient. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
+- Product photos: every loose product in the local catalog has its own photo (`public/images/products/<slug>.jpg`). The kits have none yet: their pages show a decorative navy box with the kit label plus their contents' photos. Kit cards (`KitCard`) cycle navy, orange and deep-navy gradient headers; product cards (`ProductCard`) show the kit label on a navy gradient. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
 - The demo catalog's prices, weights, dimensions and kit contents are the partner prototype's placeholders, not confirmed business data. Replace them (in Shopify or `products.json`) before selling.
 - The Kit Custom has no in-page product picker: its page explains the idea, and the visitor adds loose products from the catalog separately.
-- "Control de caducidades" (the trust bar and FAQ say "te avisamos para renovar los consumibles") was confirmed as a real service by the business, but no reminder system exists in the code.
+- No expiry-reminder system exists, so the trust bar and FAQ no longer promise one ("te avisamos para renovar los consumibles" was removed). If the business adds reminders, build them first, then change the copy in `messages/catalog.ts` (`trustExpiry*`) and `messages/content.ts` (`faqPage.expiryAnswer`).
+- The Kit 72h `longDescription` in `products.json` says it "incluye todo lo del Kit 24h", but its contents list a food ration instead of the 24h kit's energy bars. Fix the data (or the wording) before selling.
 - The Shopify API version default `2026-07` must stay within Shopify's supported window. Bump `DEFAULT_SHOPIFY_API_VERSION` or set the env var before it expires.
 - Shopify shipping zones and rates must be configured to match `storePricingPolicy`, including excluding Canarias, Ceuta and Melilla. The app quotes shipping and tax from that policy, while Shopify's hosted checkout charges its own.
   - The Shopify market for Spain must sell in EUR; a cart priced in another currency throws `ShopifyApiError`.

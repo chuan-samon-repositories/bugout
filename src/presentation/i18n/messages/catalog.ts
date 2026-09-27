@@ -21,8 +21,8 @@ export const catalog = {
     metaTitle: 'Productos',
     saleMetaTitle: 'Ofertas',
     metaDescription:
-      'Kit 24h, Kit 72h y Kit Custom, más todo el material de nuestros kits por separado: agua, luz y energía, primeros auxilios, refugio, herramientas e higiene.',
-    description: 'Todo el material de nuestros kits, disponible por separado.',
+      'Kit 24h, Kit 72h y Kit Custom, más el equipo de nuestros kits por separado: agua, luz y energía, primeros auxilios, refugio, herramientas e higiene.',
+    description: 'El equipo de nuestros kits, también por separado.',
     title: 'Productos',
     resultCount: (count: number, formatted: string) => `${formatted} ${count === 1 ? 'producto' : 'productos'}`,
     emptyTitle: 'No hay productos que coincidan con estos filtros',
@@ -93,6 +93,10 @@ export const catalog = {
     from: 'Desde',
     fromPrice: (price: string) => `Desde ${price}`,
     view: 'Ver el kit',
+    /** Starts with the visible text, so voice control users can say "Ver el kit". */
+    viewLabel: (kit: string) => `Ver el kit: ${kit}`,
+    /** A fact line on a kit card, e.g. "Peso: 1,8 kg". */
+    fact: (label: string, value: string) => `${label}: ${value}`,
     people: 'Personas',
     peopleList: (values: string[]) =>
       values.length <= 1 ? values.join('') : `${values.slice(0, -1).join(', ')} o ${values[values.length - 1]}`,
@@ -109,10 +113,11 @@ export const catalog = {
     variantUnit: (title: string) => title,
     specs: 'Ficha técnica',
     specsFor: 'Para',
+    /** Caption of a multi-variant kit's spec table: the data describe its first (smallest) version. */
+    specsForVariant: (variant: string) => `Ficha técnica de la versión para ${variant}`,
     contentsTitle: 'Contenido completo',
     contentsQuantityNote: 'Cantidades del kit para 1 persona; las versiones para más personas las multiplican.',
     contentsQuantity: (quantity: string) => `× ${quantity}`,
-    galleryClosed: 'Foto del kit cerrado próximamente',
     galleryContents: 'Lo que incluye el kit',
     crossSellTitle: 'Añade productos',
     crossSellDescription: 'Completa tu kit con material suelto del catálogo.',
@@ -136,7 +141,7 @@ export const catalog = {
 
     kitsEyebrow: 'Los kits',
     kitsTitle: 'Elige según el tiempo que necesites aguantar',
-    kitsDescription: 'Cada kit sale revisado pieza a pieza.',
+    kitsDescription: 'Consulta el contenido completo de cada uno antes de elegir.',
 
     compareEyebrow: '24h vs 72h',
     compareTitle: '¿Qué diferencias hay?',
@@ -156,7 +161,7 @@ export const catalog = {
 
     shopEyebrow: 'Productos sueltos',
     shopTitle: 'Completa o renueva tu kit',
-    shopDescription: 'Sustituye un consumible caducado o amplía tu kit pieza a pieza.',
+    shopDescription: 'Repón lo que hayas usado o amplía tu kit pieza a pieza.',
     viewCatalog: 'Ver todo el catálogo',
 
     trustTitle: 'Comprar en Bugout',
@@ -166,8 +171,8 @@ export const catalog = {
       min === max ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}` : `Entrega en ${min}–${max} días laborables`,
     trustRegionTitle: 'Península y Baleares',
     trustRegionText: 'Enviamos a toda la España peninsular y a las islas Baleares',
-    trustExpiryTitle: 'Control de caducidades',
-    trustExpiryText: 'Te avisamos para renovar los consumibles',
+    trustExpiryTitle: 'Caducidad a la vista',
+    trustExpiryText: 'El agua y los alimentos indican su fecha en cada envase',
     trustReturnsTitle: (days: number) => `${days} días para devolver`,
     trustReturnsText: 'Sin necesidad de indicar el motivo',
 

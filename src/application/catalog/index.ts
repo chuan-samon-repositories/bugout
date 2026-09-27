@@ -2,7 +2,6 @@ export { applyFilterCriteria } from './applyFilterCriteria';
 export { summarizeCategories, priceBounds } from './catalogSummary';
 export type { CategorySummary } from './catalogSummary';
 export {
-  KIT_CATEGORY,
   compareKits,
   comparableKits,
   findByVariantId,
@@ -14,3 +13,4 @@ export {
   resolveContents,
 } from './kits';
 export type { KitComparisonRow, ResolvedContentLine } from './kits';
+export { isPeopleOption, peopleCount, peopleOption, variantOptionLabel } from './variants';

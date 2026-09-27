@@ -59,7 +59,8 @@ export function NewsletterForm({ location, tone = "light", className }: Newslett
   };
 
   return (
-    <div className={cn("min-w-0", className)}>
+    // ph-no-capture: PostHog autocapture never records the email typed here.
+    <div className={cn("ph-no-capture min-w-0", className)}>
       <div role="status">
         {status === "subscribed" && (
           <p

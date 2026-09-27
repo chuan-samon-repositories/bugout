@@ -1,6 +1,6 @@
 import type { Locator, Page } from '@playwright/test';
 import { expect, test } from './support/fixtures';
-import { CATALOG_SIZE, CATEGORY_COUNTS, KITS, PRODUCTS, cartDrawer, cartLine, openPage, primaryNav } from './support/site';
+import { CATALOG_SIZE, CATEGORY_COUNTS, KITS, PRODUCTS, cartDrawer, cartLine, eurPattern, openPage, primaryNav } from './support/site';
 
 const LIGHT = ['Radio solar', 'Frontal', 'Lámpara de camping'];
 
@@ -207,10 +207,32 @@ test.describe('catalog', () => {
     const kit = cards(page).filter({ has: page.getByRole('link', { name: KITS.kit72h.name, exact: true }) });
     await expect(kit).toContainText('Desde 119,00');
     await expect(kit.getByRole('button')).toHaveCount(0);
+    // The build-your-own base is a starting price too, as on its kit card and page.
+    const custom = cards(page).filter({ has: page.getByRole('link', { name: KITS.kitCustom.name, exact: true }) });
+    await expect(custom).toContainText(new RegExp(`Desde ${eurPattern(KITS.kitCustom.variants[0].price).source}`));
 
-    await page.getByRole('button', { name: `Añadir ${PRODUCTS.radio.name} al carrito` }).click();
+    const quickAdd = page.getByRole('button', { name: `Añadir ${PRODUCTS.radio.name} al carrito` });
+    await quickAdd.click();
     const drawer = cartDrawer(page);
     await expect(drawer).toBeVisible();
     await expect(cartLine(drawer, PRODUCTS.radio.name)).toHaveCount(1);
+    await page.keyboard.press('Escape');
+    await expect(drawer).toBeHidden();
+    await expect(quickAdd).toBeFocused();
+  });
+
+  test('product cards fit two per row at 360px without horizontal scroll', async ({ page }) => {
+    await page.setViewportSize({ width: 360, height: 800 });
+    await openPage(page, '/products');
+    await expect(cards(page).first()).toBeVisible();
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+    expect(overflow, 'no horizontal scroll').toBeLessThanOrEqual(0);
+    for (const card of (await cards(page).all()).slice(0, 6)) {
+      const cardBox = (await card.boundingBox())!;
+      const button = card.getByRole('button');
+      if ((await button.count()) === 0) continue;
+      const buttonBox = (await button.boundingBox())!;
+      expect(buttonBox.x + buttonBox.width, 'quick add stays inside its card').toBeLessThanOrEqual(cardBox.x + cardBox.width);
+    }
   });
 });

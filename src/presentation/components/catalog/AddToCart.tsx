@@ -96,6 +96,8 @@ export function AddToCart({ product: snapshot }: AddToCartProps) {
           size="lg"
           className="min-w-0 flex-1 basis-48"
           loading={adding}
+          // The cart drawer opens while this is loading and returns focus here when it closes.
+          focusableWhileLoading
           disabled={pending && !adding}
           onClick={handleAdd}
         >

@@ -2,14 +2,18 @@ import Image from "next/image";
 import Link from "next/link";
 import { focusRing } from "@/presentation/components/ui";
 import { cn } from "@/presentation/components/ui/cn";
-import { brandAssets } from "@/presentation/config/brand";
+import { atWidth, brandAssets } from "@/presentation/config/brand";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
-const mark = brandAssets.mark("cream");
-const wordmark = brandAssets.wordmarkFlat("cream");
+/** Display sizes (w-10 and w-[5.5rem]), so the browser downloads 40/88px files (2x on retina), not the 986px sources. */
+const mark = atWidth(brandAssets.mark("cream"), 40);
+const wordmark = atWidth(brandAssets.wordmarkFlat("cream"), 88);
 
-/** Header logo: the cream mark plus the flat wordmark (the wordmark hides on narrow phones). */
+/**
+ * Header logo: the cream mark plus the flat wordmark. The wordmark hides on narrow phones,
+ * so it is not preloaded (only the mark is `priority`) and stays lazy where it is hidden.
+ */
 export function BrandLogo() {
   return (
     <Link
@@ -23,7 +27,6 @@ export function BrandLogo() {
         width={wordmark.width}
         height={wordmark.height}
         alt=""
-        priority
         className="hidden h-auto w-[5.5rem] min-[400px]:block"
       />
     </Link>

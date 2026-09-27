@@ -108,6 +108,20 @@ describe('kit helpers', () => {
     expect(compareKits([])).toEqual([]);
   });
 
+  it('lists people counts in the variant row whether option values are "2" or "2 personas"', () => {
+    const shopifyStyle = buildProduct({
+      id: 'kit-72h-shopify',
+      category: 'kits',
+      variants: [
+        { id: 'a', title: '1 persona', price: 59, options: [{ name: 'Personas', value: '1 persona' }] },
+        { id: 'b', title: '4 personas', price: 199, options: [{ name: 'Personas', value: '4 personas' }] },
+      ],
+      details: details({ kit: { label: '72H' } }),
+    });
+    const row = compareKits([kit24, shopifyStyle]).find((candidate) => candidate.kind === 'variants');
+    expect(row).toEqual({ kind: 'variants', label: 'Personas', values: [['1', '2'], ['1', '4']] });
+  });
+
   it('omits the variant row when no kit has variants', () => {
     expect(compareKits([kit72]).map((row) => row.kind)).toEqual(['price', 'spec', 'spec', 'items']);
   });

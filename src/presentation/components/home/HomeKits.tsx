@@ -13,10 +13,10 @@ const copy = messages.catalog.home;
 /** Spec rows the home comparison leaves out: long texts that belong on the kit page. */
 export const HOME_COMPARISON_OMIT = ["Caducidad de los consumibles"];
 
-/** Section 2: the kit cards. `id` is the hero scroll cue's target. */
+/** Section 2: the kit cards. `id` is the hero scroll cue's target (html `scroll-padding-top` clears the header). */
 export function HomeKits({ id, kits }: { id: string; kits: readonly Product[] }) {
   return (
-    <section id={id} aria-labelledby={`${id}-title`} className="scroll-mt-(--header-height) pt-24 pb-16 sm:pt-32">
+    <section id={id} aria-labelledby={`${id}-title`} className="pt-24 pb-16 sm:pt-32">
       <Container>
         <Reveal>
           <SectionHeading
@@ -62,7 +62,7 @@ export function HomeInside({ kit, lines }: { kit: Product; lines: readonly Resol
   return (
     <section
       aria-labelledby="inside-title"
-      className="relative overflow-hidden bg-navy-deep py-24 sm:py-30 before:pointer-events-none before:absolute before:-top-[20%] before:-right-[10%] before:size-[37.5rem] before:bg-[radial-gradient(circle,rgb(255_120_12/0.12),transparent_70%)]"
+      className="relative overflow-hidden bg-navy-deep py-24 sm:py-30 before:pointer-events-none before:absolute before:-top-[20%] before:-right-[10%] before:size-[37.5rem] before:bg-radial before:from-orange/12 before:to-transparent before:to-70%"
     >
       <Container className="relative">
         <Reveal>

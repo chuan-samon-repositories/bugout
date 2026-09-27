@@ -23,6 +23,8 @@ interface CartProperties {
 
 export type AnalyticsEvent =
   | { name: 'product_viewed'; properties: ProductProperties & { badge: string | null; in_stock: boolean } }
+  /** The visitor picked another variant on the product page (never sent for the initial selection). */
+  | { name: 'product_variant_selected'; properties: ProductProperties & { in_stock: boolean } }
   | {
       name: 'product_added_to_cart';
       properties: ProductProperties & CartProperties & { quantity: number; source: 'product_page' | 'product_card' | 'cart_drawer' };
@@ -30,7 +32,12 @@ export type AnalyticsEvent =
   | { name: 'product_removed_from_cart'; properties: ProductProperties & CartProperties & { quantity: number } }
   | {
       name: 'add_to_cart_failed';
-      properties: { product_id: string; quantity: number; reason: 'out_of_stock' | 'max_quantity' | 'not_found' | 'unknown' };
+      properties: {
+        product_id: string;
+        variant_title: string | null;
+        quantity: number;
+        reason: 'out_of_stock' | 'max_quantity' | 'not_found' | 'unknown';
+      };
     }
   | { name: 'cart_viewed'; properties: CartProperties }
   | { name: 'checkout_started'; properties: CartProperties & { checkout_type: 'local' | 'hosted' } }
@@ -48,7 +55,8 @@ export type AnalyticsEvent =
         currency: string;
         item_count: number;
         shipping_method: string;
-        products: Array<{ product_id: string; quantity: number; price: number }>;
+        /** `product_id` is the variant id; `variant_title` is null for single-variant products. */
+        products: Array<{ product_id: string; variant_title: string | null; quantity: number; price: number }>;
       };
     }
   | {

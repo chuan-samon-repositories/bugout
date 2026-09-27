@@ -34,6 +34,8 @@ export function QuickAddButton({ product: snapshot, className }: QuickAddButtonP
       size="sm"
       onClick={() => void add()}
       loading={adding}
+      // The cart drawer opens while this is loading and returns focus here when it closes.
+      focusableWhileLoading
       disabled={pending && !adding}
       aria-label={copy.quickAddLabel(product.name)}
       className={className}

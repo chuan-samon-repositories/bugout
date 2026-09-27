@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ManageCartUseCase } from '@/application/use-cases/ManageCartUseCase';
 import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { ShopifyCartAdapter } from './ShopifyCartAdapter';
@@ -54,6 +54,10 @@ describe('ShopifyCartAdapter', () => {
     expect(storage.getItem(SHOPIFY_CART_ID_KEY)).toBeNull();
   });
 
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('maps remote lines to a cart, skipping unavailable ones and clamping quantities', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
     const fetch = queuedFetch({
@@ -65,11 +69,58 @@ describe('ShopifyCartAdapter', () => {
         ]),
       },
     });
-    const cart = await adapterWith(fetch).load();
+    const adapter = adapterWith(fetch);
+    const cart = await adapter.load();
     expect(cart.quantityOf(pid(1))).toBe(2);
     expect(cart.quantityOf(pid(2))).toBe(0);
     expect(cart.quantityOf(pid(3))).toBe(99);
     expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-1' });
+    expect(adapter.loadNotices()).toEqual([{ kind: 'removed', productId: variantGid(2), productName: 'Producto 2' }]);
+  });
+
+  it('names dropped kit lines with their size, and clears the notices on the next load', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const kit = productNode({ handle: 'kit-72h', title: 'Kit 72h' });
+    const fetch = queuedFetch(
+      {
+        data: {
+          cart: cartNode('cart-1', [
+            { lineId: 'l1', variant: 12, quantity: 1, available: false, merchandise: peopleVariant(12, 2, '199.0'), product: kit },
+          ]),
+        },
+      },
+      { data: { cart: cartNode('cart-1') } },
+    );
+    const adapter = adapterWith(fetch);
+    await adapter.load();
+    expect(adapter.loadNotices()).toEqual([{ kind: 'removed', productId: variantGid(12), productName: 'Kit 72h · 2 personas' }]);
+    await adapter.load();
+    expect(adapter.loadNotices()).toEqual([]);
+  });
+
+  it('keeps two sizes of the same kit as two lines keyed by variant GID', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const kit = productNode({ handle: 'kit-72h', title: 'Kit 72h' });
+    const two = peopleVariant(12, 2, '199.0');
+    const four = peopleVariant(14, 4, '359.0');
+    const remote = cartNode('cart-1', [
+      { lineId: 'l12', variant: 12, quantity: 1, merchandise: two, product: kit },
+      { lineId: 'l14', variant: 14, quantity: 2, merchandise: four, product: kit },
+    ]);
+    const fetch = queuedFetch({ data: { cart: remote } }, mutationResult('cartLinesUpdate', remote));
+    const adapter = adapterWith(fetch);
+
+    const cart = await adapter.load();
+    expect(cart.getItems().map((item) => [item.product.id.value, item.product.displayName, item.quantity.value])).toEqual([
+      [variantGid(12), 'Kit 72h · 2 personas', 1],
+      [variantGid(14), 'Kit 72h · 4 personas', 2],
+    ]);
+    expect(cart.totalAmount().minor).toBe(19900 + 2 * 35900);
+
+    cart.setQuantity(pid(14), new Quantity(3));
+    await adapter.save(cart);
+    // Only the 4-person line changes; the 2-person line of the same product is untouched.
+    expect(sentRequest(fetch, 1).variables).toEqual({ cartId: 'cart-1', lines: [{ id: 'l14', quantity: 3 }] });
   });
 
   it('keeps the variant title of kit lines so the drawer shows "2 personas"', async () => {
@@ -201,6 +252,103 @@ describe('ShopifyCartAdapter', () => {
     const adapter = adapterWith(fetch);
     await adapter.save(await adapter.load());
     expect(sentRequest(fetch, 1).variables).toEqual({ cartId: 'cart-1', lineIds: ['l2'] });
+  });
+
+  describe('what Shopify actually holds', () => {
+    it('asks every cart mutation for its warnings', async () => {
+      const fetch = queuedFetch(mutationResult('cartCreate', cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 1 }])));
+      const cart = new Cart('EUR');
+      cart.addItem(product(1), new Quantity(1));
+      await adapterWith(fetch).save(cart);
+      expect(sentRequest(fetch, 0).query).toContain('warnings { code message target }');
+    });
+
+    it('resolves to the cart Shopify returned when it lowered a quantity to the stock', async () => {
+      storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+      const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+      const clamped = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 3 }]);
+      const fetch = queuedFetch(
+        { data: { cart: remote } },
+        mutationResult('cartLinesUpdate', clamped, [], [
+          { code: 'MERCHANDISE_NOT_ENOUGH_STOCK', message: 'Only 3 items were added to your cart due to availability.', target: 'l1' },
+        ]),
+      );
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const adapter = adapterWith(fetch);
+      const cart = await adapter.load();
+      cart.setQuantity(pid(1), new Quantity(5));
+
+      const saved = await adapter.save(cart);
+
+      expect(saved.quantityOf(pid(1))).toBe(3);
+      expect(warn).not.toHaveBeenCalled();
+    });
+
+    it('lets the use case report quantities Shopify lowered and lines it did not add', async () => {
+      storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+      const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+      const fetch = queuedFetch(
+        { data: { cart: remote } },
+        mutationResult('cartLinesAdd', remote, [], [
+          { code: 'MERCHANDISE_OUT_OF_STOCK', message: 'The product is out of stock.', target: 'cart-1' },
+        ]),
+        { data: { cart: remote } },
+        mutationResult('cartLinesUpdate', cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 4 }]), [], [
+          { code: 'MERCHANDISE_NOT_ENOUGH_STOCK', message: 'Only 4 items were added.', target: 'l1' },
+        ]),
+      );
+      const catalog = new InMemoryProductRepository([product(1), product(2)]);
+      const manageCart = new ManageCartUseCase(adapterWith(fetch), catalog);
+
+      const soldOut = await manageCart.addToCart(pid(2), new Quantity(1));
+      expect(soldOut.cart.quantityOf(pid(2))).toBe(0);
+      expect(soldOut.notices).toEqual([{ kind: 'removed', productId: variantGid(2), productName: 'Mochila 24H' }]);
+
+      const lowered = await manageCart.addToCart(pid(1), new Quantity(9));
+      expect(lowered.cart.quantityOf(pid(1))).toBe(4);
+      expect(lowered.notices).toEqual([
+        { kind: 'quantityReduced', productId: variantGid(1), productName: 'Mochila 24H', requested: 10, quantity: 4 },
+      ]);
+    });
+
+    it('removes lines the load dropped on the next getCart, so they are reported once', async () => {
+      storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+      const remote = cartNode('cart-1', [
+        { lineId: 'l1', variant: 1, quantity: 1 },
+        { lineId: 'l2', variant: 2, quantity: 1, available: false },
+      ]);
+      const after = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
+      const fetch = queuedFetch({ data: { cart: remote } }, mutationResult('cartLinesRemove', after), { data: { cart: after } });
+      const manageCart = new ManageCartUseCase(adapterWith(fetch), new InMemoryProductRepository());
+
+      const first = await manageCart.getCart();
+      expect(first.notices).toEqual([{ kind: 'removed', productId: variantGid(2), productName: 'Producto 2' }]);
+      expect(first.cart.quantityOf(pid(1))).toBe(1);
+      expect(sentRequest(fetch, 1).variables).toEqual({ cartId: 'cart-1', lineIds: ['l2'] });
+
+      expect((await manageCart.getCart()).notices).toEqual([]);
+    });
+
+    it('logs warnings that are not about stock', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+      const fetch = queuedFetch(
+        mutationResult('cartCreate', cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 1 }]), [], [
+          { code: 'PAYMENTS_GIFT_CARDS_UNAVAILABLE', message: 'Gift cards are not available.', target: 'cart-new' },
+        ]),
+      );
+      const cart = new Cart('EUR');
+      cart.addItem(product(1), new Quantity(1));
+      await adapterWith(fetch).save(cart);
+      expect(warn).toHaveBeenCalledWith('[shopify] cartCreate warning PAYMENTS_GIFT_CARDS_UNAVAILABLE: Gift cards are not available.');
+    });
+
+    it('resolves to the given cart when nothing had to be sent', async () => {
+      storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+      const fetch = queuedFetch({ data: { cart: cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 2 }]) } });
+      const adapter = adapterWith(fetch);
+      const cart = await adapter.load();
+      await expect(adapter.save(cart)).resolves.toBe(cart);
+    });
   });
 
   it('throws on user errors', async () => {

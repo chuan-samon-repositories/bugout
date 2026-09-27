@@ -12,10 +12,15 @@ interface NavLinkListProps {
   linkClassName: string;
   /** Extra classes for the link of the current page. */
   currentClassName?: string;
+  /**
+   * Extra classes for every other link. Put state-dependent utilities (like the text colour)
+   * here and in `currentClassName`, never in `linkClassName`: cn() does not merge conflicts.
+   */
+  idleClassName?: string;
   onNavigate?: () => void;
 }
 
-function Links({ search, links, className, linkClassName, currentClassName, onNavigate }: NavLinkListProps & { search: Pick<URLSearchParams, "get"> | null }) {
+function Links({ search, links, className, linkClassName, currentClassName, idleClassName, onNavigate }: NavLinkListProps & { search: Pick<URLSearchParams, "get"> | null }) {
   const pathname = usePathname();
   return (
     <ul className={className}>
@@ -27,7 +32,7 @@ function Links({ search, links, className, linkClassName, currentClassName, onNa
               href={link.href}
               aria-current={current ? "page" : undefined}
               onClick={onNavigate}
-              className={cn(linkClassName, current && currentClassName)}
+              className={cn(linkClassName, current ? currentClassName : idleClassName)}
             >
               {link.label}
             </Link>

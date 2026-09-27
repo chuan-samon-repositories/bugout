@@ -7,7 +7,7 @@ describe("trustItems", () => {
     expect(trustItems(testPricingPolicy).map(({ title, text }) => [title, text])).toEqual([
       ["Envío gratis desde 75,00\u00a0€", "Entrega en 3–5 días laborables"],
       ["Península y Baleares", "Enviamos a toda la España peninsular y a las islas Baleares"],
-      ["Control de caducidades", "Te avisamos para renovar los consumibles"],
+      ["Caducidad a la vista", "El agua y los alimentos indican su fecha en cada envase"],
       ["30 días para devolver", "Sin necesidad de indicar el motivo"],
     ]);
   });

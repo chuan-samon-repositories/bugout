@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { mapShopifyProduct, slugifyCategory } from './productMapping';
+import { mapShopifyProduct, parsePosition, slugifyCategory } from './productMapping';
 import { peopleVariant, productNode, variantGid, variantNode } from '@/infrastructure/testing/shopifyFixtures';
 
 const metafield = (value: unknown) => ({ value: typeof value === 'string' ? value : JSON.stringify(value) });
@@ -86,6 +86,39 @@ describe('mapShopifyProduct', () => {
     expect(onlyContents.details).toEqual({ features: [], specifications: [], contents: [{ item: 'Linterna', quantity: '1' }] });
   });
 
+  it('accepts numbers for content quantities and specification values', () => {
+    const product = mapShopifyProduct(
+      productNode({
+        specifications: metafield([{ label: 'Capacidad', value: 35 }, { label: 'Roto', value: null }]),
+        contents: metafield([
+          { item: 'Botellas de agua', quantity: 6 },
+          { item: 'Manta térmica', quantity: '2', handle: 'manta-termica' },
+          { item: 'Sin cantidad', quantity: Number.NaN },
+        ]),
+      }),
+      variantNode(1),
+    );
+    expect(product.details?.specifications).toEqual([{ label: 'Capacidad', value: '35' }]);
+    expect(product.details?.contents).toEqual([
+      { item: 'Botellas de agua', quantity: '6' },
+      { item: 'Manta térmica', quantity: '2', productSlug: 'manta-termica' },
+    ]);
+  });
+
+  it('reads custom.long_description into the details, keeping its line breaks', () => {
+    const product = mapShopifyProduct(
+      productNode({ longDescription: { value: '  Primer párrafo.\n\nSegundo párrafo.  ' } }),
+      variantNode(1),
+    );
+    expect(product.details).toEqual({
+      longDescription: 'Primer párrafo.\n\nSegundo párrafo.',
+      features: [],
+      specifications: [],
+      contents: [],
+    });
+    expect(mapShopifyProduct(productNode({ longDescription: { value: '   ' } }), variantNode(1)).details).toBeNull();
+  });
+
   it('keeps Shopify currency so the cart can reject mismatches', () => {
     const product = mapShopifyProduct(productNode(), variantNode(1, { price: { amount: '10.00', currencyCode: 'USD' } }));
     expect(product.price.currency).toBe('USD');
@@ -121,6 +154,41 @@ describe('mapShopifyProduct: kits and variants', () => {
       [{ name: 'Personas', value: '4' }],
     ]);
     expect(product.priceRange().max.amount).toBe(129);
+  });
+
+  it('titles bare "Personas" values as "N personas", like the local catalog', () => {
+    // Shopify builds the variant title from the option value: "1", "2", "4".
+    const variants = [peopleVariant(1, 1, '39.0'), peopleVariant(2, 2, '69.0'), peopleVariant(4, 4, '129.0')];
+    expect(variants.map((variant) => variant.title)).toEqual(['1', '2', '4']);
+    const product = mapShopifyProduct(productNode({ title: 'Kit 72h' }), variants[1], variants);
+    expect(product.variants.map((variant) => variant.title)).toEqual(['1 persona', '2 personas', '4 personas']);
+    expect(product.displayName).toBe('Kit 72h · 2 personas');
+    expect(product.withVariant(variantGid(1)).variantTitle).toBe('1 persona');
+  });
+
+  it('keeps option values that already read "2 personas" and any other option as Shopify titles them', () => {
+    const spelled = peopleVariant(2, 2, '69.0', {
+      title: '2 personas',
+      selectedOptions: [{ name: 'personas', value: '2 personas' }],
+    });
+    expect(mapShopifyProduct(productNode(), spelled).variantTitle).toBe('2 personas');
+
+    const size = variantNode(3, { title: '30L', selectedOptions: [{ name: 'Tamaño', value: '30L' }] });
+    expect(mapShopifyProduct(productNode(), size).variantTitle).toBe('30L');
+
+    const accented = variantNode(5, { title: '4', selectedOptions: [{ name: 'PERSONAS', value: '4' }] });
+    expect(mapShopifyProduct(productNode(), accented).variantTitle).toBe('4 personas');
+  });
+
+  it('composes several options like Shopify, with the people count spelled out', () => {
+    const variant = variantNode(6, {
+      title: '2 / Rojo',
+      selectedOptions: [
+        { name: 'Personas', value: '2' },
+        { name: 'Color', value: 'Rojo' },
+      ],
+    });
+    expect(mapShopifyProduct(productNode(), variant).variantTitle).toBe('2 personas / Rojo');
   });
 
   it('reads custom.kit, custom.related and content handles', () => {
@@ -164,3 +232,14 @@ describe('mapShopifyProduct: kits and variants', () => {
   });
 });
 
+
+describe('parsePosition', () => {
+  it('reads an integer custom.position and ignores anything else', () => {
+    expect(parsePosition({ position: { value: '3' } })).toBe(3);
+    expect(parsePosition({ position: { value: ' -1 ' } })).toBe(-1);
+    expect(parsePosition({ position: { value: '1.5' } })).toBeNull();
+    expect(parsePosition({ position: { value: 'primero' } })).toBeNull();
+    expect(parsePosition({ position: { value: '' } })).toBeNull();
+    expect(parsePosition({ position: null })).toBeNull();
+  });
+});

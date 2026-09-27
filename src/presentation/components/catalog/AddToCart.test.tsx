@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { useState, type ReactNode } from "react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Cart, MAX_QUANTITY_PER_ITEM } from "@/domain/entities/cart/Cart";
 import { buildProduct } from "@/domain/testing/buildProduct";
 import { Quantity } from "@/domain/value-objects/Quantity";
+import { Drawer } from "@/presentation/components/ui";
 import { AddToCart } from "./AddToCart";
 import { toProductSnapshot } from "./productSnapshot";
 
@@ -20,6 +22,21 @@ vi.mock("@/presentation/context/CartContext", () => ({
 
 const product = buildProduct({ id: "kit-24h", name: "Mochila 24H", price: 199 });
 const snapshot = toProductSnapshot(product);
+
+/** Stands in for the cart drawer, which CartContext opens while addItem is still running. */
+let openDrawer: () => void = () => {};
+function WithCartDrawer({ children }: { children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  openDrawer = () => setOpen(true);
+  return (
+    <>
+      {children}
+      <Drawer open={open} onClose={() => setOpen(false)} title="Tu carrito">
+        <p>Contenido</p>
+      </Drawer>
+    </>
+  );
+}
 
 function cartWith(quantity: number): Cart {
   const cart = new Cart("EUR");
@@ -83,6 +100,42 @@ describe("AddToCart", () => {
     await user.type(input, "50");
     await user.click(screen.getByRole("button", { name: "Añadir al carrito" }));
     expect(cartState.addItem).toHaveBeenCalledWith(expect.anything(), 2);
+  });
+
+  it("stays focusable while adding, so the cart drawer returns focus to it on Escape", async () => {
+    let finish: (added: boolean) => void = () => {};
+    cartState.addItem.mockImplementation(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const user = userEvent.setup();
+    render(
+      <WithCartDrawer>
+        <AddToCart product={snapshot} />
+      </WithCartDrawer>,
+    );
+    const button = screen.getByRole("button", { name: "Añadir al carrito" });
+    await user.click(button);
+
+    // Loading: busy and inert, but still focused (a disabled button would drop focus to <body>).
+    expect(button).toHaveFocus();
+    expect(button).toHaveAttribute("aria-busy", "true");
+    expect(button).toHaveAttribute("aria-disabled", "true");
+    expect(button).not.toBeDisabled();
+    await user.click(button);
+    expect(cartState.addItem).toHaveBeenCalledTimes(1);
+
+    act(() => openDrawer());
+    await act(async () => finish(true));
+    const dialog = screen.getByRole("dialog", { name: "Tu carrito" });
+    expect(dialog).toContainElement(document.activeElement as HTMLElement);
+
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(button).toHaveFocus();
+    expect(button).not.toHaveAttribute("aria-busy");
   });
 
   it("explains when the cart already holds the maximum", () => {

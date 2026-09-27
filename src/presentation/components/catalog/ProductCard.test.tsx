@@ -64,6 +64,21 @@ describe("ProductCard", () => {
     expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
+  it("shows a build-your-own kit base as a starting price, with a decorative placeholder", () => {
+    const custom = buildProduct({
+      id: "kit-custom",
+      name: "Kit Custom",
+      price: 59,
+      details: { features: [], specifications: [], contents: [], kit: { label: "CUSTOM", buildYourOwn: true } },
+    });
+    const { container } = render(<ProductCard product={custom} />);
+    expect(screen.getByText("Desde 59,00 €")).toBeInTheDocument();
+    // The heading names the card: the label box is not a second, redundant image.
+    expect(screen.queryByRole("img", { name: "Kit Custom" })).toBeNull();
+    expect(container.querySelector("[data-kit-placeholder]")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByRole("button", { name: "Añadir Kit Custom al carrito" })).toBeInTheDocument();
+  });
+
   it("supports a level-3 heading for use under a section heading", () => {
     render(<ProductCard product={buildProduct({ name: "Kit" })} headingLevel={3} />);
     expect(screen.getByRole("heading", { level: 3, name: "Kit" })).toBeInTheDocument();

@@ -125,7 +125,8 @@ export function ContactForm({ initialTopic = "general" }: ContactFormProps) {
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit} className="min-w-0">
+    // ph-no-capture: PostHog autocapture never records the name, email or message typed here.
+    <form noValidate onSubmit={handleSubmit} className="ph-no-capture min-w-0">
       <FormErrorSummary errors={summary} className={summary.length > 0 ? "mb-5" : undefined} />
       <div className="flex flex-col gap-5">
         <div className="grid gap-5 sm:grid-cols-2">

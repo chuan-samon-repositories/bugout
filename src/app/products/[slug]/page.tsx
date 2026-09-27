@@ -8,7 +8,7 @@ import { NotFoundError } from "@/domain/errors";
 import { getContainer } from "@/infrastructure/config";
 import { categoryLabel } from "@/presentation/components/catalog/categoryLabel";
 import { DeliveryInfo } from "@/presentation/components/catalog/DeliveryInfo";
-import { ProductDetailSections } from "@/presentation/components/catalog/ProductDetailSections";
+import { ProductDetailSections, hasDetailSections } from "@/presentation/components/catalog/ProductDetailSections";
 import { ProductGallery } from "@/presentation/components/catalog/ProductGallery";
 import { ProductGrid } from "@/presentation/components/catalog/ProductGrid";
 import { ProductImage } from "@/presentation/components/catalog/ProductImage";
@@ -155,7 +155,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <RatingStars rating={product.rating} showCount />
             <p className="text-base leading-relaxed text-muted">{product.description}</p>
             {kit && product.details?.longDescription && (
-              <p className="leading-relaxed text-muted">{product.details.longDescription}</p>
+              // pre-line: a Shopify long description can contain line breaks.
+              <p className="leading-relaxed whitespace-pre-line text-muted">{product.details.longDescription}</p>
             )}
             {containing.length > 0 && (
               <ul aria-label={k.includedInLabel} className="flex flex-wrap gap-2">
@@ -175,7 +176,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
               </ul>
             )}
 
-            <PurchasePanel product={snapshot} fromLabel={buildYourOwn} />
+            {/* Only kits show their specs here; other products list them in ProductDetailSections below. */}
+            <PurchasePanel product={snapshot} fromLabel={buildYourOwn} showSpecs={!!kit} />
 
             {kit && !buildYourOwn && (
               <Link href={routes.howToChoose} className={cn(textLinkClasses, "self-start")}>
@@ -209,7 +211,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </section>
         )}
 
-        {!kit && product.details && (
+        {!kit && hasDetailSections(product) && (
           <div className="mb-20">
             <ProductDetailSections product={product} />
           </div>

@@ -14,17 +14,28 @@ function DetailSection({ id, title, children }: { id: string; title: string; chi
   );
 }
 
-/** Description, features and specifications; each only when the product has that data. Kit contents live in KitContentsList. */
+/** True when ProductDetailSections has something to show for `product`. */
+export function hasDetailSections(product: Product): boolean {
+  const details = product.details;
+  return !!details && (!!details.longDescription?.trim() || details.features.length > 0 || details.specifications.length > 0);
+}
+
+/**
+ * Long description, features and specifications; each only when the product has that data.
+ * The short description is already under the page title, so "Descripción" needs a long one.
+ * Kit contents live in KitContentsList.
+ */
 export function ProductDetailSections({ product }: { product: Product }) {
   const t = messages.catalog.product;
   const details = product.details;
-  const description = details?.longDescription ?? product.description;
+  const description = details?.longDescription?.trim();
 
   return (
     <div className="grid gap-12 lg:grid-cols-2">
       {description && (
         <DetailSection id="product-description" title={t.description}>
-          <p className="leading-relaxed text-ink">{description}</p>
+          {/* pre-line: a Shopify long description can contain line breaks. */}
+          <p className="leading-relaxed whitespace-pre-line text-ink">{description}</p>
         </DetailSection>
       )}
 
@@ -53,7 +64,6 @@ export function ProductDetailSections({ product }: { product: Product }) {
           </dl>
         </DetailSection>
       )}
-
     </div>
   );
 }

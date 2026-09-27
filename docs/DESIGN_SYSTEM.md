@@ -13,7 +13,7 @@ The prototype's Catalan/English copy, language switcher, "TODO" placeholders and
 - **Motion:** `ease-brand` (`cubic-bezier(.16,.84,.44,1)`), card hover lifts, scroll reveals (`Reveal`) and the breathing frog (`FrogMascot`, currently hidden). Everything is decorative and stops under `prefers-reduced-motion`.
 - **The frog mascot is hidden.** It doesn't react to or guide the visitor, so it is decoration only. `isMascotEnabled()` (`presentation/config/mascot.ts`, `MASCOT_ENABLED = false`) gates it in the home hero, the "Por qué prepararse" teaser (a centred text column without it) and the 404 page. Set the flag to `true` to bring it back, ideally once it has a role. `mascot.test.tsx` covers both states.
 - **Mascot and brand art** live in `public/images/brand/` (mark and wordmark, flat and stacked, in cream, navy and orange) and `public/images/mascot/` (`frog.png` and the 8-frame `frog-breathe-strip.png`). Use `brandAssets` (`presentation/config/brand.ts`) for their paths and sizes. The favicon (`app/icon.png`) is the orange mark (`mark-orange.png`, as in the prototype) on a 512px navy-deep rounded square: the mark is about 2.2:1, so on a transparent square it would fill under half of a 16px tab icon.
-- **Product photos** are 900×900, shot on the brand navy, in `public/images/products/<slug>.jpg`. Product media areas are `bg-navy`, so a missing photo still looks intentional.
+- **Product photos** are 900×900, shot on the brand navy, in `public/images/products/<slug>.jpg`. Product media areas are `bg-navy`, so a missing photo still looks intentional. A kit without photos shows its label on a navy gradient (decorative, `aria-hidden`): `KitCard` headers cycle navy, orange and deep navy; `ProductCard` and the kit page use navy.
 
 ## Tokens (`src/app/globals.css`)
 
@@ -34,16 +34,16 @@ Plus `max-w-site` (1180px container), `rounded-kit` (28px), `shadow-card`, `shad
 
 | Prototype (`bug-out`) | React | Notes |
 |---|---|---|
-| `.nav`, `.nav.scrolled`, `.progress-bar` | `layout/Header.tsx`, `HeaderShell.tsx`, `BrandLogo.tsx` | `fixed`; transparent over the home hero until 40px of scroll (`data-transparent`), solid navy with blur elsewhere; `main` has `pt-(--header-height)` |
-| `.nav__burger` dropdown | `layout/MobileMenu.tsx` | Dark `Drawer` with the nav and "Compra ahora" |
+| `.nav`, `.nav.scrolled`, `.progress-bar` | `layout/Header.tsx`, `HeaderShell.tsx`, `BrandLogo.tsx` | `fixed`; transparent over the home hero until 40px of scroll (`data-transparent`), solid navy with blur elsewhere; `main` has `pt-(--header-height)`. The links show from `xl` (1280px): below that they crowd the logo and cart. Logo images are requested at their display size (`atWidth()` in `config/brand.ts`); only the mark is `priority` |
+| `.nav__burger` dropdown | `layout/MobileMenu.tsx` | Dark `Drawer` with the nav and "Compra ahora", below `xl` |
 | `.lang-switch` | — | Not ported: the site is Spanish only |
 | `.hero`, `.hero__frog`, `.hero__scroll` | `home/HomeHero.tsx`, `ui/FrogMascot.tsx` | Slides under the header with `-mt-(--header-height)`; the frog renders only when `isMascotEnabled()` |
 | `.kitcard-grid` / `.kitcard` | `kits/KitCard.tsx` (`KitCard`, `KitCardGrid`) | Label from `details.kit.label`, "Desde" from `priceRange()` |
-| `.compare-table` | `kits/KitComparisonTable.tsx` | Rows from `compareKits()`; the home page omits the long expiry row |
+| `.compare-table` | `kits/KitComparisonTable.tsx` | Rows from `compareKits()`; the home page omits the long expiry row. On phones cells tighten and wrap so two kits fit 360px; more kits scroll sideways in a focusable region |
 | `.interior` + `.contents-grid` | `home/HomeKits.tsx` (`HomeInside`), `kits/KitContents.tsx` (`KitContentsGrid`) | The flagship kit (most contents) |
 | `.why` | `home/WhyPrepareTeaser.tsx` | Frog column only when `isMascotEnabled()` |
-| `.shop-grid` / `.shop-card`, `.included-badge` | `catalog/ProductGrid.tsx`, `catalog/ProductCard.tsx`, `catalog/QuickAddButton.tsx` | Badges from `includedInIndex()`; quick add only for single-variant, in-stock products |
-| `.trust` | `home/TrustBar.tsx` | Facts from the pricing policy and `siteConfig.returnWindowDays` only |
+| `.shop-grid` / `.shop-card`, `.included-badge` | `catalog/ProductGrid.tsx`, `catalog/ProductCard.tsx`, `catalog/QuickAddButton.tsx` | Badges from `includedInIndex()`; quick add only for single-variant, in-stock products; "Desde" via `startingPriceLabel()` (several prices or a build-your-own base), as on `KitCard`; the price row wraps on narrow cards |
+| `.trust` | `home/TrustBar.tsx` | Facts only: shipping from the pricing policy, the shipping region, the expiry date printed on each pack ("Caducidad a la vista", no reminder service) and `siteConfig.returnWindowDays` |
 | `.page-hero` | `ui/PageHeader.tsx` (`tone="hero"`, the default) | Render it outside any `Container`; checkout uses `tone="plain"` |
 | `.filter-bar` / `.filter-chip` | `catalog/CategoryChips.tsx` | Real links (`aria-current`) that filter in memory; price and availability sit in the "Más filtros" panel |
 | `.kitpage` (gallery, `.variant-selector`, `.specs-table`, `.contents-list`, `.custom-explainer`) | `app/products/[slug]/page.tsx`, `kits/KitGallery.tsx`, `kits/PurchasePanel.tsx`, `kits/VariantSelector.tsx`, `kits/KitContents.tsx` (`KitContentsList`) | Variant chips are a native radio group |
@@ -66,6 +66,7 @@ Plus `max-w-site` (1180px container), `rounded-kit` (28px), `shadow-card`, `shad
 
 ## Pitfalls
 
-- `cn()` only joins classes and doesn't merge Tailwind conflicts. `className="hidden sm:inline-flex"` on a `ButtonLink` loses to its own `inline-flex`, so wrap the element instead (as the header CTA does).
+- `cn()` only joins classes and doesn't merge Tailwind conflicts. `className="hidden sm:inline-flex"` on a `ButtonLink` loses to its own `inline-flex`, so wrap the element instead (as the header CTA does). For the same reason `NavLinkList` takes `idleClassName` / `currentClassName` instead of layering a current colour over a base one.
+- Brand colours inside arbitrary gradients use the tokens too: gradient utilities with opacity (`bg-radial from-orange/12 to-transparent`) or `color-mix(in_srgb,var(--color-sand)_3.5%,transparent)`, never `rgb(...)` literals of a token.
 - Custom CSS that utilities should be able to override (like `.frog-breathe`) must sit in `@layer components`, because unlayered CSS beats every Tailwind utility.
 - Text next to a visually hidden span gets an extra space in the accessible name ("Ver el kit : Kit 72h"). Use an `aria-label` that starts with the visible text instead.

@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi, type MockInstance } from "vitest";
 import type { FilterCriteria } from "@/application/dtos/FilterCriteria";
 import { buildProduct } from "@/domain/testing/buildProduct";
 import { parseCatalogSearchParams } from "./catalogSearchParams";
-import { CatalogView } from "./CatalogView";
+import { ANALYTICS_DEBOUNCE_MS, CatalogView } from "./CatalogView";
 import { toProductSnapshot } from "./productSnapshot";
 
 const nav = vi.hoisted(() => ({
@@ -67,14 +67,20 @@ describe("CatalogView", () => {
     replaceState.mockRestore();
   });
 
-  it("lists every product without touching the URL or analytics on first render", async () => {
-    renderCatalog();
-    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
-    expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
-    expect(screen.getByText("4 productos")).toHaveAttribute("aria-live", "polite");
-    await new Promise((resolve) => setTimeout(resolve, 50));
-    expect(replaceState).not.toHaveBeenCalled();
-    expect(analytics.track).not.toHaveBeenCalled();
+  it("lists every product without touching the URL or analytics on first render", () => {
+    vi.useFakeTimers();
+    try {
+      renderCatalog();
+      expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+      expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
+      expect(screen.getByText("4 productos")).toHaveAttribute("aria-live", "polite");
+      // Past the analytics debounce, so a filter event would have been sent by now.
+      act(() => vi.advanceTimersByTime(ANALYTICS_DEBOUNCE_MS + 100));
+      expect(replaceState).not.toHaveBeenCalled();
+      expect(analytics.track).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("filters by category, updates the heading and syncs the URL", async () => {
@@ -133,6 +139,18 @@ describe("CatalogView", () => {
     expect(screen.getByText("4 productos")).toBeInTheDocument();
     expect(productNames()).toEqual(["Filtros", "Potabilizador", "Comida de emergencia", "Mochila 24H", "Mochila 72H"]);
     expect(lastUrl()).toBe("/products?sort=price-asc");
+    // Nothing is on sale, so once the filter is off "Solo ofertas" is no longer offered.
+    expect(screen.queryByRole("checkbox", { name: "Solo ofertas" })).toBeNull();
+    expect(screen.getByRole("checkbox", { name: "Solo en stock" })).toBeInTheDocument();
+  });
+
+  it("offers 'Solo ofertas' only when some product is on sale", async () => {
+    const onSale = [...products, toProductSnapshot(buildProduct({ id: "manta", name: "Manta", category: "herramientas", price: 6, originalPrice: 8 }))];
+    const user = userEvent.setup();
+    render(<CatalogView products={onSale} initialCriteria={{ sortBy: "featured" }} />);
+    await user.click(screen.getByRole("checkbox", { name: "Solo ofertas" }));
+    expect(screen.getByText("1 producto")).toBeInTheDocument();
+    expect(lastUrl()).toBe("/products?sale=1");
   });
 
   it("sorts with the select and reports the change to analytics", async () => {

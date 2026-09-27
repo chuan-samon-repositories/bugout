@@ -3,7 +3,9 @@ import { act, renderHook, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "@/app/Providers";
 import type { Product } from "@/domain/entities/product/Product";
+import { Cart } from "@/domain/entities/cart/Cart";
 import { BusinessRuleError, ValidationError } from "@/domain/errors";
+import { Quantity } from "@/domain/value-objects/Quantity";
 import { getContainer, resetContainer } from "@/infrastructure/config";
 import { useCart } from "./CartContext";
 
@@ -80,6 +82,122 @@ describe("CartProvider", () => {
       }),
     });
     expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ name: "cart_viewed" }));
+  });
+
+  it("tracks the selected variant's id and title when adding a kit size", async () => {
+    const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
+    const kit = (await product("kit-24h-1p")).withVariant("kit-24h-2p");
+    const { result } = await renderCart();
+
+    await act(async () => {
+      await result.current.addItem(kit, 1);
+    });
+
+    expect(result.current.cart?.getItems().map((item) => item.product.id.value)).toEqual(["kit-24h-2p"]);
+    expect(track).toHaveBeenCalledWith({
+      name: "product_added_to_cart",
+      properties: expect.objectContaining({
+        product_id: "kit-24h-2p",
+        product_slug: "kit-24h",
+        product_name: "Kit 24h",
+        variant_title: "2 personas",
+        quantity: 1,
+      }),
+    });
+  });
+
+  describe("changes the store made on its own", () => {
+    async function cartWith(productId: string, quantity: number) {
+      const cart = new Cart("EUR");
+      if (quantity > 0) cart.addItem(await product(productId), new Quantity(quantity));
+      return cart;
+    }
+
+    it("shows the store's cart and an info toast when it kept fewer units, tracking only the units added", async () => {
+      const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
+      const backpack = await product("mochila-65l");
+      vi.spyOn(getContainer().getManageCartUseCase(), "addToCart").mockResolvedValue({
+        cart: await cartWith("mochila-65l", 2),
+        notices: [
+          { kind: "quantityReduced", productId: "mochila-65l", productName: backpack.displayName, requested: 5, quantity: 2 },
+        ],
+      });
+      const { result } = await renderCart();
+
+      let added = false;
+      await act(async () => {
+        added = await result.current.addItem(backpack, 5);
+      });
+
+      expect(added).toBe(true);
+      expect(result.current.itemCount).toBe(2);
+      expect(result.current.isOpen).toBe(true);
+      expect(
+        screen.getByText(
+          "Solo quedan 2 unidades de Mochila de supervivencia 65L, así que hemos ajustado la cantidad de tu carrito.",
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).toBeEmptyDOMElement();
+      expect(track).toHaveBeenCalledWith({
+        name: "product_added_to_cart",
+        properties: expect.objectContaining({ product_id: "mochila-65l", quantity: 2, cart_item_count: 2 }),
+      });
+    });
+
+    it("does not open the drawer and tracks a failure when the store had none left", async () => {
+      const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
+      const backpack = await product("mochila-65l");
+      vi.spyOn(getContainer().getManageCartUseCase(), "addToCart").mockResolvedValue({
+        cart: new Cart("EUR"),
+        notices: [{ kind: "removed", productId: "mochila-65l", productName: backpack.displayName }],
+      });
+      const { result } = await renderCart();
+
+      let added = true;
+      await act(async () => {
+        added = await result.current.addItem(backpack, 1);
+      });
+
+      expect(added).toBe(false);
+      expect(result.current.isOpen).toBe(false);
+      expect(
+        screen.getByText("Hemos quitado Mochila de supervivencia 65L de tu carrito porque ya no está disponible."),
+      ).toBeInTheDocument();
+      expect(track).toHaveBeenCalledWith({
+        name: "add_to_cart_failed",
+        properties: { product_id: "mochila-65l", variant_title: null, quantity: 1, reason: "out_of_stock" },
+      });
+      expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ name: "product_added_to_cart" }));
+    });
+
+    it("tells the visitor about lines dropped when the cart is restored", async () => {
+      vi.spyOn(getContainer().getManageCartUseCase(), "getCart").mockResolvedValueOnce({
+        cart: new Cart("EUR"),
+        notices: [{ kind: "removed", productId: "kit-24h-2p", productName: "Kit 24h · 2 personas" }],
+      });
+      const { result } = await renderCart();
+      expect(result.current.cart?.isEmpty()).toBe(true);
+      expect(screen.getByText("Hemos quitado Kit 24h · 2 personas de tu carrito porque ya no está disponible.")).toBeInTheDocument();
+    });
+
+    it("tracks the units the store really kept when a quantity change is lowered", async () => {
+      const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
+      localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
+      const { result } = await renderCart();
+      vi.spyOn(getContainer().getManageCartUseCase(), "setQuantity").mockResolvedValue({
+        cart: await cartWith("kit-medicina", 3),
+        notices: [{ kind: "quantityReduced", productId: "kit-medicina", productName: "Botiquín", requested: 10, quantity: 3 }],
+      });
+
+      await act(() => result.current.setItemQuantity("kit-medicina", 10));
+
+      expect(result.current.itemCount).toBe(3);
+      expect(screen.getByText(/Solo quedan 3 unidades de Botiquín/)).toBeInTheDocument();
+      expect(track).toHaveBeenCalledWith({
+        name: "product_added_to_cart",
+        properties: expect.objectContaining({ product_id: "kit-medicina", quantity: 2, source: "cart_drawer" }),
+      });
+    });
   });
 
   it("tracks cart_viewed only when the visitor opens the drawer, once per opening", async () => {
@@ -170,9 +288,28 @@ describe("CartProvider", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Mochila de supervivencia 65L está agotado.");
     expect(track).toHaveBeenCalledWith({
       name: "add_to_cart_failed",
-      properties: { product_id: "mochila-65l", quantity: 1, reason: "out_of_stock" },
+      properties: { product_id: "mochila-65l", variant_title: null, quantity: 1, reason: "out_of_stock" },
     });
     expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("reports the variant title when adding a kit size fails", async () => {
+    const container = getContainer();
+    const track = vi.spyOn(container.getAnalyticsService(), "track");
+    vi.spyOn(container.getManageCartUseCase(), "addToCart").mockRejectedValue(
+      new BusinessRuleError("MAX_QUANTITY_EXCEEDED", "too many"),
+    );
+    const kit = (await product("kit-24h-1p")).withVariant("kit-24h-2p");
+    const { result } = await renderCart();
+
+    await act(async () => {
+      await result.current.addItem(kit, 1);
+    });
+
+    expect(track).toHaveBeenCalledWith({
+      name: "add_to_cart_failed",
+      properties: { product_id: "kit-24h-2p", variant_title: "2 personas", quantity: 1, reason: "max_quantity" },
+    });
   });
 
   it("rejects invalid quantities without touching the cart", async () => {

@@ -30,7 +30,8 @@ export function KitContentsGrid({ lines }: { lines: readonly ResolvedContentLine
         const label = `${line.product?.name ?? line.item}${multiple(line.quantity)}`;
         const body = (
           <>
-            <span className="relative mb-2.5 block aspect-square overflow-hidden rounded-lg bg-sand/8">
+            {/* Decorative, as in KitContentsList: the label below names the line (an alt would repeat it). */}
+            <span aria-hidden="true" className="relative mb-2.5 block aspect-square overflow-hidden rounded-lg bg-sand/8">
               {line.product ? (
                 <ProductImage product={line.product} sizes="160px" />
               ) : (

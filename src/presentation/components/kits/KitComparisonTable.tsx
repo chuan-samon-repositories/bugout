@@ -38,10 +38,19 @@ export interface KitComparisonTableProps {
   className?: string;
 }
 
-/** Side-by-side comparison of kits (the partner design's "24h vs 72h" table). */
+/** Narrowest useful table: the label column plus this much per kit (rem). Two kits fit a 360px phone. */
+const LABEL_MIN_REM = 8;
+const KIT_MIN_REM = 6;
+
+/**
+ * Side-by-side comparison of kits (the partner design's "24h vs 72h" table). On phones the
+ * cells tighten and wrap so two kits fit without scrolling; with more kits the region scrolls
+ * sideways (it is focusable and named, so keyboard users can scroll it too).
+ */
 export function KitComparisonTable({ kits, omitSpecs = [], className }: KitComparisonTableProps) {
   const rows = compareKits(kits).filter((row) => row.kind !== "spec" || !omitSpecs.includes(row.label));
   if (rows.length === 0) return null;
+  const cell = "px-3 py-3 sm:px-5 sm:py-3.5";
 
   return (
     <div
@@ -50,15 +59,18 @@ export function KitComparisonTable({ kits, omitSpecs = [], className }: KitCompa
       tabIndex={0}
       className={cn("max-w-full overflow-x-auto rounded-2xl bg-white shadow-card", focusRing, className)}
     >
-      <table className="w-full min-w-[28rem] border-collapse text-left text-[0.90625rem]">
+      <table
+        className="w-full border-collapse text-left text-[0.8125rem] wrap-anywhere hyphens-auto sm:text-[0.90625rem] sm:wrap-break-word"
+        style={{ minWidth: `${LABEL_MIN_REM + KIT_MIN_REM * kits.length}rem` }}
+      >
         <caption className="sr-only">{copy.compareCaption}</caption>
         <thead>
           <tr className="bg-navy text-[0.8125rem] tracking-[0.04em] text-sand uppercase">
-            <th scope="col" className="px-5 py-3.5 font-bold">
+            <th scope="col" className={cn(cell, "font-bold")}>
               <span className="sr-only">{copy.compareFeature}</span>
             </th>
             {kits.map((kit) => (
-              <th key={kit.slug} scope="col" className="px-5 py-3.5 font-bold">
+              <th key={kit.slug} scope="col" className={cn(cell, "font-bold")}>
                 {kit.name}
               </th>
             ))}
@@ -69,11 +81,11 @@ export function KitComparisonTable({ kits, omitSpecs = [], className }: KitCompa
             const label = rowLabel(row);
             return (
               <tr key={`${row.kind}-${label}`} className="border-b border-sand-line last:border-b-0">
-                <th scope="row" className="w-2/5 px-5 py-3.5 font-semibold text-muted">
+                <th scope="row" className={cn(cell, "w-2/5 align-top font-semibold text-muted")}>
                   {label}
                 </th>
                 {rowValues(row).map((value, index) => (
-                  <td key={kits[index].slug} className="px-5 py-3.5 font-bold text-navy-deep">
+                  <td key={kits[index].slug} className={cn(cell, "align-top font-bold text-navy-deep")}>
                     {value}
                   </td>
                 ))}

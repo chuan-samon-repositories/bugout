@@ -22,20 +22,22 @@ export function Header({ nav }: HeaderProps) {
     <HeaderShell>
       <Container className="flex h-full items-center gap-4">
         <BrandLogo />
-        <nav aria-label={messages.shell.nav.primary} className="hidden min-w-0 flex-1 justify-center lg:flex">
+        {/* From xl only: below 1280px the links, logo, cart and "Compra ahora" do not fit on one row, so the menu takes over. */}
+        <nav aria-label={messages.shell.nav.primary} className="hidden min-w-0 flex-1 justify-center xl:flex">
           <NavLinkList
             links={links}
-            className="flex items-center gap-1 xl:gap-2"
+            className="flex items-center gap-2"
             linkClassName={cn(
-              "relative inline-flex min-h-11 items-center rounded-md px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-sand/85 transition-colors hover:text-sand xl:px-2",
-              "after:absolute after:bottom-2 after:left-1.5 after:h-0.5 after:w-0 after:bg-orange after:transition-[width] after:duration-250 after:ease-brand hover:after:w-[calc(100%-0.75rem)] xl:after:left-2 xl:hover:after:w-[calc(100%-1rem)]",
+              "relative inline-flex min-h-11 items-center rounded-md px-2 text-[0.8125rem] font-semibold whitespace-nowrap transition-colors hover:text-sand",
+              "after:absolute after:bottom-2 after:left-2 after:h-0.5 after:w-0 after:bg-orange after:transition-[width] after:duration-250 after:ease-brand hover:after:w-[calc(100%-1rem)]",
               focusRing,
               "focus-visible:ring-offset-navy-darker",
             )}
-            currentClassName="text-sand after:w-[calc(100%-0.75rem)] xl:after:w-[calc(100%-1rem)]"
+            idleClassName="text-sand/85"
+            currentClassName="text-sand after:w-[calc(100%-1rem)]"
           />
         </nav>
-        <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:gap-3.5">
+        <div className="ml-auto flex items-center gap-2 xl:ml-0 xl:gap-3.5">
           <CartButton />
           {/* Wrapped: cn() does not merge classes, so "hidden" on the link would lose to its inline-flex. */}
           <div className="hidden sm:block">

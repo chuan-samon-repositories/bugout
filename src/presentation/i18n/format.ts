@@ -31,3 +31,10 @@ const dateFormatter = new Intl.DateTimeFormat(LOCALE, { dateStyle: 'long' });
 export function formatDate(value: Date | string): string {
   return dateFormatter.format(typeof value === 'string' ? new Date(value) : value);
 }
+
+const listFormatter = new Intl.ListFormat(LOCALE, { style: 'long', type: 'conjunction' });
+
+/** Joins values as Spanish prose, e.g. "el Kit 24h, el Kit 48h y el Kit 72h". */
+export function formatList(values: readonly string[]): string {
+  return listFormatter.format(values);
+}

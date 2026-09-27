@@ -1,3 +1,4 @@
+import type { CartNotice } from '@/application/dtos/Cart';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
 import { CurrencyCode } from '@/domain/value-objects/Money';
@@ -10,6 +11,8 @@ import {
   CART_LINES_UPDATE_MUTATION,
   CART_QUERY,
   CartMutationPayload,
+  STOCK_WARNING_CODES,
+  ShopifyCartLine,
   ShopifyCartNode,
   toLineInputs,
 } from '@/infrastructure/adapters/shopify/cartGraphql';
@@ -40,14 +43,23 @@ function toSnapshot(cart: ShopifyCartNode): RemoteSnapshot {
   return { cartId: cart.id, lines, duplicateLineIds };
 }
 
+/** "Kit 72h · 2 personas" for a line, even when its data can't be mapped to a Product. */
+function lineName(line: ShopifyCartLine): string {
+  try {
+    return mapShopifyProduct(line.merchandise.product, line.merchandise).displayName;
+  } catch {
+    return line.merchandise.product.title;
+  }
+}
+
 /**
- * Lines that can't be represented (sold out, invalid data) are left out of the aggregate,
- * and the next save removes them from Shopify. A price in another currency is a store
- * configuration problem, not a bad line, so it fails loudly instead: dropping those lines
- * would delete the visitor's whole cart remotely.
+ * Lines that can't be represented (sold out, invalid data) are left out of the aggregate
+ * and returned as `removed` notices; the next save removes them from Shopify. A price in
+ * another currency is a store configuration problem, not a bad line, so it fails loudly
+ * instead: dropping those lines would delete the visitor's whole cart remotely.
  * @throws ShopifyApiError when a line is priced in a currency other than `currency`
  */
-function toCart(remote: ShopifyCartNode, currency: CurrencyCode): Cart {
+function toCart(remote: ShopifyCartNode, currency: CurrencyCode): { cart: Cart; dropped: CartNotice[] } {
   const foreign = remote.lines.nodes.find((line) => line.merchandise.price.currencyCode !== currency);
   if (foreign) {
     throw new ShopifyApiError(
@@ -56,16 +68,20 @@ function toCart(remote: ShopifyCartNode, currency: CurrencyCode): Cart {
     );
   }
   const cart = new Cart(currency);
+  const dropped: CartNotice[] = [];
   for (const line of remote.lines.nodes) {
     try {
       const product = mapShopifyProduct(line.merchandise.product, line.merchandise);
       const room = MAX_QUANTITY_PER_ITEM - cart.quantityOf(product.id);
-      cart.addItem(product, new Quantity(Math.min(line.quantity, room)));
+      if (room > 0) cart.addItem(product, new Quantity(Math.min(line.quantity, room)));
     } catch {
       // Skipped; the next save removes the line from Shopify so both sides agree.
+      if (!dropped.some((notice) => notice.productId === line.merchandise.id)) {
+        dropped.push({ kind: 'removed', productId: line.merchandise.id, productName: lineName(line) });
+      }
     }
   }
-  return cart;
+  return { cart, dropped };
 }
 
 function diff(cart: Cart, remote: RemoteSnapshot) {
@@ -89,13 +105,16 @@ function diff(cart: Cart, remote: RemoteSnapshot) {
 
 /**
  * Cart stored in Shopify. The cart id lives in localStorage; save() diffs the aggregate
- * against the last known remote lines and sends only the line mutations needed. After
+ * against the last known remote lines, sends only the line mutations needed and resolves
+ * to the cart the last mutation returned, which is what Shopify holds (it lowers
+ * quantities to the stock and leaves sold-out merchandise out, with warnings). After
  * a save that changed the remote cart it bumps SHOPIFY_CART_REVISION_KEY so other tabs
  * reload, and every loaded or mutated cart's checkout URL is remembered in the id store
  * so checkout needs no extra round trip.
  */
 export class ShopifyCartAdapter implements CartRepository {
   private snapshot: RemoteSnapshot | null = null;
+  private notices: CartNotice[] = [];
   /** Successful remote mutations so far; save() compares it to know whether to bump the revision. */
   private mutations = 0;
 
@@ -106,18 +125,29 @@ export class ShopifyCartAdapter implements CartRepository {
   ) {}
 
   async load(): Promise<Cart> {
+    this.notices = [];
     const remote = await this.fetchRemote();
-    return remote ? toCart(remote, this.currency) : new Cart(this.currency);
+    if (!remote) return new Cart(this.currency);
+    const { cart, dropped } = toCart(remote, this.currency);
+    this.notices = dropped;
+    return cart;
   }
 
-  async save(cart: Cart): Promise<void> {
+  async save(cart: Cart): Promise<Cart> {
     const before = this.mutations;
+    let saved: ShopifyCartNode | null;
     try {
-      await this.sync(cart);
+      saved = await this.sync(cart);
     } finally {
       // Also after a partial failure: the mutations that did succeed changed the remote cart.
       if (this.mutations !== before) this.cartIds.markChanged();
     }
+    // Nothing sent: Shopify already holds exactly `cart`.
+    return saved ? toCart(saved, this.currency).cart : cart;
+  }
+
+  loadNotices(): readonly CartNotice[] {
+    return this.notices;
   }
 
   async clear(): Promise<void> {
@@ -125,20 +155,23 @@ export class ShopifyCartAdapter implements CartRepository {
     this.snapshot = null;
   }
 
-  private async sync(cart: Cart): Promise<void> {
+  /** Sends the needed mutations and resolves to the cart the last one returned, or null when none was needed. */
+  private async sync(cart: Cart): Promise<ShopifyCartNode | null> {
     const remote = await this.currentSnapshot();
     if (!remote) {
-      if (cart.isEmpty()) return;
+      if (cart.isEmpty()) return null;
       const created = await this.mutate('cartCreate', CART_CREATE_MUTATION, { lines: toLineInputs(cart) });
       this.cartIds.set(created.id);
-      return;
+      return created;
     }
 
     const { add, update, remove } = diff(cart, remote);
     const cartId = remote.cartId;
-    if (remove.length > 0) await this.mutate('cartLinesRemove', CART_LINES_REMOVE_MUTATION, { cartId, lineIds: remove });
-    if (update.length > 0) await this.mutate('cartLinesUpdate', CART_LINES_UPDATE_MUTATION, { cartId, lines: update });
-    if (add.length > 0) await this.mutate('cartLinesAdd', CART_LINES_ADD_MUTATION, { cartId, lines: add });
+    let last: ShopifyCartNode | null = null;
+    if (remove.length > 0) last = await this.mutate('cartLinesRemove', CART_LINES_REMOVE_MUTATION, { cartId, lineIds: remove });
+    if (update.length > 0) last = await this.mutate('cartLinesUpdate', CART_LINES_UPDATE_MUTATION, { cartId, lines: update });
+    if (add.length > 0) last = await this.mutate('cartLinesAdd', CART_LINES_ADD_MUTATION, { cartId, lines: add });
+    return last;
   }
 
   private async fetchRemote(): Promise<ShopifyCartNode | null> {
@@ -176,6 +209,12 @@ export class ShopifyCartAdapter implements CartRepository {
     const payload = data[operation];
     assertNoUserErrors(operation, payload?.userErrors);
     if (!payload?.cart) throw new ShopifyApiError(`${operation} returned no cart`);
+    for (const warning of payload.warnings ?? []) {
+      // Stock warnings show in the returned cart, which save() maps; anything else is only logged.
+      if (!STOCK_WARNING_CODES.includes(warning.code)) {
+        console.warn(`[shopify] ${operation} warning ${warning.code}: ${warning.message}`);
+      }
+    }
     this.mutations += 1;
     this.remember(payload.cart);
     return payload.cart;

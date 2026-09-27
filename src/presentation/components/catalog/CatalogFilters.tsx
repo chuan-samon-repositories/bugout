@@ -13,6 +13,8 @@ export interface CatalogFiltersProps {
   /** Formatted range hint, e.g. "Precios entre 39,00 € y 299,00 €". */
   rangeHint: string | null;
   showSwapHint: boolean;
+  /** Offer "Solo ofertas": false when nothing in the catalog is on sale (unless the filter is already on). */
+  showOnSale: boolean;
   activeCount: number;
   onMinTextChange(value: string): void;
   onMaxTextChange(value: string): void;
@@ -28,6 +30,7 @@ export function CatalogFilters({
   bounds,
   rangeHint,
   showSwapHint,
+  showOnSale,
   activeCount,
   onMinTextChange,
   onMaxTextChange,
@@ -81,12 +84,14 @@ export function CatalogFilters({
           checked={!!criteria.inStockOnly}
           onChange={(event) => onInStockChange(event.target.checked)}
         />
-        <CheckboxField
-          name="sale"
-          label={t.onSaleOnly}
-          checked={!!criteria.onSaleOnly}
-          onChange={(event) => onSaleChange(event.target.checked)}
-        />
+        {(showOnSale || criteria.onSaleOnly) && (
+          <CheckboxField
+            name="sale"
+            label={t.onSaleOnly}
+            checked={!!criteria.onSaleOnly}
+            onChange={(event) => onSaleChange(event.target.checked)}
+          />
+        )}
       </fieldset>
 
       {activeCount > 0 && (

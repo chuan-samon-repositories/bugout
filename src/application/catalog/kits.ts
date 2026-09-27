@@ -1,8 +1,6 @@
 import type { Product, ProductContentItem } from '@/domain/entities/product/Product';
 import type { Money } from '@/domain/value-objects/Money';
-
-/** Category slug of kits, the same for the local catalog and Shopify ("Kits" product type). */
-export const KIT_CATEGORY = 'kits';
+import { variantOptionLabel } from '@/application/catalog/variants';
 
 /** Kits in catalog order. A product is a kit when its details carry kit info. */
 export function kitsIn(products: readonly Product[]): Product[] {
@@ -78,8 +76,9 @@ export type KitComparisonRow =
 
 /**
  * Side-by-side rows for a kit comparison table: starting price, variant
- * choices (e.g. number of people), every specification any kit has (in
- * first-seen order) and the number of content lines.
+ * choices (e.g. number of people, as `variantOptionLabel`: "1", "2", "4" whether
+ * the option values are "2" or "2 personas"), every specification any kit has
+ * (in first-seen order) and the number of content lines.
  */
 export function compareKits(kits: readonly Product[]): KitComparisonRow[] {
   if (kits.length === 0) return [];
@@ -91,9 +90,7 @@ export function compareKits(kits: readonly Product[]): KitComparisonRow[] {
       kind: 'variants',
       label: optionName,
       values: kits.map((kit) =>
-        kit.hasVariants()
-          ? kit.variants.map((variant) => variant.options[0]?.value ?? variant.title)
-          : [],
+        kit.hasVariants() ? kit.variants.map(variantOptionLabel) : [],
       ),
     });
   }

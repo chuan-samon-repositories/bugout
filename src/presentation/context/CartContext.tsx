@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { AnalyticsEvent } from "@/application/analytics/events";
+import type { CartNotice, CartUpdate } from "@/application/dtos/Cart";
 import type { Cart } from "@/domain/entities/cart/Cart";
 import type { Product } from "@/domain/entities/product/Product";
 import { BusinessRuleError, NotFoundError, ValidationError } from "@/domain/errors";
@@ -96,6 +97,21 @@ function isExpectedError(error: unknown): boolean {
   return error instanceof BusinessRuleError || error instanceof NotFoundError;
 }
 
+/** Copy for a change the store made to the cart on its own (not enough stock, sold out). */
+function noticeMessage(notice: CartNotice): string {
+  return notice.kind === "quantityReduced"
+    ? messages.cart.quantityReduced(notice.productName, notice.quantity)
+    : messages.cart.lineRemoved(notice.productName);
+}
+
+/** Units of `quantity` the store really added, given its notices (it may have had less stock). */
+function unitsAdded(productId: string, quantity: number, notices: readonly CartNotice[]): number {
+  const notice = notices.find((candidate) => candidate.productId === productId);
+  if (!notice) return quantity;
+  if (notice.kind === "removed") return 0;
+  return Math.max(0, quantity - (notice.requested - notice.quantity));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const analytics = useAnalytics();
@@ -124,6 +140,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCartState(next);
   }, []);
 
+  /** Shows the cart the store holds and tells the visitor, in info toasts, what the store changed on its own. */
+  const apply = useCallback(
+    ({ cart: next, notices }: CartUpdate) => {
+      setCart(next);
+      for (const notice of notices) notify({ tone: "info", message: noticeMessage(notice) });
+    },
+    [setCart, notify],
+  );
+
   /** Runs tasks one after another so rapid clicks can never interleave repository reads and writes. */
   const enqueue = useCallback(<T,>(task: () => Promise<T>, mutation: boolean): Promise<T> => {
     if (mutation) setPendingCount((count) => count + 1);
@@ -135,7 +160,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     try {
-      setCart(await manageCart.getCart());
+      apply(await manageCart.getCart());
       setLoadError(false);
     } catch (error) {
       setLoadError(true);
@@ -143,7 +168,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setReady(true);
     }
-  }, [manageCart, analytics, setCart]);
+  }, [manageCart, analytics, apply]);
 
   const refresh = useCallback(() => enqueue(load, false), [enqueue, load]);
 
@@ -187,13 +212,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
     (product: Product, quantity: number, source: AddToCartSource = "product_page") =>
       enqueue(async () => {
         try {
-          const updated = await manageCart.addToCart(product.id, new Quantity(quantity));
-          setCart(updated);
+          const update = await manageCart.addToCart(product.id, new Quantity(quantity));
+          apply(update);
+          const added = unitsAdded(product.id.value, quantity, update.notices);
+          if (added === 0) {
+            // The store had no stock left for it; the info toast says so.
+            analytics.track({
+              name: "add_to_cart_failed",
+              properties: { product_id: product.id.value, variant_title: product.variantTitle, quantity, reason: "out_of_stock" },
+            });
+            return false;
+          }
           // The drawer opening (a labelled dialog that takes focus) is the confirmation.
           showDrawer();
           analytics.track({
             name: "product_added_to_cart",
-            properties: { ...productProperties(product), ...cartProperties(updated), quantity, source },
+            properties: { ...productProperties(product), ...cartProperties(update.cart), quantity: added, source },
           });
           return true;
         } catch (error) {
@@ -201,33 +235,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
           notify({ tone: "error", message: toUserMessage(error, { productName: product.displayName }) });
           analytics.track({
             name: "add_to_cart_failed",
-            properties: { product_id: product.id.value, quantity, reason },
+            properties: { product_id: product.id.value, variant_title: product.variantTitle, quantity, reason },
           });
           if (reason === "unknown") analytics.captureException(error, { area: "cart", action: "add" });
           return false;
         }
       }, true),
-    [enqueue, manageCart, setCart, showDrawer, notify, analytics],
+    [enqueue, manageCart, apply, showDrawer, notify, analytics],
   );
 
   /** After a failed change the stored cart may differ from what is shown (e.g. edited in another tab). */
   const recover = useCallback(async () => {
     try {
-      setCart(await manageCart.getCart());
+      apply(await manageCart.getCart());
     } catch {
       // Keep showing the last known cart.
     }
-  }, [manageCart, setCart]);
+  }, [manageCart, apply]);
 
   const setItemQuantity = useCallback(
     (productId: string, quantity: number) =>
       enqueue(async () => {
         const line = findLine(cartRef.current, productId);
         try {
-          const updated = await manageCart.setQuantity(new ProductId(productId), new Quantity(quantity));
-          setCart(updated);
+          const update = await manageCart.setQuantity(new ProductId(productId), new Quantity(quantity));
+          apply(update);
+          const updated = update.cart;
           if (!line) return;
-          const delta = quantity - line.quantity.value;
+          // What the store kept, which can be less than asked for when stock is short.
+          const delta = updated.quantityOf(line.product.id) - line.quantity.value;
           const properties = { ...productProperties(line.product), ...cartProperties(updated), quantity: Math.abs(delta) };
           if (delta > 0) {
             analytics.track({ name: "product_added_to_cart", properties: { ...properties, source: "cart_drawer" } });
@@ -239,7 +275,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           await recover();
         }
       }, true),
-    [enqueue, manageCart, setCart, analytics, reportFailure, recover],
+    [enqueue, manageCart, apply, analytics, reportFailure, recover],
   );
 
   const removeItem = useCallback(
@@ -247,8 +283,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       enqueue(async () => {
         const line = findLine(cartRef.current, productId);
         try {
-          const updated = await manageCart.deleteFromCart(new ProductId(productId));
-          setCart(updated);
+          const update = await manageCart.deleteFromCart(new ProductId(productId));
+          apply(update);
+          const updated = update.cart;
           if (line) {
             analytics.track({
               name: "product_removed_from_cart",
@@ -260,20 +297,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
           await recover();
         }
       }, true),
-    [enqueue, manageCart, setCart, analytics, reportFailure, recover],
+    [enqueue, manageCart, apply, analytics, reportFailure, recover],
   );
 
   const clearCart = useCallback(
     () =>
       enqueue(async () => {
         try {
-          setCart(await manageCart.clearCart());
+          apply(await manageCart.clearCart());
         } catch (error) {
           reportFailure(error, { action: "clear" });
           await recover();
         }
       }, true),
-    [enqueue, manageCart, setCart, reportFailure, recover],
+    [enqueue, manageCart, apply, reportFailure, recover],
   );
 
   const checkout = useCallback(

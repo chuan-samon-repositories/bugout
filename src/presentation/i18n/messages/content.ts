@@ -1,3 +1,5 @@
+import { formatList } from '@/presentation/i18n/format';
+
 /** Date of the current version of every legal page (ISO calendar date). */
 export const LEGAL_UPDATED_AT = '2026-09-26';
 
@@ -181,17 +183,22 @@ export const content = {
     differenceQuestion: '¿Qué diferencia hay entre los kits?',
     differenceLink: 'Ver la comparativa completa',
     peopleQuestion: '¿Puedo comprar un kit para toda la familia?',
-    peopleAnswer: (kits: string, people: string) =>
-      `Sí. ${kits} se venden para ${people} personas: elige el número de personas en la página de cada kit.`,
+    /** `kits` are the kit names: "Sí. El Kit 24h y el Kit 72h se venden para 1, 2 o 4 personas…" */
+    peopleAnswer: (kits: readonly string[], people: string) => {
+      const list = formatList(kits.map((kit) => `el ${kit}`));
+      return `Sí. ${list.charAt(0).toUpperCase()}${list.slice(1)} ${kits.length === 1 ? 'se vende' : 'se venden'} para ${people} personas: elige el número de personas en la página de cada kit.`;
+    },
+    /** Term of a kit in the "¿Qué diferencia hay?" list, followed by its description. */
+    differenceTerm: (kit: string) => `${kit}:`,
     customQuestion: '¿Puedo montar mi propio kit?',
     customAnswer: (kit: string) => `Sí, con el ${kit}: parte de una mochila base y añádele los productos sueltos que necesites.`,
     customLink: (kit: string) => `Ver el ${kit}`,
     looseQuestion: '¿Vendéis por separado lo que llevan los kits?',
-    looseAnswer: 'Sí. Todo el material de nuestros kits está disponible suelto, para completar un kit o reponer lo que hayas usado.',
+    looseAnswer: 'Sí. El equipo de nuestros kits también se vende suelto, para completar un kit o reponer lo que hayas usado.',
     looseLink: 'Ver los productos sueltos',
     expiryQuestion: '¿Caducan los consumibles?',
     expiryAnswer:
-      'El agua y los alimentos tienen su propia fecha de caducidad, indicada en cada envase. Te avisamos para renovar los consumibles, y puedes reponerlos sueltos desde el catálogo.',
+      'El agua y los alimentos tienen su propia fecha de caducidad, indicada en cada envase. Revisa esas fechas de vez en cuando y renueva lo que esté a punto de caducar.',
   },
   about: {
     title: 'Sobre nosotros',
@@ -216,7 +223,7 @@ export const content = {
       {
         title: 'Transparencia',
         description:
-          'Cada producto indica su contenido, sus especificaciones y su precio con IVA incluido. Sabes exactamente lo que compras antes de comprarlo.',
+          'Cada kit detalla su contenido pieza a pieza y todos los precios llevan el IVA incluido. Sabes exactamente lo que compras antes de comprarlo.',
       },
       {
         title: 'Materiales duraderos',
@@ -248,7 +255,7 @@ export const content = {
       {
         title: 'Modulares',
         description:
-          'El kit personalizable parte de una base con lo imprescindible y se completa con nuestros accesorios de comida, agua y primeros auxilios según tu entorno y el tamaño de tu familia.',
+          'El kit personalizable parte de una mochila base y se completa con los productos sueltos del catálogo que necesites según tu entorno y el tamaño de tu familia.',
       },
     ],
     ctaTitle: '¿Empezamos a preparar tu kit?',

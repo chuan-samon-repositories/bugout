@@ -98,7 +98,7 @@ describe('AppContainer', () => {
 
   it('adds products to the local cart through the catalog', async () => {
     const data = stubLocalStorage();
-    const cart = await createContainer(local).getManageCartUseCase().addToCart(new ProductId('kit-medicina'), new Quantity(2));
+    const { cart } = await createContainer(local).getManageCartUseCase().addToCart(new ProductId('kit-medicina'), new Quantity(2));
     expect(cart.totalAmount().minor).toBe(3600);
     expect(JSON.parse(data.get('bugout.cart') ?? '{}')).toEqual({ version: 2, items: [{ productId: 'kit-medicina', quantity: 2 }] });
   });

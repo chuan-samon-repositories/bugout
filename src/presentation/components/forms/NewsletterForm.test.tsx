@@ -57,6 +57,11 @@ describe("NewsletterForm", () => {
     expect(screen.getByRole("link", { name: "política de privacidad" })).toHaveAttribute("href", "/privacy");
   });
 
+  it("keeps the typed email out of analytics autocapture", () => {
+    render(<NewsletterForm location="home" />);
+    expect(screen.getByRole("textbox", { name: "Correo electrónico" }).closest(".ph-no-capture")).not.toBeNull();
+  });
+
   it("shows a generic error when the subscription fails", async () => {
     vi.spyOn(getContainer().getSubscribeNewsletterUseCase(), "execute").mockRejectedValueOnce(new Error("offline"));
     render(<NewsletterForm location="home" />);

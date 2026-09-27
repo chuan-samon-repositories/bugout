@@ -63,6 +63,12 @@ export function buttonClasses({ variant = "primary", size = "md", fullWidth = fa
 export interface ButtonProps extends ComponentPropsWithRef<"button">, ButtonStyleOptions {
   /** Shows a spinner, sets aria-busy and disables the button. */
   loading?: boolean;
+  /**
+   * While loading, keep the button focusable (aria-disabled, clicks ignored) instead of
+   * `disabled`. Use it when the action opens a dialog: a disabled button loses focus to
+   * <body>, so the dialog could not return focus to it on close.
+   */
+  focusableWhileLoading?: boolean;
 }
 
 export function Button({
@@ -70,18 +76,23 @@ export function Button({
   size,
   fullWidth,
   loading = false,
+  focusableWhileLoading = false,
   disabled,
   type = "button",
   className,
   children,
+  onClick,
   ...props
 }: ButtonProps) {
+  const inertWhileLoading = loading && focusableWhileLoading && !disabled;
   return (
     <button
       type={type}
-      disabled={disabled || loading}
+      disabled={disabled || (loading && !inertWhileLoading)}
       aria-busy={loading || undefined}
+      aria-disabled={inertWhileLoading || undefined}
       className={buttonClasses({ variant, size, fullWidth, className })}
+      onClick={inertWhileLoading ? (event) => event.preventDefault() : onClick}
       {...props}
     >
       {loading && <Spinner size="sm" decorative />}

@@ -35,7 +35,8 @@ describe('LocalStorageCartAdapter', () => {
   it('returns an empty cart without storage (server rendering)', async () => {
     const serverAdapter = new LocalStorageCartAdapter(catalog, 'EUR', null);
     expect((await serverAdapter.load()).isEmpty()).toBe(true);
-    await expect(serverAdapter.save(new Cart('EUR'))).resolves.toBeUndefined();
+    const empty = new Cart('EUR');
+    await expect(serverAdapter.save(empty)).resolves.toBe(empty);
     await expect(serverAdapter.clear()).resolves.toBeUndefined();
   });
 
@@ -114,6 +115,18 @@ describe('LocalStorageCartAdapter', () => {
     });
     const cart = await adapter.load();
     expect(cart.getItems().map((item) => item.product.id.value)).toEqual(['kit']);
+    // Only the sold-out product can be named; unknown ids and malformed lines are dropped silently.
+    expect(adapter.loadNotices()).toEqual([{ kind: 'removed', productId: 'sold-out', productName: 'Producto de prueba' }]);
+
+    store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1 }] });
+    await adapter.load();
+    expect(adapter.loadNotices()).toEqual([]);
+  });
+
+  it('save resolves to the cart it stored', async () => {
+    const cart = new Cart('EUR');
+    cart.addItem(buildProduct({ id: 'kit', price: 199 }), new Quantity(2));
+    await expect(adapter.save(cart)).resolves.toBe(cart);
   });
 
   it('clamps quantities to the per-item limit, including duplicated lines', async () => {

@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { variantOptionLabel } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { buttonClasses, cn } from "@/presentation/components/ui";
-import { formatMoney, messages } from "@/presentation/i18n";
+import { startingPriceLabel } from "@/presentation/components/catalog/startingPrice";
+import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
 const copy = messages.catalog.kit;
@@ -16,13 +18,7 @@ const MEDIA_TONES = [
 /** People options of a kit, e.g. "1, 2 o 4"; null for a single-variant kit. */
 export function peopleSummary(kit: Product): string | null {
   if (!kit.hasVariants()) return null;
-  return copy.peopleList(kit.variants.map((variant) => variant.options[0]?.value ?? variant.title));
-}
-
-/** "Desde 39,00 €" when the kit has several prices or is a build-your-own base; otherwise the price. */
-export function kitPriceLabel(kit: Product): string {
-  const { min } = kit.priceRange();
-  return kit.hasPriceRange() || kit.details?.kit?.buildYourOwn ? copy.fromPrice(formatMoney(min)) : formatMoney(min);
+  return copy.peopleList(kit.variants.map(variantOptionLabel));
 }
 
 export interface KitCardProps {
@@ -62,21 +58,12 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
         <Heading className="mb-2 text-[1.3125rem] text-navy-deep">{kit.name}</Heading>
         <p className="mb-4 text-sm text-muted">{kit.description}</p>
         <ul className="mb-5 flex-1 space-y-1 text-[0.8125rem] text-muted">
-          {people && (
-            <li>
-              {copy.people}: {people}
-            </li>
-          )}
-          {weight && (
-            <li>
-              {weight.label}: {weight.value}
-            </li>
-          )}
+          {people && <li>{copy.fact(copy.people, people)}</li>}
+          {weight && <li>{copy.fact(weight.label, weight.value)}</li>}
         </ul>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-xl font-extrabold text-navy-deep">{kitPriceLabel(kit)}</p>
-          {/* The label starts with the visible text, so voice control users can say "Ver el kit". */}
-          <Link href={routes.product(kit.slug)} aria-label={`${copy.view}: ${kit.name}`} className={buttonClasses({ size: "sm" })}>
+          <p className="text-xl font-extrabold text-navy-deep">{startingPriceLabel(kit)}</p>
+          <Link href={routes.product(kit.slug)} aria-label={copy.viewLabel(kit.name)} className={buttonClasses({ size: "sm" })}>
             {copy.view}
           </Link>
         </div>

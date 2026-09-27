@@ -3,7 +3,7 @@ import Link from "next/link";
 import { NewsletterForm } from "@/presentation/components/forms/NewsletterForm";
 import { Container, focusRing } from "@/presentation/components/ui";
 import { cn } from "@/presentation/components/ui/cn";
-import { brandAssets } from "@/presentation/config/brand";
+import { atWidth, brandAssets } from "@/presentation/config/brand";
 import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
@@ -13,7 +13,8 @@ import { shopLinks, type NavKit, type NavLink } from "./navigation";
 
 const copy = messages.shell.footer;
 const nav = messages.shell.nav;
-const wordmark = brandAssets.wordmarkStacked("cream");
+/** Displayed at w-36 (144px): sized so the browser fetches a 144px file (2x on retina), not the 790px source. */
+const wordmark = atWidth(brandAssets.wordmarkStacked("cream"), 144);
 
 const linkClass = cn(
   "inline-flex min-h-11 items-center rounded-sm text-sm text-sand/75 transition-colors hover:text-orange-on-navy sm:min-h-8",

@@ -53,8 +53,37 @@ test.describe('navigation', () => {
     await expect(menuButton(page)).toBeHidden();
   });
 
+  test('the header never overlaps between 1024px and 1280px', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'Desktop widths only');
+    const banner = page.getByRole('banner');
+    const logo = banner.getByRole('link', { name: 'Bugout, ir al inicio' });
+    const cart = banner.getByRole('button', { name: /^Carrito/ });
+    const cta = banner.getByRole('link', { name: 'Compra ahora' });
+    const nav = banner.getByRole('navigation', { name: 'Principal' });
+    await openPage(page, '/about');
+    for (const width of [1024, 1100, 1279, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      // The consent decision is stored after the first visit, so reloads show no banner.
+      await page.reload();
+      // Below xl the links move into the menu, which sits after the call to action.
+      // The links list, not the nav: the nav stretches, while overflowing links spill out of it.
+      const middle = width >= 1280 ? nav.getByRole('list') : menuButton(page);
+      await expect(middle).toBeVisible();
+      await expect(width >= 1280 ? menuButton(page) : nav).toBeHidden();
+      const boxes = await Promise.all([logo, middle, cart, cta].map(async (element) => (await element.boundingBox())!));
+      const [logoBox, middleBox, cartBox, ctaBox] = boxes;
+      if (width >= 1280) {
+        expect(middleBox.x, `nav starts after the logo at ${width}px`).toBeGreaterThanOrEqual(logoBox.x + logoBox.width);
+        expect(middleBox.x + middleBox.width, `nav ends before the cart at ${width}px`).toBeLessThanOrEqual(cartBox.x);
+      }
+      expect(logoBox.x + logoBox.width, `logo before the cart at ${width}px`).toBeLessThanOrEqual(cartBox.x);
+      expect(cartBox.x + cartBox.width, `cart before the call to action at ${width}px`).toBeLessThanOrEqual(ctaBox.x);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth), `no horizontal scroll at ${width}px`).toBeLessThanOrEqual(width);
+    }
+  });
+
   test('the mobile menu is a dialog that closes with Escape and on navigation', async ({ page, isMobile }) => {
-    test.skip(!isMobile, 'The menu button only exists below the lg breakpoint');
+    test.skip(!isMobile, 'The menu button only exists below the xl breakpoint');
     await openPage(page, '/');
     await expect(page.getByRole('banner').getByRole('navigation', { name: 'Principal' })).toBeHidden();
 
@@ -109,7 +138,7 @@ test.describe('navigation', () => {
   });
 
   test('the close button of the mobile menu restores focus', async ({ page, isMobile }) => {
-    test.skip(!isMobile, 'The menu button only exists below the lg breakpoint');
+    test.skip(!isMobile, 'The menu button only exists below the xl breakpoint');
     await openPage(page, '/');
     const button = menuButton(page);
     await button.click();

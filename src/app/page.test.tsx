@@ -63,11 +63,15 @@ describe("home page", () => {
     ]);
     expect(within(table).getByRole("row", { name: /Personas/ })).toHaveTextContent("1, 2 o 4");
     const inside = screen.getByRole("region", { name: "El contenido, desplegado" });
-    expect(within(inside).getByRole("link", { name: /Radio solar/ })).toHaveAttribute("href", "/products/radio-solar");
+    const radio = within(inside).getByRole("link", { name: "Radio solar" });
+    expect(radio).toHaveAttribute("href", "/products/radio-solar");
+    // The thumbnail is decorative: its alt would only repeat the label.
+    expect(within(radio).queryByRole("img")).toBeNull();
     const trust = screen.getByRole("region", { name: "Comprar en Bugout" });
     expect(trust).toHaveTextContent("Envío gratis desde 75,00 €");
     expect(trust).toHaveTextContent("Península y Baleares");
-    expect(trust).toHaveTextContent("Control de caducidades");
+    expect(trust).toHaveTextContent("Caducidad a la vista");
+    expect(trust).not.toHaveTextContent(/te avisamos/i);
     expect(trust).not.toHaveTextContent(/garant|24–48/i);
   });
 

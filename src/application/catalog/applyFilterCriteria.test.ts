@@ -60,6 +60,31 @@ describe('applyFilterCriteria', () => {
     expect(input).toEqual(catalog);
   });
 
+  describe('products with several variant prices', () => {
+    // "Desde 39 €": 39, 69 and 129 € variants; the selected (first in stock) is the 69 € one.
+    const kit = buildProduct({
+      id: 'kit-24h',
+      variants: [
+        { id: 'kit-24h-1p', title: '1 persona', price: 39, inStock: false },
+        { id: 'kit-24h-2p', title: '2 personas', price: 69 },
+        { id: 'kit-24h-4p', title: '4 personas', price: 129 },
+      ],
+    });
+    const lamp = buildProduct({ id: 'lamp', price: 50 });
+    const radio = buildProduct({ id: 'radio', price: 100 });
+
+    it('matches a price range when any variant price falls in it', () => {
+      expect(ids(applyFilterCriteria([kit, lamp], { ...all, priceMin: 30, priceMax: 40 }))).toEqual(['kit-24h-2p']);
+      expect(ids(applyFilterCriteria([kit, lamp], { ...all, priceMin: 120, priceMax: 130 }))).toEqual(['kit-24h-2p']);
+      expect(ids(applyFilterCriteria([kit, lamp], { ...all, priceMin: 70, priceMax: 120 }))).toEqual([]);
+    });
+
+    it('sorts by the cheapest variant, the "Desde" price the card shows', () => {
+      expect(ids(applyFilterCriteria([radio, lamp, kit], { sortBy: 'price-asc' }))).toEqual(['kit-24h-2p', 'lamp', 'radio']);
+      expect(ids(applyFilterCriteria([kit, lamp, radio], { sortBy: 'price-desc' }))).toEqual(['radio', 'lamp', 'kit-24h-2p']);
+    });
+  });
+
   it('only returns products that match every criterion, and all of them', () => {
     const productArb = fc.record({
       cents: fc.integer({ min: 1, max: 50_000 }),

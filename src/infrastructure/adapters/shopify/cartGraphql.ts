@@ -40,12 +40,27 @@ export interface ShopifyCartNode {
   lines: { nodes: ShopifyCartLine[] };
 }
 
+/**
+ * A change Shopify made to a mutation's input instead of failing it, e.g.
+ * MERCHANDISE_NOT_ENOUGH_STOCK (quantity lowered to the stock) or
+ * MERCHANDISE_OUT_OF_STOCK (line not added). `target` is the id of the line or cart concerned.
+ */
+export interface ShopifyCartWarning {
+  code: string;
+  message: string;
+  target: string;
+}
+
+/** Warning codes whose effect (fewer units, or no line) the cart the mutation returns already shows. */
+export const STOCK_WARNING_CODES: readonly string[] = ['MERCHANDISE_NOT_ENOUGH_STOCK', 'MERCHANDISE_OUT_OF_STOCK'];
+
 export interface CartMutationPayload {
   cart: ShopifyCartNode | null;
   userErrors: ShopifyUserError[];
+  warnings?: ShopifyCartWarning[];
 }
 
-const MUTATION_RESULT = 'cart { ...CartFields } userErrors { field message code }';
+const MUTATION_RESULT = 'cart { ...CartFields } userErrors { field message code } warnings { code message target }';
 
 export const CART_QUERY = /* GraphQL */ `
   query Cart($id: ID!) ${STOREFRONT_CONTEXT} {

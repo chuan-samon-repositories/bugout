@@ -14,9 +14,15 @@ export function summarizeCategories(products: readonly Product[]): CategorySumma
   return Array.from(counts, ([slug, count]) => ({ slug, count }));
 }
 
-/** Price range of the list in whole major units (min floored, max ceiled), or null when empty. */
+/**
+ * Price range of the list across every variant, in whole major units (the cheapest
+ * variant floored, the dearest ceiled), or null when empty.
+ */
 export function priceBounds(products: readonly Product[]): { min: number; max: number } | null {
   if (products.length === 0) return null;
-  const amounts = products.map((product) => product.price.amount);
-  return { min: Math.floor(Math.min(...amounts)), max: Math.ceil(Math.max(...amounts)) };
+  const ranges = products.map((product) => product.priceRange());
+  return {
+    min: Math.floor(Math.min(...ranges.map(({ min }) => min.amount))),
+    max: Math.ceil(Math.max(...ranges.map(({ max }) => max.amount))),
+  };
 }

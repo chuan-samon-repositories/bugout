@@ -91,6 +91,13 @@ describe("ContactForm", () => {
     render(<ContactForm initialTopic="wholesale" />);
     expect(screen.getByRole("combobox", { name: "Tema" })).toHaveValue("wholesale");
   });
+
+  it("keeps what the visitor types out of analytics autocapture", () => {
+    render(<ContactForm />);
+    for (const field of screen.getAllByRole("textbox")) {
+      expect(field.closest(".ph-no-capture")).not.toBeNull();
+    }
+  });
 });
 
 describe("isContactTopic", () => {

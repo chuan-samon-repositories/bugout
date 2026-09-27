@@ -22,3 +22,11 @@ export const brandAssets = {
   /** The pixel-art frog, standing still. */
   frog: image("/images/mascot/frog.png", 298, 298),
 } as const;
+
+/**
+ * `image` scaled to the width it is displayed at (CSS pixels), for next/image `width`/`height`.
+ * next/image then offers 1x and 2x files of that size instead of the full-size source.
+ */
+export function atWidth(asset: BrandImage, width: number): BrandImage {
+  return { src: asset.src, width, height: Math.round((asset.height * width) / asset.width) };
+}

@@ -36,6 +36,12 @@ export class ConfigurationError extends Error {
 
 const PROVIDERS: readonly CommerceProvider[] = ['local', 'shopify'];
 
+/**
+ * Prefixes of Shopify secret tokens (Admin API access token, app shared secret, custom and
+ * private app tokens). The public Storefront token has none of them.
+ */
+export const SECRET_SHOPIFY_TOKEN_PREFIXES = ['shpat_', 'shpss_', 'shpca_', 'shppa_'] as const;
+
 function clean(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   return trimmed ? trimmed : undefined;
@@ -45,7 +51,7 @@ function isProvider(value: string): value is CommerceProvider {
   return (PROVIDERS as readonly string[]).includes(value);
 }
 
-/** @throws ConfigurationError for an unknown provider or incomplete Shopify settings */
+/** @throws ConfigurationError for an unknown provider, incomplete Shopify settings or a secret Shopify token */
 export function parseConfig(env: RawEnv): AppConfig {
   const provider = clean(env.provider)?.toLowerCase() ?? 'local';
   if (!isProvider(provider)) {
@@ -68,6 +74,16 @@ export function parseConfig(env: RawEnv): AppConfig {
   if (!storeDomain || !storefrontAccessToken) {
     const verb = missing.length > 1 ? 'are' : 'is';
     throw new ConfigurationError(`NEXT_PUBLIC_COMMERCE_PROVIDER is "shopify" but ${missing.join(' and ')} ${verb} not set.`);
+  }
+  const secretPrefix = SECRET_SHOPIFY_TOKEN_PREFIXES.find((prefix) => storefrontAccessToken.startsWith(prefix));
+  if (secretPrefix) {
+    // Never echo the token: the message may end up in build logs.
+    throw new ConfigurationError(
+      `NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN starts with "${secretPrefix}", which is a secret Shopify token ` +
+        '(Admin API or private). NEXT_PUBLIC_ variables are published in the browser bundle, so a private or ' +
+        'Admin token must never be a NEXT_PUBLIC_ variable. Use the public Storefront API token of the Headless ' +
+        'channel, and revoke the exposed token in Shopify.',
+    );
   }
   return {
     provider,

@@ -39,39 +39,41 @@ export default async function ContactPage({ searchParams }: ContactPageProps) {
 
   if (!isMessagingEnabled()) {
     return (
-      <Container className="pb-16">
+      <>
         {header}
-        <div className="grid gap-10 lg:grid-cols-3">
+        <Container className="grid gap-10 py-16 lg:grid-cols-3">
           <div className="min-w-0 lg:col-span-2">
             <ContactFaq policy={policy} />
           </div>
           <div className="min-w-0">
             <ContactHelp policy={policy} />
           </div>
-        </div>
-      </Container>
+        </Container>
+      </>
     );
   }
 
   const { topic } = await searchParams;
   const initialTopic = isContactTopic(topic) ? topic : undefined;
   return (
-    <Container className="pb-16">
+    <>
       {header}
-      <div className="grid gap-10 lg:grid-cols-3">
-        <section aria-labelledby="contact-form-title" className="min-w-0 lg:col-span-2">
-          <h2 id="contact-form-title" className="mb-6 text-2xl font-bold tracking-tight text-ink">
-            {copy.formTitle}
-          </h2>
-          <ContactForm key={initialTopic ?? "general"} initialTopic={initialTopic} />
-        </section>
-        <div className="min-w-0">
-          <ContactHelp policy={policy} />
+      <Container className="py-16">
+        <div className="grid gap-10 lg:grid-cols-3">
+          <section aria-labelledby="contact-form-title" className="min-w-0 lg:col-span-2">
+            <h2 id="contact-form-title" className="mb-6 text-2xl text-navy-deep">
+              {copy.formTitle}
+            </h2>
+            <ContactForm key={initialTopic ?? "general"} initialTopic={initialTopic} />
+          </section>
+          <div className="min-w-0">
+            <ContactHelp policy={policy} />
+          </div>
         </div>
-      </div>
-      <div className="mt-16 max-w-3xl">
-        <ContactFaq policy={policy} />
-      </div>
-    </Container>
+        <div className="mt-16 max-w-3xl">
+          <ContactFaq policy={policy} />
+        </div>
+      </Container>
+    </>
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { cache, Suspense } from "react";
-import { summarizeCategories } from "@/application/catalog";
+import { includedInIndex, summarizeCategories } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { getContainer } from "@/infrastructure/config";
 import { parseCatalogSearchParams, readCategoryParam } from "@/presentation/components/catalog/catalogSearchParams";
@@ -81,18 +81,20 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const criteria = parseCatalogSearchParams(params, { categories });
 
   return (
-    <Container>
-      <Suspense fallback={<CatalogFallback />}>
-        <CatalogView products={products.map(toProductSnapshot)} initialCriteria={criteria} />
-      </Suspense>
-    </Container>
+    <Suspense fallback={<CatalogFallback />}>
+      <CatalogView
+        products={products.map(toProductSnapshot)}
+        initialCriteria={criteria}
+        includedIn={includedInIndex(products)}
+      />
+    </Suspense>
   );
 }
 
 function CatalogFallback() {
   return (
     <>
-      <PageHeader title={messages.catalog.list.title} breadcrumbs={breadcrumbs} />
+      <PageHeader title={messages.catalog.list.title} description={messages.catalog.list.description} breadcrumbs={breadcrumbs} />
       <div className="flex justify-center py-16 text-navy">
         <Spinner size="lg" label={messages.catalog.list.loading} />
       </div>
@@ -102,18 +104,20 @@ function CatalogFallback() {
 
 function CatalogUnavailable() {
   return (
-    <Container className="pb-16">
+    <>
       <PageHeader title={messages.catalog.list.title} breadcrumbs={breadcrumbs} />
-      <div role="alert" className="flex flex-col items-start gap-4 rounded-xl border border-danger/30 bg-white p-6 sm:flex-row">
-        <AlertCircleIcon className="size-6 shrink-0 text-danger" />
-        <div className="min-w-0">
-          <h2 className="text-lg font-semibold text-ink">{messages.catalog.list.unavailableTitle}</h2>
-          <p className="mt-1 text-muted">{messages.errors.catalogUnavailable}</p>
-          <a href={routes.products} className={buttonClasses({ variant: "secondary", size: "sm", className: "mt-4" })}>
-            {messages.common.retry}
-          </a>
+      <Container className="py-14">
+        <div role="alert" className="flex flex-col items-start gap-4 rounded-2xl border border-danger/30 bg-white p-6 sm:flex-row">
+          <AlertCircleIcon className="size-6 shrink-0 text-danger" />
+          <div className="min-w-0">
+            <h2 className="text-lg text-navy-deep">{messages.catalog.list.unavailableTitle}</h2>
+            <p className="mt-1 text-muted">{messages.errors.catalogUnavailable}</p>
+            <a href={routes.products} className={buttonClasses({ variant: "secondary", size: "sm", className: "mt-4" })}>
+              {messages.common.retry}
+            </a>
+          </div>
         </div>
-      </div>
-    </Container>
+      </Container>
+    </>
   );
 }

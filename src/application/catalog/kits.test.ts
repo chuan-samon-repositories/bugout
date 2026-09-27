@@ -3,6 +3,7 @@ import {
   compareKits,
   comparableKits,
   findByVariantId,
+  includedInIndex,
   kitsContaining,
   kitsIn,
   looseProductsIn,
@@ -70,6 +71,10 @@ describe('kit helpers', () => {
     expect(kitsContaining('manta', catalog).map((p) => p.slug)).toEqual(['kit-24h', 'kit-72h']);
     expect(kitsContaining('radio', catalog).map((p) => p.slug)).toEqual(['kit-72h']);
     expect(kitsContaining('kit-24h', catalog)).toEqual([]);
+  });
+
+  it('indexes, per product slug, the names of the kits that include it', () => {
+    expect(includedInIndex(catalog)).toEqual({ manta: ['Kit 24h', 'Kit 72h'], radio: ['Kit 72h'] });
   });
 
   it('joins content lines with their catalog products', () => {

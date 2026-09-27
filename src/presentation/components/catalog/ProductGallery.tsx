@@ -17,13 +17,12 @@ export function ProductGallery({ product: snapshot }: ProductGalleryProps) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <div className="relative aspect-square overflow-hidden rounded-xl bg-sand/20">
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-navy">
         <ProductImage
           product={product}
           index={selected}
           sizes="(min-width: 1024px) 50vw, 100vw"
           priority={selected === 0}
-          className="p-6"
         />
       </div>
       <ul aria-label={messages.catalog.product.gallery} className="flex flex-wrap gap-3">
@@ -35,12 +34,12 @@ export function ProductGallery({ product: snapshot }: ProductGalleryProps) {
               aria-pressed={selected === index}
               onClick={() => setSelected(index)}
               className={cn(
-                "relative block size-20 overflow-hidden rounded-lg border-2 bg-sand/20",
+                "relative block size-20 overflow-hidden rounded-lg border-2 bg-navy",
                 selected === index ? "border-accent" : "border-transparent hover:border-navy",
                 focusRing,
               )}
             >
-              <ProductImage product={product} index={index} sizes="80px" className="p-1" />
+              <ProductImage product={product} index={index} sizes="80px" />
             </button>
           </li>
         ))}

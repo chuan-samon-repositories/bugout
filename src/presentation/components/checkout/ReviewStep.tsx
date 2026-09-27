@@ -35,9 +35,9 @@ function ReviewSection({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-lg border border-muted/30 p-4 sm:p-5">
+    <section className="rounded-xl border-[1.5px] border-sand-line p-4 sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold text-ink">{title}</h3>
+        <h3 className="font-bold text-navy-deep">{title}</h3>
         <Button variant="ghost" size="sm" onClick={onEdit}>
           {copy.review.edit}
           <VisuallyHidden> {editLabel}</VisuallyHidden>
@@ -107,8 +107,8 @@ export function ReviewStep({
           </p>
         )}
       </ReviewSection>
-      <p className="flex items-start gap-3 rounded-lg border border-navy/30 bg-sand/40 p-4 text-sm font-medium text-ink">
-        <InfoIcon className="mt-0.5 size-5 shrink-0 text-navy" />
+      <p className="flex items-start gap-3 rounded-2xl bg-sand-dim p-4 text-sm font-semibold text-navy-deep">
+        <InfoIcon className="mt-0.5 size-5 shrink-0 text-accent" />
         <span className="min-w-0">{copy.review.demoNotice}</span>
       </p>
       {placeError && (

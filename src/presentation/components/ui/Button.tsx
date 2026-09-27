@@ -22,6 +22,12 @@ export interface ButtonStyleOptions {
 export const focusRing =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2";
 
+/** Orange (accent) bold text link, e.g. "Ver todo el catálogo →" under a section. */
+export const textLinkClasses = cn(
+  "inline-flex items-center gap-1.5 rounded-sm text-[0.90625rem] font-bold text-accent underline-offset-4 hover:text-accent-hover hover:underline",
+  focusRing,
+);
+
 /** Lift on hover, only for enabled controls. */
 const lift = "hover:-translate-y-0.5 disabled:hover:translate-y-0 aria-disabled:hover:translate-y-0";
 

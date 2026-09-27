@@ -36,7 +36,7 @@ export function AddToCart({ product: snapshot }: AddToCartProps) {
   if (max === 0) {
     return (
       <div className="flex flex-col gap-3">
-        <p className="rounded-lg bg-sand/40 px-4 py-3 text-sm font-medium text-ink" role="status">
+        <p className="rounded-xl bg-sand-dim/60 px-4 py-3 text-sm font-semibold text-navy-deep" role="status">
           {t.maxReached}
         </p>
         <Button size="lg" fullWidth disabled>
@@ -63,10 +63,10 @@ export function AddToCart({ product: snapshot }: AddToCartProps) {
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-end gap-4">
         <div className="min-w-0">
-          <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-ink">
+          <label htmlFor={inputId} className="mb-1.5 block text-sm font-bold text-navy-deep">
             {t.quantity}
           </label>
-          <div className="flex items-center gap-1 rounded-lg border border-muted/70 bg-white p-0.5">
+          <div className="flex items-center gap-1 rounded-full border-[1.5px] border-muted/60 bg-white p-0.5">
             <IconButton label={t.decrease} onClick={() => setDraft(String(quantity - 1))} disabled={quantity <= 1}>
               <MinusIcon />
             </IconButton>

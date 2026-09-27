@@ -199,11 +199,11 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
         totals={totals}
         policy={policy}
         shippingLabel={rate ? shippingMethodLabel(rate) : undefined}
-        className="lg:sticky lg:top-20 lg:col-start-2 lg:row-start-1"
+        className="lg:sticky lg:top-24 lg:col-start-2 lg:row-start-1"
       />
       <div className="min-w-0 lg:col-start-1 lg:row-start-1">
         <CheckoutStepper current={step} onStepSelect={goBackTo} />
-        <div className="mt-8">
+        <div className="mt-6 rounded-2xl bg-white p-5 shadow-card sm:p-8">
           {step === "contact" && (
             <ContactStep
               details={details}

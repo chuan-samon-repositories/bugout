@@ -5,12 +5,13 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import { applyFilterCriteria, priceBounds, summarizeCategories } from "@/application/catalog";
 import type { FilterCriteria, SortOption } from "@/application/dtos/FilterCriteria";
 import { Money } from "@/domain/value-objects/Money";
-import { Button, ChevronDownIcon, PageHeader, SelectField, cn } from "@/presentation/components/ui";
+import { Button, ChevronDownIcon, Container, PageHeader, SelectField, cn } from "@/presentation/components/ui";
 import { useAnalytics } from "@/presentation/context/AnalyticsContext";
 import { useDebouncedValue } from "@/presentation/hooks/useDebouncedValue";
 import { formatMoney, formatNumber, messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 import { CatalogFilters } from "./CatalogFilters";
+import { CategoryChips } from "./CategoryChips";
 import {
   clearFilters,
   countActiveFilters,
@@ -25,18 +26,20 @@ import { availableSortOptions } from "./sortOptions";
 
 export const PRICE_DEBOUNCE_MS = 400;
 export const ANALYTICS_DEBOUNCE_MS = 800;
-const CATALOG_IMAGE_SIZES = "(min-width: 1280px) 300px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw";
+const CATALOG_IMAGE_SIZES = "(min-width: 1280px) 280px, (min-width: 1024px) 22vw, (min-width: 768px) 30vw, 50vw";
 
 export interface CatalogViewProps {
   products: readonly ProductSnapshot[];
   initialCriteria: FilterCriteria;
+  /** Kit names per product slug, for the "Incluido en" badges. */
+  includedIn?: Readonly<Record<string, readonly string[]>>;
 }
 
 const priceText = (value: number | undefined) => (value === undefined ? "" : String(value));
 const queryOf = (criteria: FilterCriteria) => serializeCatalogCriteria(criteria).toString();
 
 /** Catalog listing: filters are applied in memory, so controls never unmount while filtering. */
-export function CatalogView({ products: snapshots, initialCriteria }: CatalogViewProps) {
+export function CatalogView({ products: snapshots, initialCriteria, includedIn }: CatalogViewProps) {
   const t = messages.catalog;
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -157,42 +160,61 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
     label: t.filters.sortOptions[value],
   }));
 
+  // The category has its own chips; "Más filtros" counts the rest.
+  const moreCount = activeCount - (criteria.category ? 1 : 0);
+
   return (
     <>
-      <PageHeader title={title} breadcrumbs={breadcrumbs} />
-      <div className="flex flex-col gap-6 pb-16 lg:flex-row lg:items-start lg:gap-10">
-        <aside aria-label={t.filters.title} className="min-w-0 lg:sticky lg:top-20 lg:w-64 lg:shrink-0">
-          <button
-            type="button"
-            aria-expanded={filtersOpen}
-            aria-controls={panelId}
-            onClick={() => setFiltersOpen((open) => !open)}
-            className={cn(
-              "flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border-2 border-navy bg-white px-4 font-semibold text-navy",
-              "hover:bg-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 lg:hidden",
-            )}
-          >
-            <span className="flex min-w-0 flex-wrap items-center gap-x-2">
-              {t.filters.toggle}
-              {activeCount > 0 && (
-                <span className="text-sm font-normal text-muted">({t.filters.activeCount(activeCount)})</span>
-              )}
-            </span>
-            <ChevronDownIcon className={cn("size-5 shrink-0 transition-transform", filtersOpen && "rotate-180")} />
-          </button>
-          <h2 className="sr-only lg:not-sr-only lg:mb-4 lg:text-lg lg:font-semibold lg:text-ink">{t.filters.title}</h2>
-          <div id={panelId} className={cn(filtersOpen ? "block" : "hidden", "mt-4 lg:mt-0 lg:block")}>
+      <PageHeader title={title} description={t.list.description} breadcrumbs={breadcrumbs} />
+      <Container className="pt-12 pb-24 sm:pt-14">
+        <aside aria-label={t.filters.title} className="mb-9 flex flex-col gap-6">
+          <CategoryChips
+            criteria={criteria}
+            categories={categories}
+            totalCount={products.length}
+            onCategoryChange={(category) => update({ category })}
+          />
+          <div className="flex flex-col gap-4 border-y border-sand-line py-4 sm:flex-row sm:items-end sm:justify-between">
+            <p aria-live="polite" aria-atomic="true" className="text-sm font-semibold text-muted sm:pb-3">
+              {t.list.resultCount(results.length, formatNumber(results.length))}
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+              <button
+                type="button"
+                aria-expanded={filtersOpen}
+                aria-controls={panelId}
+                onClick={() => setFiltersOpen((open) => !open)}
+                className={cn(
+                  "flex min-h-11 items-center justify-between gap-3 rounded-full border-[1.5px] border-navy-deep px-5 text-sm font-bold text-navy-deep",
+                  "hover:bg-navy-deep hover:text-sand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+                )}
+              >
+                <span className="flex min-w-0 flex-wrap items-center gap-x-2">
+                  {t.filters.toggle}
+                  {moreCount > 0 && <span className="font-semibold">({t.filters.activeCount(moreCount)})</span>}
+                </span>
+                <ChevronDownIcon className={cn("size-5 shrink-0 transition-transform", filtersOpen && "rotate-180")} />
+              </button>
+              <SelectField
+                name="sort"
+                label={t.filters.sort}
+                value={criteria.sortBy}
+                onChange={(event) => update({ sortBy: event.target.value as SortOption })}
+                options={sortOptions}
+                className="sm:w-60"
+              />
+            </div>
+          </div>
+          <div id={panelId} className={filtersOpen ? "block" : "hidden"}>
+            <h2 className="sr-only">{t.filters.title}</h2>
             <CatalogFilters
               criteria={criteria}
-              categories={categories}
-              totalCount={products.length}
               minText={minText}
               maxText={maxText}
               bounds={bounds}
               rangeHint={rangeHint}
               showSwapHint={showSwapHint}
               activeCount={activeCount}
-              onCategoryChange={(category) => update({ category })}
               onMinTextChange={setMinText}
               onMaxTextChange={setMaxText}
               onInStockChange={(inStockOnly) => update({ inStockOnly: inStockOnly || undefined })}
@@ -202,36 +224,20 @@ export function CatalogView({ products: snapshots, initialCriteria }: CatalogVie
           </div>
         </aside>
 
-        <div className="min-w-0 flex-1">
-          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <p aria-live="polite" aria-atomic="true" className="text-sm font-medium text-muted">
-              {t.list.resultCount(results.length, formatNumber(results.length))}
-            </p>
-            <SelectField
-              name="sort"
-              label={t.filters.sort}
-              value={criteria.sortBy}
-              onChange={(event) => update({ sortBy: event.target.value as SortOption })}
-              options={sortOptions}
-              className="sm:w-64"
-            />
+        {results.length > 0 ? (
+          <ProductGrid products={results} includedIn={includedIn} sizes={CATALOG_IMAGE_SIZES} />
+        ) : (
+          <div className="rounded-2xl bg-white px-6 py-12 text-center shadow-card">
+            <h2 className="text-lg text-navy-deep">{t.list.emptyTitle}</h2>
+            <p className="mt-2 text-muted">{t.list.emptyDescription}</p>
+            {activeCount > 0 && (
+              <Button className="mt-6" onClick={reset}>
+                {t.filters.clear}
+              </Button>
+            )}
           </div>
-
-          {results.length > 0 ? (
-            <ProductGrid products={results} sizes={CATALOG_IMAGE_SIZES} />
-          ) : (
-            <div className="rounded-xl border border-sand bg-sand/20 px-6 py-12 text-center">
-              <h2 className="text-lg font-semibold text-ink">{t.list.emptyTitle}</h2>
-              <p className="mt-2 text-muted">{t.list.emptyDescription}</p>
-              {activeCount > 0 && (
-                <Button className="mt-6" onClick={reset}>
-                  {t.filters.clear}
-                </Button>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+        )}
+      </Container>
     </>
   );
 }

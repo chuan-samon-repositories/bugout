@@ -41,96 +41,97 @@ export default function AboutPage() {
   /** A message really reaches the shop (email or connected form): invite people to write and promise a reply. */
   const hasChannel = canPromiseReply();
   return (
-    <Container className="pb-16 sm:pb-20">
+    <>
       <PageHeader
         title={copy.title}
         description={copy.description}
         breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: copy.title }]}
       />
+      <Container className="py-16 sm:py-20">
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
+          <section aria-labelledby="about-story" className="min-w-0">
+            <h2 id="about-story" className="text-2xl text-navy-deep sm:text-3xl">
+              {copy.storyTitle}
+            </h2>
+            <div className="mt-5 space-y-4 text-base leading-7 text-muted">
+              {copy.story.map((paragraph) => (
+                <p key={paragraph}>{paragraph}</p>
+              ))}
+            </div>
+          </section>
 
-      <div className="grid gap-10 lg:grid-cols-2 lg:gap-12">
-        <section aria-labelledby="about-story" className="min-w-0">
-          <h2 id="about-story" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-            {copy.storyTitle}
+          <section
+            aria-labelledby="about-mission"
+            className="min-w-0 self-start rounded-2xl bg-navy-deep p-6 text-sand sm:p-8"
+          >
+            <h2 id="about-mission" className="text-2xl font-bold tracking-tight text-orange-on-navy">
+              {copy.missionTitle}
+            </h2>
+            <p className="mt-4 text-lg leading-8">{copy.mission}</p>
+          </section>
+        </div>
+
+        <section aria-labelledby="about-values" className="mt-16 sm:mt-20">
+          <h2 id="about-values" className="text-2xl text-navy-deep sm:text-3xl">
+            {copy.valuesTitle}
           </h2>
-          <div className="mt-5 space-y-4 text-base leading-7 text-muted">
-            {copy.story.map((paragraph) => (
-              <p key={paragraph}>{paragraph}</p>
+          <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {copy.values.map((value, index) => (
+              <li key={value.title} className="min-w-0 rounded-2xl bg-white p-6 shadow-card">
+                <IconBadge icon={valueIcons[index % valueIcons.length]} />
+                <h3 className="mt-4 text-lg font-bold text-navy-deep">{value.title}</h3>
+                <p className="mt-2 leading-7 text-muted">{value.description}</p>
+              </li>
             ))}
-          </div>
+            <li className="min-w-0 rounded-2xl bg-white p-6 shadow-card">
+              <IconBadge icon={valueIcons[copy.values.length % valueIcons.length]} />
+              <h3 className="mt-4 text-lg font-bold text-navy-deep">{copy.supportValue.title}</h3>
+              <p className="mt-2 leading-7 text-muted">
+                {copy.supportValue.lead} <ContactChannel linkClassName={linkClasses} />
+                {hasChannel && ` ${copy.supportValue.replyPromise}`}.
+              </p>
+            </li>
+          </ul>
+        </section>
+
+        <section aria-labelledby="about-design" className="mt-16 sm:mt-20">
+          <h2 id="about-design" className="text-2xl text-navy-deep sm:text-3xl">
+            {copy.designTitle}
+          </h2>
+          <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">{copy.designIntro}</p>
+          <ul className="mt-8 grid gap-6 md:grid-cols-3">
+            {copy.designPoints.map((point, index) => (
+              <li key={point.title} className="flex min-w-0 gap-4">
+                <IconBadge icon={designIcons[index % designIcons.length]} />
+                <div className="min-w-0">
+                  <h3 className="text-lg font-bold text-navy-deep">{point.title}</h3>
+                  <p className="mt-2 leading-7 text-muted">{point.description}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </section>
 
         <section
-          aria-labelledby="about-mission"
-          className="min-w-0 self-start rounded-2xl bg-navy p-6 text-white sm:p-8"
+          aria-labelledby="about-cta"
+          className="mt-16 rounded-2xl bg-sand-dim px-6 py-12 text-center sm:mt-20 sm:px-10"
         >
-          <h2 id="about-mission" className="text-2xl font-bold tracking-tight text-orange-on-navy">
-            {copy.missionTitle}
+          <h2 id="about-cta" className="text-2xl text-navy-deep sm:text-3xl">
+            {copy.ctaTitle}
           </h2>
-          <p className="mt-4 text-lg leading-8">{copy.mission}</p>
-        </section>
-      </div>
-
-      <section aria-labelledby="about-values" className="mt-16 sm:mt-20">
-        <h2 id="about-values" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          {copy.valuesTitle}
-        </h2>
-        <ul className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {copy.values.map((value, index) => (
-            <li key={value.title} className="min-w-0 rounded-xl border border-sand p-6">
-              <IconBadge icon={valueIcons[index % valueIcons.length]} />
-              <h3 className="mt-4 text-lg font-semibold text-ink">{value.title}</h3>
-              <p className="mt-2 leading-7 text-muted">{value.description}</p>
-            </li>
-          ))}
-          <li className="min-w-0 rounded-xl border border-sand p-6">
-            <IconBadge icon={valueIcons[copy.values.length % valueIcons.length]} />
-            <h3 className="mt-4 text-lg font-semibold text-ink">{copy.supportValue.title}</h3>
-            <p className="mt-2 leading-7 text-muted">
-              {copy.supportValue.lead} <ContactChannel linkClassName={linkClasses} />
-              {hasChannel && ` ${copy.supportValue.replyPromise}`}.
-            </p>
-          </li>
-        </ul>
-      </section>
-
-      <section aria-labelledby="about-design" className="mt-16 sm:mt-20">
-        <h2 id="about-design" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          {copy.designTitle}
-        </h2>
-        <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">{copy.designIntro}</p>
-        <ul className="mt-8 grid gap-6 md:grid-cols-3">
-          {copy.designPoints.map((point, index) => (
-            <li key={point.title} className="flex min-w-0 gap-4">
-              <IconBadge icon={designIcons[index % designIcons.length]} />
-              <div className="min-w-0">
-                <h3 className="text-lg font-semibold text-ink">{point.title}</h3>
-                <p className="mt-2 leading-7 text-muted">{point.description}</p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section
-        aria-labelledby="about-cta"
-        className="mt-16 rounded-2xl bg-sand px-6 py-10 text-center sm:mt-20 sm:px-10"
-      >
-        <h2 id="about-cta" className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-          {copy.ctaTitle}
-        </h2>
-        <p className="mx-auto mt-3 max-w-2xl text-lg text-ink">{hasChannel ? copy.ctaText : copy.ctaTextWithoutChannel}</p>
-        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
-          <ButtonLink href={routes.products} size="lg">
-            {copy.ctaProducts}
-          </ButtonLink>
-          {hasChannel && (
-            <ButtonLink href={routes.contact} variant="secondary" size="lg">
-              {copy.ctaContact}
+          <p className="mx-auto mt-3 max-w-2xl text-lg text-muted">{hasChannel ? copy.ctaText : copy.ctaTextWithoutChannel}</p>
+          <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+            <ButtonLink href={routes.products} size="lg">
+              {copy.ctaProducts}
             </ButtonLink>
-          )}
-        </div>
-      </section>
-    </Container>
+            {hasChannel && (
+              <ButtonLink href={routes.contact} variant="secondary" size="lg">
+                {copy.ctaContact}
+              </ButtonLink>
+            )}
+          </div>
+        </section>
+      </Container>
+    </>
   );
 }

@@ -132,6 +132,67 @@ export const content = {
     scrollHint: 'Tabla de cookies',
     items: cookieItems,
   },
+  howToChoose: {
+    title: 'Cómo elegir tu kit',
+    description:
+      'El Kit 24h y el Kit 72h, comparados lado a lado, más el Kit Custom si prefieres montártelo a medida.',
+    metaDescription: 'Compara el Kit 24h y el Kit 72h de Bugout y descubre cuál necesitas según tu situación.',
+    compareTitle: 'Comparativa',
+    forWhomTitle: 'Para quién es cada kit',
+    kitsTitle: 'Los kits',
+  },
+  whyPrepare: {
+    title: 'Por qué prepararse',
+    description:
+      'Las emergencias más habituales no son catástrofes de película: son cortes de luz, temporales, inundaciones locales o evacuaciones cortas. Un kit básico reduce la incertidumbre de los primeros momentos.',
+    metaDescription:
+      'Por qué vale la pena tener un kit de emergencia en casa: apagones, temporales e inundaciones, y qué recomiendan las autoridades.',
+    sections: [
+      {
+        title: 'Apagones y cortes de suministro',
+        paragraphs: [
+          'Un corte de luz largo deja la casa sin iluminación ni calefacción, apaga la nevera y, cuando se agotan las baterías, también el móvil. El apagón del 28 de abril de 2025, que dejó sin electricidad durante horas a gran parte de la península ibérica, recordó lo rápido que puede pasar.',
+          'Tener a mano una linterna o un frontal, una radio que no dependa de la red eléctrica, agua y algo de comida permite pasar esas horas con calma y seguir la información oficial.',
+        ],
+      },
+      {
+        title: 'Inundaciones y temporales',
+        paragraphs: [
+          'Las lluvias torrenciales y los temporales pueden cortar carreteras y suministros en muy poco tiempo, y obligar a quedarse en casa o a salir de ella con prisa.',
+          'En esos momentos ayuda tener preparado lo esencial en una mochila: agua, abrigo, primeros auxilios, luz y los documentos importantes protegidos del agua.',
+        ],
+      },
+      {
+        title: 'Qué recomiendan las autoridades',
+        paragraphs: [
+          'La Comisión Europea, en su Estrategia para una Unión de la Preparación de marzo de 2025, anima a la población a tener lo necesario para ser autosuficiente durante al menos 72 horas en caso de emergencia.',
+          'En España, Protección Civil publica recomendaciones para preparar un kit de emergencia y un plan familiar. Consúltalas en su web oficial antes de preparar el tuyo.',
+        ],
+        link: { label: 'Recomendaciones de Protección Civil', href: 'https://www.proteccioncivil.es' },
+      },
+    ],
+    ctaTitle: 'Elige tu kit',
+  },
+  faqPage: {
+    title: 'Preguntas frecuentes',
+    description: 'Resolvemos las dudas más habituales sobre los kits, los productos y los pedidos.',
+    kitsTitle: 'Sobre los kits',
+    ordersTitle: 'Pedidos, envíos y devoluciones',
+    differenceQuestion: '¿Qué diferencia hay entre los kits?',
+    differenceLink: 'Ver la comparativa completa',
+    peopleQuestion: '¿Puedo comprar un kit para toda la familia?',
+    peopleAnswer: (kits: string, people: string) =>
+      `Sí. ${kits} se venden para ${people} personas: elige el número de personas en la página de cada kit.`,
+    customQuestion: '¿Puedo montar mi propio kit?',
+    customAnswer: (kit: string) => `Sí, con el ${kit}: parte de una mochila base y añádele los productos sueltos que necesites.`,
+    customLink: (kit: string) => `Ver el ${kit}`,
+    looseQuestion: '¿Vendéis por separado lo que llevan los kits?',
+    looseAnswer: 'Sí. Todo el material de nuestros kits está disponible suelto, para completar un kit o reponer lo que hayas usado.',
+    looseLink: 'Ver los productos sueltos',
+    expiryQuestion: '¿Caducan los consumibles?',
+    expiryAnswer:
+      'El agua y los alimentos tienen su propia fecha de caducidad, indicada en cada envase. Te avisamos para renovar los consumibles, y puedes reponerlos sueltos desde el catálogo.',
+  },
   about: {
     title: 'Sobre nosotros',
     description:

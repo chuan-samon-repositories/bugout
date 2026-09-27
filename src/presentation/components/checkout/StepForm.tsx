@@ -25,7 +25,7 @@ export function StepForm({ title, headingRef, errors, onSubmit, children, action
         id="checkout-step-heading"
         ref={headingRef}
         tabIndex={-1}
-        className="text-2xl font-bold tracking-tight text-ink focus-visible:outline-none"
+        className="text-2xl text-navy-deep focus-visible:outline-none"
       >
         {title}
       </h2>

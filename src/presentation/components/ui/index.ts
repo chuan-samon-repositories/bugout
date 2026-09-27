@@ -8,6 +8,7 @@ export {
   IconButton,
   buttonClasses,
   focusRing,
+  textLinkClasses,
   type ButtonProps,
   type ButtonLinkProps,
   type ButtonSize,

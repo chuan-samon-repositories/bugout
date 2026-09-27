@@ -1,17 +1,11 @@
 "use client";
 
-import type { CategorySummary } from "@/application/catalog";
 import type { FilterCriteria } from "@/application/dtos/FilterCriteria";
-import { Button, CheckboxField, RadioGroupField, TextField } from "@/presentation/components/ui";
-import { formatNumber, messages } from "@/presentation/i18n";
-import { categoryLabel } from "./categoryLabel";
-
-const ALL_CATEGORIES = "";
+import { Button, CheckboxField, TextField } from "@/presentation/components/ui";
+import { messages } from "@/presentation/i18n";
 
 export interface CatalogFiltersProps {
   criteria: FilterCriteria;
-  categories: readonly CategorySummary[];
-  totalCount: number;
   minText: string;
   maxText: string;
   /** Placeholders for the price inputs, from the catalog's price range. */
@@ -20,7 +14,6 @@ export interface CatalogFiltersProps {
   rangeHint: string | null;
   showSwapHint: boolean;
   activeCount: number;
-  onCategoryChange(category: string | undefined): void;
   onMinTextChange(value: string): void;
   onMaxTextChange(value: string): void;
   onInStockChange(value: boolean): void;
@@ -30,15 +23,12 @@ export interface CatalogFiltersProps {
 
 export function CatalogFilters({
   criteria,
-  categories,
-  totalCount,
   minText,
   maxText,
   bounds,
   rangeHint,
   showSwapHint,
   activeCount,
-  onCategoryChange,
   onMinTextChange,
   onMaxTextChange,
   onInStockChange,
@@ -46,27 +36,11 @@ export function CatalogFilters({
   onClear,
 }: CatalogFiltersProps) {
   const t = messages.catalog.filters;
-  const countAside = (count: number) => <span className="text-sm font-normal text-muted">{formatNumber(count)}</span>;
 
   return (
-    <div className="flex flex-col gap-6">
-      <RadioGroupField
-        name="category"
-        label={t.category}
-        value={criteria.category ?? ALL_CATEGORIES}
-        onValueChange={(value) => onCategoryChange(value || undefined)}
-        options={[
-          { value: ALL_CATEGORIES, label: t.allCategories, aside: countAside(totalCount) },
-          ...categories.map((category) => ({
-            value: category.slug,
-            label: categoryLabel(category.slug),
-            aside: countAside(category.count),
-          })),
-        ]}
-      />
-
+    <div className="grid gap-6 rounded-2xl bg-white p-5 shadow-card sm:grid-cols-2 sm:p-6 lg:grid-cols-[1.4fr_1fr_auto] lg:items-start">
       <fieldset className="min-w-0">
-        <legend className="mb-2 text-sm font-medium text-ink">{t.price}</legend>
+        <legend className="mb-2 text-sm font-bold text-navy-deep">{t.price}</legend>
         <div className="grid grid-cols-2 gap-3">
           <TextField
             name="min"
@@ -100,7 +74,7 @@ export function CatalogFilters({
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-3">
-        <legend className="mb-2 text-sm font-medium text-ink">{t.availability}</legend>
+        <legend className="mb-2 text-sm font-bold text-navy-deep">{t.availability}</legend>
         <CheckboxField
           name="stock"
           label={t.inStockOnly}
@@ -116,7 +90,7 @@ export function CatalogFilters({
       </fieldset>
 
       {activeCount > 0 && (
-        <Button variant="secondary" size="sm" onClick={onClear} className="self-start">
+        <Button variant="secondary" size="sm" onClick={onClear} className="self-start lg:self-end">
           {t.clear}
         </Button>
       )}

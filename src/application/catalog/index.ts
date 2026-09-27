@@ -6,6 +6,7 @@ export {
   compareKits,
   comparableKits,
   findByVariantId,
+  includedInIndex,
   kitsContaining,
   kitsIn,
   looseProductsIn,

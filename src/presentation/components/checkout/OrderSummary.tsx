@@ -25,8 +25,8 @@ export function OrderSummary({ cart, totals, policy, shippingLabel, className }:
   const titleId = `${panelId}-title`;
 
   return (
-    <aside aria-labelledby={titleId} className={cn("min-w-0 rounded-xl border border-muted/30 bg-sand/30", className)}>
-      <h2 id={titleId} className="sr-only lg:not-sr-only lg:block lg:px-6 lg:pt-6 lg:text-lg lg:font-semibold lg:text-ink">
+    <aside aria-labelledby={titleId} className={cn("min-w-0 rounded-2xl bg-white shadow-card", className)}>
+      <h2 id={titleId} className="sr-only lg:not-sr-only lg:block lg:px-6 lg:pt-6 lg:text-lg lg:text-navy-deep">
         {copy.title}
       </h2>
       <button
@@ -46,14 +46,14 @@ export function OrderSummary({ cart, totals, policy, shippingLabel, className }:
         <ul className="divide-y divide-muted/20">
           {cart.getItems().map((item) => (
             <li key={item.product.id.value} className="flex items-center gap-3 py-3">
-              <div aria-hidden="true" className="relative size-16 shrink-0 overflow-hidden rounded-md border border-muted/20 bg-white">
+              <div aria-hidden="true" className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-navy">
                 <ProductImage product={item.product} sizes="64px" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="break-words text-sm font-medium text-ink">{item.product.displayName}</p>
                 <p className="text-sm text-muted">{copy.quantity(item.quantity.value)}</p>
               </div>
-              <p className="shrink-0 text-sm font-semibold text-ink tabular-nums">{formatMoney(item.subtotal())}</p>
+              <p className="shrink-0 text-sm font-bold text-navy-deep tabular-nums">{formatMoney(item.subtotal())}</p>
             </li>
           ))}
         </ul>

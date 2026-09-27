@@ -1,28 +1,67 @@
 // @vitest-environment jsdom
 import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
 import { ProductCard } from "./ProductCard";
 
+const cart = vi.hoisted(() => ({ addItem: vi.fn(async () => true), pending: false }));
+
+vi.mock("@/presentation/context/CartContext", () => ({
+  useCart: () => cart,
+}));
+
 describe("ProductCard", () => {
-  it("is a single link to the product page with the name as heading", () => {
+  it("has a single link to the product page, named after the product and used as heading", () => {
     const product = buildProduct({
-      id: "72h-survival-backpack",
-      name: "Mochila de supervivencia 72H",
-      price: 299,
-      originalPrice: 399,
+      id: "mochila-30l",
+      name: "Mochila de supervivencia 30L",
+      price: 59,
+      originalPrice: 69,
       badge: "PREMIUM",
     });
-    const { container } = render(<ProductCard product={product} />);
+    render(<ProductCard product={product} />);
 
     const links = screen.getAllByRole("link");
     expect(links).toHaveLength(1);
-    expect(links[0]).toHaveAttribute("href", "/products/72h-survival-backpack");
-    expect(links[0]).toHaveAccessibleName("Mochila de supervivencia 72H");
-    expect(screen.getByRole("heading", { level: 2, name: "Mochila de supervivencia 72H" })).toBeInTheDocument();
-    expect(container.querySelectorAll("button")).toHaveLength(0);
+    expect(links[0]).toHaveAttribute("href", "/products/mochila-30l");
+    expect(links[0]).toHaveAccessibleName("Mochila de supervivencia 30L");
+    expect(screen.getByRole("heading", { level: 2, name: "Mochila de supervivencia 30L" })).toBeInTheDocument();
     expect(screen.getByText("Premium")).toBeInTheDocument();
     expect(screen.queryByText("Agotado")).toBeNull();
+  });
+
+  it("adds a single-variant product to the cart from the card", async () => {
+    const user = userEvent.setup();
+    const product = buildProduct({ id: "silbato", name: "Silbato", price: 5 });
+    render(<ProductCard product={product} />);
+
+    await user.click(screen.getByRole("button", { name: "Añadir Silbato al carrito" }));
+
+    expect(cart.addItem).toHaveBeenCalledWith(expect.objectContaining({ slug: "silbato" }), 1, "product_card");
+  });
+
+  it("lists the kits that include the product", () => {
+    render(<ProductCard product={buildProduct({ name: "Manta" })} includedIn={["Kit 24h", "Kit 72h"]} />);
+    const list = screen.getByRole("list", { name: "Incluido en" });
+    expect(within(list).getAllByRole("listitem").map((item) => item.textContent)).toEqual([
+      "Incluido en el Kit 24h",
+      "Incluido en el Kit 72h",
+    ]);
+  });
+
+  it("shows a starting price and no quick add for kits sold in several sizes", () => {
+    const kit = buildProduct({
+      id: "kit-24h",
+      name: "Kit 24h",
+      variants: [
+        { id: "kit-24h-1p", title: "1 persona", price: 39 },
+        { id: "kit-24h-2p", title: "2 personas", price: 69 },
+      ],
+    });
+    const { container } = render(<ProductCard product={kit} />);
+    expect(screen.getByText("Desde 39,00 €")).toBeInTheDocument();
+    expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
   it("supports a level-3 heading for use under a section heading", () => {
@@ -30,9 +69,10 @@ describe("ProductCard", () => {
     expect(screen.getByRole("heading", { level: 3, name: "Kit" })).toBeInTheDocument();
   });
 
-  it("labels out-of-stock products", () => {
+  it("labels out-of-stock products and offers no quick add", () => {
     const { container } = render(<ProductCard product={buildProduct({ inStock: false })} />);
     expect(within(container).getByText("Agotado")).toBeInTheDocument();
+    expect(container.querySelectorAll("button")).toHaveLength(0);
   });
 
   it("hides ratings when there are no reviews", () => {

@@ -46,22 +46,22 @@ export function OrderConfirmationView({ confirmation, policy }: OrderConfirmatio
           <h1
             ref={headingRef}
             tabIndex={-1}
-            className="mt-4 text-3xl font-bold tracking-tight text-ink focus-visible:outline-none sm:text-4xl"
+            className="mt-4 text-3xl text-navy-deep focus-visible:outline-none sm:text-4xl"
           >
             {copy.title}
           </h1>
         </div>
 
-        <p className="mt-6 flex items-start gap-3 rounded-lg border border-navy/30 bg-sand/40 p-4 text-sm font-medium text-ink">
-          <InfoIcon className="mt-0.5 size-5 shrink-0 text-navy" />
+        <p className="mt-6 flex items-start gap-3 rounded-2xl bg-sand-dim p-4 text-sm font-semibold text-navy-deep">
+          <InfoIcon className="mt-0.5 size-5 shrink-0 text-accent" />
           <span className="min-w-0">{messages.checkout.review.demoNotice}</span>
         </p>
 
         {/* ph-no-capture: PostHog autocapture never records the customer's details. */}
-        <dl className="ph-no-capture mt-8 grid gap-4 rounded-xl border border-muted/30 p-5 text-sm sm:grid-cols-2">
+        <dl className="ph-no-capture mt-8 grid gap-4 rounded-2xl bg-white shadow-card p-5 text-sm sm:grid-cols-2">
           <div className="min-w-0">
             <dt className="text-muted">{copy.orderNumber}</dt>
-            <dd className="mt-1 break-all font-mono text-base font-semibold text-ink">{confirmation.orderNumber}</dd>
+            <dd className="mt-1 break-all font-mono text-base font-bold text-navy-deep">{confirmation.orderNumber}</dd>
           </div>
           <div className="min-w-0">
             <dt className="text-muted">{copy.email}</dt>
@@ -80,8 +80,8 @@ export function OrderConfirmationView({ confirmation, policy }: OrderConfirmatio
           </div>
         </dl>
 
-        <section aria-labelledby="confirmation-items-title" className="mt-8 rounded-xl border border-muted/30 p-5">
-          <h2 id="confirmation-items-title" className="font-semibold text-ink">
+        <section aria-labelledby="confirmation-items-title" className="mt-8 rounded-2xl bg-white shadow-card p-5">
+          <h2 id="confirmation-items-title" className="font-bold text-navy-deep">
             {copy.items}
           </h2>
           <ul className="mt-3 divide-y divide-muted/20">
@@ -91,7 +91,7 @@ export function OrderConfirmationView({ confirmation, policy }: OrderConfirmatio
                   {line.name}
                   <span className="block text-muted">{messages.checkout.summary.quantity(line.quantity)}</span>
                 </span>
-                <span className="shrink-0 font-semibold text-ink tabular-nums">
+                <span className="shrink-0 font-bold text-navy-deep tabular-nums">
                   {formatMoney(Money.fromMinor(line.subtotalMinor, currency))}
                 </span>
               </li>

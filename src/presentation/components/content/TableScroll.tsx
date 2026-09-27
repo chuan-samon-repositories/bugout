@@ -15,7 +15,7 @@ export function TableScroll({ label, children, className }: TableScrollProps) {
       role="region"
       aria-label={label}
       tabIndex={0}
-      className={cn("my-6 max-w-full overflow-x-auto rounded-lg border border-sand", focusRing, className)}
+      className={cn("my-6 max-w-full overflow-x-auto rounded-xl border border-sand-line bg-white", focusRing, className)}
     >
       {children}
     </div>
@@ -24,8 +24,8 @@ export function TableScroll({ label, children, className }: TableScrollProps) {
 
 export const tableClasses = {
   table: "w-full min-w-[36rem] border-collapse text-left text-sm",
-  caption: "px-4 py-3 text-left text-base font-semibold text-ink",
-  headCell: "border-b border-sand bg-sand/60 px-4 py-3 font-semibold text-ink",
-  rowHeader: "border-t border-sand px-4 py-3 align-top font-semibold text-ink",
-  cell: "border-t border-sand px-4 py-3 align-top text-ink",
+  caption: "px-4 py-3 text-left text-base font-bold text-navy-deep",
+  headCell: "border-b border-sand-line bg-navy px-4 py-3 font-bold text-sand",
+  rowHeader: "border-t border-sand-line px-4 py-3 align-top font-semibold text-navy-deep",
+  cell: "border-t border-sand-line px-4 py-3 align-top text-ink",
 } as const;

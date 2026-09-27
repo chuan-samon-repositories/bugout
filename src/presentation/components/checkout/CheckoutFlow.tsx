@@ -20,9 +20,9 @@ const copy = messages.checkout;
 
 function EmptyCheckout() {
   return (
-    <div className="flex flex-col items-center gap-4 rounded-xl border border-muted/30 px-4 py-16 text-center">
+    <div className="flex flex-col items-center gap-4 rounded-2xl bg-white shadow-card px-4 py-16 text-center">
       <CartIcon className="size-12 text-navy/60" />
-      <h2 className="text-2xl font-bold tracking-tight text-ink">{copy.empty.title}</h2>
+      <h2 className="text-2xl text-navy-deep">{copy.empty.title}</h2>
       <p className="max-w-md text-muted">{copy.empty.text}</p>
       <ButtonLink href={routes.products} size="lg" className="mt-2">
         {copy.empty.cta}
@@ -43,9 +43,9 @@ function CartLoadError({ onRetry }: { onRetry(): Promise<void> }) {
     }
   };
   return (
-    <div role="alert" className="flex flex-col items-center gap-3 rounded-xl border border-muted/30 px-4 py-16 text-center">
+    <div role="alert" className="flex flex-col items-center gap-3 rounded-2xl bg-white shadow-card px-4 py-16 text-center">
       <AlertCircleIcon className="size-12 text-danger" />
-      <p className="text-lg font-semibold text-ink">{messages.cart.loadError}</p>
+      <p className="text-lg font-bold text-navy-deep">{messages.cart.loadError}</p>
       <Button variant="secondary" onClick={() => void retry()} loading={retrying} className="mt-2">
         {messages.cart.retryLoad}
       </Button>
@@ -109,8 +109,9 @@ export function CheckoutFlow({ provider }: CheckoutFlowProps) {
   }
 
   return (
-    <Container className="pb-16">
+    <Container className="pb-24">
       <PageHeader
+        tone="plain"
         title={copy.title}
         breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: copy.title }]}
       />

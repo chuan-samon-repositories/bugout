@@ -14,9 +14,9 @@ const linkClasses = cn("rounded-sm font-medium text-accent underline underline-o
 function HelpItem({ icon, title, children }: { icon: ReactNode; title: string; children: ReactNode }) {
   return (
     <li className="flex items-start gap-3">
-      <span className="mt-0.5 shrink-0 text-navy">{icon}</span>
+      <span className="mt-0.5 shrink-0 text-accent">{icon}</span>
       <div className="min-w-0">
-        <h3 className="font-semibold text-ink">{title}</h3>
+        <h3 className="font-bold text-navy-deep">{title}</h3>
         <div className="mt-1 space-y-1 text-sm text-muted">{children}</div>
       </div>
     </li>
@@ -31,8 +31,8 @@ export function ContactHelp({ policy }: { policy: PricingPolicy }) {
   const threshold = freeShippingThreshold(policy);
   const formShown = isMessagingEnabled();
   return (
-    <section aria-labelledby="contact-help-title" className="rounded-xl bg-sand/40 p-6">
-      <h2 id="contact-help-title" className="text-lg font-semibold text-ink">
+    <section aria-labelledby="contact-help-title" className="rounded-2xl bg-white p-6 shadow-card">
+      <h2 id="contact-help-title" className="text-lg text-navy-deep">
         {canPromiseReply() ? copy.title : copy.titleWithoutChannel}
       </h2>
       <ul className="mt-4 space-y-5">

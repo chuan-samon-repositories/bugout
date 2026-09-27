@@ -3,11 +3,12 @@ import { buildProduct } from "@/domain/testing/buildProduct";
 import { pickFeatured, pickFlagship, summarizeReviews } from "./homeData";
 
 describe("pickFeatured", () => {
-  it("prefers featured products and falls back to the first ones", () => {
+  it("lists loose products (never kits), featured ones first, up to the limit", () => {
+    const kit = buildProduct({ id: "kit", featured: true, details: { features: [], specifications: [], contents: [], kit: { label: "24H" } } });
     const a = buildProduct({ id: "a" });
     const b = buildProduct({ id: "b", featured: true });
     const c = buildProduct({ id: "c" });
-    expect(pickFeatured([a, b, c]).map((p) => p.slug)).toEqual(["b"]);
+    expect(pickFeatured([kit, a, b, c]).map((p) => p.slug)).toEqual(["b", "a", "c"]);
     expect(pickFeatured([a, c], 1).map((p) => p.slug)).toEqual(["a"]);
   });
 });

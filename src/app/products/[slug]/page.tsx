@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
+import { includedInIndex, kitsContaining, relatedProducts, resolveContents } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { NotFoundError } from "@/domain/errors";
 import { getContainer } from "@/infrastructure/config";
-import { AddToCart } from "@/presentation/components/catalog/AddToCart";
 import { categoryLabel } from "@/presentation/components/catalog/categoryLabel";
 import { DeliveryInfo } from "@/presentation/components/catalog/DeliveryInfo";
 import { ProductDetailSections } from "@/presentation/components/catalog/ProductDetailSections";
@@ -15,17 +16,23 @@ import { productViewedProperties } from "@/presentation/components/catalog/produ
 import { productJsonLd, serializeJsonLd } from "@/presentation/components/catalog/productJsonLd";
 import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
 import { ProductViewTracker } from "@/presentation/components/catalog/ProductViewTracker";
+import { KitContentsList } from "@/presentation/components/kits/KitContents";
+import { KitGallery } from "@/presentation/components/kits/KitGallery";
+import { PurchasePanel } from "@/presentation/components/kits/PurchasePanel";
 import {
-  AlertCircleIcon,
+  ArrowRightIcon,
   Breadcrumbs,
-  CheckCircleIcon,
+  ButtonLink,
   Container,
-  PriceTag,
+  Eyebrow,
   ProductBadge,
   RatingStars,
+  cn,
+  focusRing,
+  textLinkClasses,
 } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
-import { formatMoney, messages } from "@/presentation/i18n";
+import { messages } from "@/presentation/i18n";
 import { catalogUrl, routes } from "@/presentation/routes";
 
 /** Product pages are prerendered and regenerated at most every 5 minutes (price and stock changes). */
@@ -37,7 +44,8 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-const MAX_RELATED = 3;
+/** Fallback cross-sell size when a product lists no related products. */
+const MAX_RELATED = 4;
 
 const getProduct = cache(async (slug: string): Promise<Product> => {
   try {
@@ -48,14 +56,12 @@ const getProduct = cache(async (slug: string): Promise<Product> => {
   }
 });
 
-async function getRelatedProducts(product: Product): Promise<Product[]> {
+/** The whole catalog, to resolve kit contents, "included in" badges and cross-sells; empty on failure. */
+async function loadCatalog(): Promise<Product[]> {
   try {
-    const products = await getContainer().getGetProductsUseCase().execute();
-    return products
-      .filter((candidate) => candidate.category === product.category && candidate.slug !== product.slug)
-      .slice(0, MAX_RELATED);
+    return await getContainer().getGetProductsUseCase().execute();
   } catch (error) {
-    console.error("Could not load related products", error);
+    console.error("Could not load the catalog for a product page", error);
     return [];
   }
 }
@@ -90,84 +96,134 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   };
 }
 
+const sectionTitle = "mb-6 text-[clamp(1.5rem,3vw,2rem)] text-navy-deep";
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const product = await getProduct(slug);
-  const related = await getRelatedProducts(product);
+  const catalog = await loadCatalog();
   const policy = getContainer().getPricingPolicy();
   const snapshot = toProductSnapshot(product);
   const t = messages.catalog.product;
-  const savings = product.savings();
+  const k = messages.catalog.kit;
+  const kit = product.details?.kit ?? null;
+  const buildYourOwn = !!kit?.buildYourOwn;
+  const lines = resolveContents(product, catalog);
+  const containing = kitsContaining(product.slug, catalog);
+  const crossSell = relatedProducts(product, catalog);
+  const related =
+    crossSell.length > 0
+      ? crossSell
+      : catalog.filter((candidate) => candidate.category === product.category && candidate.slug !== product.slug).slice(0, MAX_RELATED);
   const category = categoryLabel(product.category);
 
   return (
-    <Container className="pb-16">
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd(product, siteConfig.url)) }}
       />
       <ProductViewTracker properties={productViewedProperties(product)} />
 
-      <Breadcrumbs
-        className="py-6"
-        items={[
-          { label: messages.common.home, href: routes.home },
-          { label: messages.common.products, href: routes.products },
-          { label: category, href: catalogUrl({ category: product.category }) },
-          { label: product.name },
-        ]}
-      />
+      <Container className="pt-8 pb-24">
+        <Breadcrumbs
+          items={[
+            { label: messages.common.home, href: routes.home },
+            { label: messages.common.products, href: routes.products },
+            { label: category, href: catalogUrl({ category: product.category }) },
+            { label: product.name },
+          ]}
+        />
 
-      <div className="grid gap-8 lg:grid-cols-2 lg:gap-12">
-        {product.images.length > 1 ? (
-          <ProductGallery product={snapshot} />
-        ) : (
-          <div className="relative aspect-square min-w-0 overflow-hidden rounded-xl bg-sand/20">
-            <ProductImage product={product} sizes="(min-width: 1024px) 50vw, 100vw" priority className="p-6" />
+        <div className="mt-8 mb-20 grid gap-10 lg:grid-cols-2 lg:gap-14">
+          {kit ? (
+            <KitGallery kit={product} lines={lines} />
+          ) : product.images.length > 1 ? (
+            <ProductGallery product={snapshot} />
+          ) : (
+            <div className="relative aspect-square min-w-0 overflow-hidden rounded-2xl bg-navy">
+              <ProductImage product={product} sizes="(min-width: 1024px) 560px, 100vw" priority />
+            </div>
+          )}
+
+          <div className="flex min-w-0 flex-col gap-5">
+            <div>
+              <Eyebrow className="mb-2.5">{kit ? kit.label : category}</Eyebrow>
+              {product.badge && <ProductBadge badge={product.badge} className="mb-3" />}
+              <h1 className="text-[clamp(1.75rem,3.6vw,2.5rem)] leading-tight break-words text-navy-deep">{product.name}</h1>
+            </div>
+            <RatingStars rating={product.rating} showCount />
+            <p className="text-base leading-relaxed text-muted">{product.description}</p>
+            {kit && product.details?.longDescription && (
+              <p className="leading-relaxed text-muted">{product.details.longDescription}</p>
+            )}
+            {containing.length > 0 && (
+              <ul aria-label={k.includedInLabel} className="flex flex-wrap gap-2">
+                {containing.map((container) => (
+                  <li key={container.slug}>
+                    <Link
+                      href={routes.product(container.slug)}
+                      className={cn(
+                        "inline-flex min-h-9 items-center rounded-full bg-accent-soft px-3.5 text-xs font-bold text-navy-deep hover:bg-orange/30",
+                        focusRing,
+                      )}
+                    >
+                      {k.includedIn(container.name)}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            <PurchasePanel product={snapshot} fromLabel={buildYourOwn} />
+
+            {kit && !buildYourOwn && (
+              <Link href={routes.howToChoose} className={cn(textLinkClasses, "self-start")}>
+                {k.compareLink}
+                <ArrowRightIcon className="size-4" />
+              </Link>
+            )}
+            <DeliveryInfo policy={policy} />
+          </div>
+        </div>
+
+        {buildYourOwn && (
+          <section aria-labelledby="build-your-own-title" className="mb-20 rounded-2xl bg-sand-dim px-7 py-8 sm:px-9">
+            <h2 id="build-your-own-title" className="mb-2.5 text-lg text-navy-deep">
+              {k.buildYourOwnTitle}
+            </h2>
+            <p className="mb-5 max-w-3xl text-muted">{k.buildYourOwnText}</p>
+            <ButtonLink href={routes.products} variant="secondary" size="sm">
+              {k.buildYourOwnCta}
+            </ButtonLink>
+          </section>
+        )}
+
+        {kit && !buildYourOwn && lines.length > 0 && (
+          <section aria-labelledby="kit-contents-title" className="mb-20">
+            <h2 id="kit-contents-title" className={sectionTitle}>
+              {k.contentsTitle}
+            </h2>
+            {product.hasVariants() && <p className="mb-4 text-sm text-muted">{k.contentsQuantityNote}</p>}
+            <KitContentsList lines={lines} />
+          </section>
+        )}
+
+        {!kit && product.details && (
+          <div className="mb-20">
+            <ProductDetailSections product={product} />
           </div>
         )}
 
-        <div className="flex min-w-0 flex-col gap-5">
-          {product.badge && <ProductBadge badge={product.badge} className="self-start" />}
-          <h1 className="break-words text-3xl font-bold tracking-tight text-ink sm:text-4xl">{product.name}</h1>
-          <RatingStars rating={product.rating} showCount />
-
-          <div className="flex flex-col gap-1">
-            <PriceTag price={product.price} originalPrice={product.originalPrice} size="lg" />
-            {savings && <p className="text-sm font-semibold text-success">{t.savings(formatMoney(savings))}</p>}
-          </div>
-
-          {product.inStock ? (
-            <p className="flex items-center gap-2 font-medium text-success">
-              <CheckCircleIcon className="size-5 shrink-0" />
-              {t.inStock}
-            </p>
-          ) : (
-            <p className="flex items-center gap-2 font-medium text-danger">
-              <AlertCircleIcon className="size-5 shrink-0" />
-              {t.outOfStock}
-            </p>
-          )}
-
-          <p className="text-lg leading-relaxed text-muted">{product.description}</p>
-
-          <AddToCart product={snapshot} />
-          <DeliveryInfo policy={policy} />
-        </div>
-      </div>
-
-      <div className="mt-16 border-t border-sand pt-12">
-        <ProductDetailSections product={product} />
-      </div>
-
-      {related.length > 0 && (
-        <section aria-labelledby="related-products-title" className="mt-16 border-t border-sand pt-12">
-          <h2 id="related-products-title" className="mb-6 text-2xl font-bold text-ink">
-            {t.related}
-          </h2>
-          <ProductGrid products={related} headingLevel={3} />
-        </section>
-      )}
-    </Container>
+        {related.length > 0 && (
+          <section aria-labelledby="related-products-title">
+            <h2 id="related-products-title" className={sectionTitle}>
+              {kit ? k.crossSellTitle : t.related}
+            </h2>
+            <ProductGrid products={related} includedIn={includedInIndex(catalog)} headingLevel={3} />
+          </section>
+        )}
+      </Container>
+    </>
   );
 }

@@ -1,16 +1,20 @@
+import { comparableKits, includedInIndex, kitsIn, resolveContents } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { getContainer } from "@/infrastructure/config";
 import { FeaturedProducts } from "@/presentation/components/home/FeaturedProducts";
-import { pickFeatured, pickFlagship, summarizeReviews } from "@/presentation/components/home/homeData";
+import { pickFeatured, pickFlagship } from "@/presentation/components/home/homeData";
 import { HomeHero } from "@/presentation/components/home/HomeHero";
-import { KitShowcase } from "@/presentation/components/home/KitShowcase";
+import { HomeComparison, HomeInside, HomeKits } from "@/presentation/components/home/HomeKits";
 import { NewsletterSection } from "@/presentation/components/home/NewsletterSection";
-import { Principles } from "@/presentation/components/home/Principles";
-import { ValueProps } from "@/presentation/components/home/ValueProps";
+import { TrustBar } from "@/presentation/components/home/TrustBar";
+import { WhyPrepareTeaser } from "@/presentation/components/home/WhyPrepareTeaser";
+import { navData } from "@/presentation/components/layout/navigation";
 import { isMessagingEnabled } from "@/presentation/config/messaging";
 
 /** Regenerate at most every 5 minutes so catalog price and stock changes show up without a redeploy. */
 export const revalidate = 300;
+
+const KITS_SECTION_ID = "kits";
 
 async function loadProducts(): Promise<Product[]> {
   try {
@@ -21,19 +25,24 @@ async function loadProducts(): Promise<Product[]> {
   }
 }
 
+/** Sections in the partner design's order: hero, kits, 24h vs 72h, what's inside, why prepare, loose products, trust. */
 export default async function HomePage() {
   const products = await loadProducts();
-  const flagship = pickFlagship(products);
+  const kits = kitsIn(products);
+  const compared = comparableKits(products).slice(0, 2);
+  const flagship = pickFlagship(kits);
   const featured = pickFeatured(products);
 
   return (
     <>
-      <HomeHero flagshipSlug={flagship?.slug ?? null} reviews={summarizeReviews(products)} />
-      <ValueProps policy={getContainer().getPricingPolicy()} />
-      {featured.length > 0 && <FeaturedProducts products={featured} />}
-      {flagship && <KitShowcase product={flagship} />}
+      <HomeHero kits={navData(products).kits} scrollTargetId={KITS_SECTION_ID} />
+      {kits.length > 0 && <HomeKits id={KITS_SECTION_ID} kits={kits} />}
+      {compared.length > 1 && <HomeComparison kits={compared} />}
+      {flagship && <HomeInside kit={flagship} lines={resolveContents(flagship, products)} />}
+      <WhyPrepareTeaser />
+      {featured.length > 0 && <FeaturedProducts products={featured} includedIn={includedInIndex(products)} />}
       {isMessagingEnabled() && <NewsletterSection />}
-      <Principles />
+      <TrustBar policy={getContainer().getPricingPolicy()} />
     </>
   );
 }

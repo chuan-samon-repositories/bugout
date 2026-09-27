@@ -9,6 +9,9 @@ export const revalidate = 300;
 const staticPaths = [
   routes.home,
   routes.products,
+  routes.howToChoose,
+  routes.whyPrepare,
+  routes.faq,
   routes.about,
   routes.contact,
   routes.shippingReturns,

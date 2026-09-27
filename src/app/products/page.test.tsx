@@ -36,11 +36,12 @@ beforeEach(() => {
 
 describe("/products", () => {
   it("titles a known category and lets it be indexed", async () => {
-    const metadata = await metadataFor("category=accessories");
-    expect(metadata.title).toBe("Accesorios");
+    const metadata = await metadataFor("category=luz-y-energia");
+    expect(metadata.title).toBe("Luz y energía");
     expect(metadata.robots).toBeUndefined();
-    await renderPage("category=accessories");
-    expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
+    await renderPage("category=luz-y-energia");
+    expect(screen.getByRole("heading", { level: 1, name: "Luz y energía" })).toBeInTheDocument();
+    expect(screen.getByText("3 productos")).toBeInTheDocument();
   });
 
   it("ignores an unknown category: default title and heading, every product, noindex", async () => {
@@ -53,7 +54,7 @@ describe("/products", () => {
     await renderPage(`category=${INJECTED}`);
     expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/llama|900123456/i);
-    expect(screen.getByText("6 productos")).toBeInTheDocument();
+    expect(screen.getByText("20 productos")).toBeInTheDocument();
   });
 
   it("keeps the other filters when only the category is unknown", async () => {

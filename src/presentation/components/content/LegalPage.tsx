@@ -19,7 +19,7 @@ function toCalendarDate(value: string): Date {
 
 export function LegalPage({ title, updatedAt, children }: LegalPageProps) {
   return (
-    <Container className="pb-16 sm:pb-20">
+    <>
       <PageHeader
         title={title}
         breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: title }]}
@@ -29,7 +29,9 @@ export function LegalPage({ title, updatedAt, children }: LegalPageProps) {
           </p>
         }
       />
-      <Prose>{children}</Prose>
-    </Container>
+      <Container className="pt-14 pb-24 sm:pt-16">
+        <Prose className="mx-auto">{children}</Prose>
+      </Container>
+    </>
   );
 }

@@ -14,21 +14,22 @@ import {
 } from "@/presentation/components/checkout/shippingCopy";
 
 const copy = messages.forms.contact.faq;
-const linkClasses = cn("rounded-sm text-accent underline underline-offset-2 hover:no-underline", focusRing);
+export const faqLinkClasses = cn("rounded-sm font-semibold text-accent underline underline-offset-2 hover:no-underline", focusRing);
 
-function FaqItem({ question, children }: { question: string; children: ReactNode }) {
+/** One collapsible question (a native <details>). */
+export function FaqItem({ question, children }: { question: string; children: ReactNode }) {
   return (
-    <details className="group rounded-lg border border-muted/30 bg-white">
+    <details className="group rounded-2xl bg-white shadow-card">
       <summary
         className={cn(
-          "flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg p-4 font-semibold text-ink [&::-webkit-details-marker]:hidden",
+          "flex cursor-pointer list-none items-center justify-between gap-4 rounded-2xl px-5 py-4 font-bold text-navy-deep [&::-webkit-details-marker]:hidden",
           focusRing,
         )}
       >
         <span className="min-w-0">{question}</span>
         <ChevronDownIcon className="size-5 shrink-0 text-muted transition-transform group-open:rotate-180" />
       </summary>
-      <div className="space-y-2 px-4 pb-4 text-muted">{children}</div>
+      <div className="space-y-2 px-5 pb-5 text-muted">{children}</div>
     </details>
   );
 }
@@ -37,18 +38,18 @@ function FaqItem({ question, children }: { question: string; children: ReactNode
  * Frequent questions on the contact page. Answers that consist of "write to us" (wholesale, order status) are
  * shown only when a message really reaches the shop (an email is configured or the contact form is connected).
  */
-export function ContactFaq({ policy }: { policy: PricingPolicy }) {
+export function ContactFaq({ policy, title = copy.title }: { policy: PricingPolicy; title?: string }) {
   const hasChannel = canPromiseReply();
   return (
     <section aria-labelledby="contact-faq-title">
-      <h2 id="contact-faq-title" className="text-2xl font-bold tracking-tight text-ink">
-        {copy.title}
+      <h2 id="contact-faq-title" className="text-2xl text-navy-deep">
+        {title}
       </h2>
       <div className="mt-6 space-y-3">
         <FaqItem question={copy.returnsQuestion}>
           <p>
             {copy.returnsAnswer(siteConfig.returnWindowDays)}{" "}
-            <Link href={routes.shippingReturns} className={linkClasses}>
+            <Link href={routes.shippingReturns} className={faqLinkClasses}>
               {copy.returnsLink}
             </Link>
             .
@@ -70,7 +71,7 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
         {hasChannel && (
           <FaqItem question={copy.wholesaleQuestion}>
             <p>
-              {copy.wholesaleLead} <ContactChannel capitalized topic="wholesale" linkClassName={linkClasses} />{" "}
+              {copy.wholesaleLead} <ContactChannel capitalized topic="wholesale" linkClassName={faqLinkClasses} />{" "}
               {copy.wholesaleAnswer}
             </p>
           </FaqItem>
@@ -78,7 +79,7 @@ export function ContactFaq({ policy }: { policy: PricingPolicy }) {
         {hasChannel && (
           <FaqItem question={copy.orderStatusQuestion}>
             <p>
-              <ContactChannel capitalized topic="order" linkClassName={linkClasses} /> {copy.orderStatusAnswer}
+              <ContactChannel capitalized topic="order" linkClassName={faqLinkClasses} /> {copy.orderStatusAnswer}
             </p>
           </FaqItem>
         )}

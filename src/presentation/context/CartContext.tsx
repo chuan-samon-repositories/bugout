@@ -14,7 +14,7 @@ import { messages, toUserMessage } from "@/presentation/i18n";
 import { useAnalytics } from "./AnalyticsContext";
 import { useNotifications } from "./NotificationContext";
 
-export type AddToCartSource = "product_page" | "cart_drawer";
+export type AddToCartSource = "product_page" | "product_card" | "cart_drawer";
 
 export interface CheckoutOptions {
   /** Replace the current history entry when handing off to a hosted checkout. Default false. */

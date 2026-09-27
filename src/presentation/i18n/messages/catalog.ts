@@ -21,7 +21,8 @@ export const catalog = {
     metaTitle: 'Productos',
     saleMetaTitle: 'Ofertas',
     metaDescription:
-      'Mochilas y kits de supervivencia listos para usar, además de comida, agua y material de primeros auxilios para emergencias.',
+      'Kit 24h, Kit 72h y Kit Custom, más todo el material de nuestros kits por separado: agua, luz y energía, primeros auxilios, refugio, herramientas e higiene.',
+    description: 'Todo el material de nuestros kits, disponible por separado.',
     title: 'Productos',
     resultCount: (count: number, formatted: string) => `${formatted} ${count === 1 ? 'producto' : 'productos'}`,
     emptyTitle: 'No hay productos que coincidan con estos filtros',
@@ -32,7 +33,9 @@ export const catalog = {
 
   filters: {
     title: 'Filtros',
-    toggle: 'Filtros',
+    toggle: 'Más filtros',
+    categoriesLabel: 'Categorías',
+    categoryCount: (count: string) => `(${count})`,
     activeCount: (count: number) => (count === 1 ? '1 filtro activo' : `${count} filtros activos`),
     category: 'Categoría',
     allCategories: 'Todas',
@@ -85,54 +88,90 @@ export const catalog = {
     moreInfo: 'Más información sobre envíos y devoluciones',
   },
 
+  /** Kit cards, comparison table, contents and the kit detail page. */
+  kit: {
+    from: 'Desde',
+    fromPrice: (price: string) => `Desde ${price}`,
+    view: 'Ver el kit',
+    people: 'Personas',
+    peopleList: (values: string[]) =>
+      values.length <= 1 ? values.join('') : `${values.slice(0, -1).join(', ')} o ${values[values.length - 1]}`,
+    compareCaption: 'Comparativa de los kits',
+    compareFeature: 'Característica',
+    compareRows: {
+      price: 'Precio (desde)',
+      items: 'Número de artículos',
+    },
+    compareEmpty: '—',
+    includedIn: (kit: string) => `Incluido en el ${kit}`,
+    includedInLabel: 'Incluido en',
+    variantLegend: (option: string) => `Número de ${option.toLowerCase()}`,
+    variantUnit: (title: string) => title,
+    specs: 'Ficha técnica',
+    specsFor: 'Para',
+    contentsTitle: 'Contenido completo',
+    contentsQuantityNote: 'Cantidades del kit para 1 persona; las versiones para más personas las multiplican.',
+    contentsQuantity: (quantity: string) => `× ${quantity}`,
+    galleryClosed: 'Foto del kit cerrado próximamente',
+    galleryContents: 'Lo que incluye el kit',
+    crossSellTitle: 'Añade productos',
+    crossSellDescription: 'Completa tu kit con material suelto del catálogo.',
+    compareLink: 'Ver la comparativa de kits',
+    buildYourOwnTitle: '¿Cómo funciona el Kit Custom?',
+    buildYourOwnText:
+      'Elige la mochila base y añádele los productos sueltos que necesites del catálogo: cada uno se añade al carrito por separado, así pagas solo lo que te falta.',
+    buildYourOwnCta: 'Ver los productos sueltos',
+    quickAdd: 'Añadir',
+    quickAddLabel: (name: string) => `Añadir ${name} al carrito`,
+  },
+
   home: {
-    heroImageAlt: 'Dos excursionistas con mochila caminando por un sendero de montaña',
-    heroEyebrow: 'Mochilas y kits de supervivencia',
-    heroTitle: 'Prepárate para lo inesperado',
-    heroSubtitle: (tagline: string) =>
-      `${tagline}: kits completos y listos para usar, para que tú y los tuyos tengáis a mano lo esencial cuando más falta hace.`,
-    heroPrimary: 'Ver nuestro kit más completo',
-    heroSecondary: 'Ver todos los productos',
-    heroTrust: (average: string, count: string) => `Valoración media de ${average} sobre 5 en ${count} opiniones de clientes`,
+    heroEyebrow: 'Estar preparado no es opcional',
+    heroTitleLead: 'Porque una emergencia',
+    heroTitleAccent: 'no avisa.',
+    heroSubtitle:
+      'Kit 24h, Kit 72h o monta tu propio kit. Equipamiento esencial para ti y tu familia, listo para salir por la puerta contigo.',
+    heroFallbackCta: 'Ver los productos',
+    heroScroll: 'Bajar a los kits',
 
-    valuePropsTitle: 'Por qué Bugout',
-    readyTitle: 'Kits listos para usar',
-    readyText: 'Cada mochila llega preparada con lo esencial. Solo tienes que dejarla a mano en casa, en el coche o en la oficina.',
-    shippingTitle: (min: number, max: number) => (min === max ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}` : `Entrega en ${min}–${max} días laborables`),
-    shippingTitleFallback: 'Envío a domicilio',
-    shippingFree: (threshold: string) => `Envío estándar gratis en pedidos desde ${threshold}.`,
-    shippingPaid: (price: string) => `Envío estándar por ${price}.`,
-    returnsTitle: (days: number) => `${days} días para devolver tu pedido`,
-    returnsText: (days: number) => `Si no te convence, tienes ${days} días para devolver tu pedido.`,
+    kitsEyebrow: 'Los kits',
+    kitsTitle: 'Elige según el tiempo que necesites aguantar',
+    kitsDescription: 'Cada kit sale revisado pieza a pieza.',
 
-    featuredTitle: 'Productos destacados',
-    featuredDescription: 'Nuestros kits más completos para empezar a prepararte.',
+    compareEyebrow: '24h vs 72h',
+    compareTitle: '¿Qué diferencias hay?',
+    compareMore: 'Ver la comparativa completa y saber qué kit te conviene',
+
+    insideEyebrow: 'Qué hay dentro',
+    insideTitle: 'El contenido, desplegado',
+    insideDescription: (kit: string) => `Contenido del ${kit}. Cada pieza está por un motivo.`,
+
+    whyEyebrow: 'Por qué prepararse',
+    whyTitle: 'Las emergencias no avisan',
+    whyParagraphs: [
+      'Un apagón, una inundación repentina o una evacuación temporal pueden pasar en cualquier zona y en cualquier momento. Tener un kit básico a mano no es alarmismo: es el mismo sentido común que tener un seguro o un extintor en casa.',
+      'Las autoridades de protección civil recomiendan que cada hogar tenga a mano material básico de subsistencia y primeros auxilios para las primeras horas de una emergencia, antes de que llegue la ayuda.',
+    ],
+    whyMore: 'Leer más',
+
+    shopEyebrow: 'Productos sueltos',
+    shopTitle: 'Completa o renueva tu kit',
+    shopDescription: 'Sustituye un consumible caducado o amplía tu kit pieza a pieza.',
     viewCatalog: 'Ver todo el catálogo',
 
-    kitTitle: (name: string) => `Qué incluye: ${name}`,
-    kitLink: (name: string) => `Ver ${name}`,
+    trustTitle: 'Comprar en Bugout',
+    trustFreeShipping: (threshold: string) => `Envío gratis desde ${threshold}`,
+    trustShippingPrice: (price: string) => `Envío estándar por ${price}`,
+    trustDelivery: (min: number, max: number) =>
+      min === max ? `Entrega en ${min} ${min === 1 ? 'día laborable' : 'días laborables'}` : `Entrega en ${min}–${max} días laborables`,
+    trustRegionTitle: 'Península y Baleares',
+    trustRegionText: 'Enviamos a toda la España peninsular y a las islas Baleares',
+    trustExpiryTitle: 'Control de caducidades',
+    trustExpiryText: 'Te avisamos para renovar los consumibles',
+    trustReturnsTitle: (days: number) => `${days} días para devolver`,
+    trustReturnsText: 'Sin necesidad de indicar el motivo',
 
     newsletterTitle: 'Consejos de preparación en tu correo',
     newsletterText: 'Recibe guías prácticas para preparar tu kit, novedades del catálogo y ofertas.',
-
-    principlesTitle: 'Nuestros principios',
-    principlesIntro: 'Lo que tenemos en cuenta al elegir cada artículo que vendemos.',
-    principles: [
-      {
-        title: 'Preparación para todos los públicos',
-        text: 'Kits pensados para que cualquier persona, tenga o no experiencia, sepa qué lleva y cómo usarlo.',
-      },
-      {
-        title: 'Lo esencial, sin relleno',
-        text: 'Elegimos cada artículo por su utilidad en una emergencia, no para alargar la lista de contenido.',
-      },
-      {
-        title: 'Hecho para durar',
-        text: 'Apostamos por materiales resistentes para que tu kit siga listo el día que lo necesites, aunque pasen años.',
-      },
-    ],
-    missionTitle: 'Nuestra misión',
-    missionText:
-      'Ayudar a personas y familias a afrontar cualquier emergencia con tranquilidad y con las herramientas adecuadas. No se trata de vivir con miedo, sino de estar preparados para poder ayudarnos y ayudar a los demás.',
   },
 } as const;

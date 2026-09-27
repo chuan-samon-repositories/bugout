@@ -26,6 +26,22 @@ export function kitsContaining(slug: string, products: readonly Product[]): Prod
   );
 }
 
+/**
+ * For every product some kit includes, the names of those kits, keyed by product slug.
+ * Plain data, so a Server Component can hand it to a client listing.
+ */
+export function includedInIndex(products: readonly Product[]): Record<string, string[]> {
+  const index: Record<string, string[]> = {};
+  for (const kit of kitsIn(products)) {
+    for (const { productSlug } of kit.details?.contents ?? []) {
+      if (!productSlug || productSlug === kit.slug) continue;
+      const names = (index[productSlug] ??= []);
+      if (!names.includes(kit.name)) names.push(kit.name);
+    }
+  }
+  return index;
+}
+
 export interface ResolvedContentLine extends ProductContentItem {
   /** The catalog product this line refers to, when there is one. */
   product: Product | null;

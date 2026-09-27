@@ -1,6 +1,9 @@
 import type { Product } from "@/domain/entities/product/Product";
 
-export const FEATURED_LIMIT = 3;
+import { looseProductsIn } from "@/application/catalog";
+
+/** Loose products on the home page (two rows of the four-column grid). */
+export const FEATURED_LIMIT = 8;
 
 /**
  * The product the home page leads with: the kit with the most listed contents,
@@ -21,10 +24,13 @@ export function pickFlagship(products: readonly Product[]): Product | null {
   );
 }
 
-/** Featured products, or the first few when none are flagged. */
+/** Loose products (not kits) for "Completa o renueva tu kit": featured ones first, in catalog order. */
 export function pickFeatured(products: readonly Product[], limit = FEATURED_LIMIT): Product[] {
-  const featured = products.filter((product) => product.isFeatured());
-  return (featured.length > 0 ? featured : products).slice(0, limit);
+  const loose = looseProductsIn(products);
+  return [...loose.filter((product) => product.isFeatured()), ...loose.filter((product) => !product.isFeatured())].slice(
+    0,
+    limit,
+  );
 }
 
 export interface ReviewSummary {

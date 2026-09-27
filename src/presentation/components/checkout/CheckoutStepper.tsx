@@ -24,8 +24,8 @@ export function CheckoutStepper({ current, onStepSelect }: CheckoutStepperProps)
           <span
             aria-hidden="true"
             className={cn(
-              "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
-              isCurrent && "bg-navy text-white",
+              "flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-extrabold",
+              isCurrent && "bg-orange text-navy-deep",
               isDone && "bg-success text-white",
               !isCurrent && !isDone && "border-2 border-muted/50 text-muted",
             )}
@@ -53,7 +53,7 @@ export function CheckoutStepper({ current, onStepSelect }: CheckoutStepperProps)
                 <VisuallyHidden>, {copy.completed}</VisuallyHidden>
               </button>
             ) : (
-              <span className={cn("flex min-h-11 items-center gap-2 text-sm", isCurrent ? "font-semibold text-ink" : "text-muted")}>
+              <span className={cn("flex min-h-11 items-center gap-2 text-sm", isCurrent ? "font-bold text-navy-deep" : "text-muted")}>
                 {marker}
                 <span>{name}</span>
               </span>

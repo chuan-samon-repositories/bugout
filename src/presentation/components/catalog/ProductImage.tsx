@@ -14,8 +14,9 @@ interface ProductImageProps {
 }
 
 /**
- * Square product picture that fills its (relative) parent. Products without
- * photos get a neutral placeholder rather than an unrelated stock image.
+ * Square product picture that fills its (relative) parent. Catalog photos are
+ * shot on the brand navy, so the placeholder for products without photos is
+ * navy too, rather than an unrelated stock image.
  */
 export function ProductImage({ product, index = 0, sizes, priority = false, className }: ProductImageProps) {
   const image = product.images[index];
@@ -25,7 +26,7 @@ export function ProductImage({ product, index = 0, sizes, priority = false, clas
       <div
         role="img"
         aria-label={product.name}
-        className={cn("absolute inset-0 flex items-center justify-center bg-sand/40 text-navy/40", className)}
+        className={cn("absolute inset-0 flex items-center justify-center bg-navy text-sand/40", className)}
       >
         <PackageIcon className="size-1/3" />
       </div>
@@ -39,7 +40,7 @@ export function ProductImage({ product, index = 0, sizes, priority = false, clas
       fill
       sizes={sizes}
       priority={priority}
-      className={cn("object-contain", className)}
+      className={cn("object-cover", className)}
     />
   );
 }

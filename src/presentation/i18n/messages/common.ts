@@ -10,6 +10,7 @@ export const common = {
   close: 'Cerrar',
   retry: 'Reintentar',
   breadcrumbs: 'Migas de pan',
+  opensInNewTab: 'se abre en una pestaña nueva',
   /** Spanish labels for known product badges (keys match `Product.badge`). */
   badges: {
     BESTSELLER: 'Más vendido',

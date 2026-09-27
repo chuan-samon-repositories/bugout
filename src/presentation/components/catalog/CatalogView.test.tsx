@@ -31,10 +31,10 @@ vi.mock("@/presentation/context/CartContext", () => ({
 }));
 
 const products = [
-  buildProduct({ id: "kit-24h", name: "Mochila 24H", category: "survival-kits", price: 199, featured: true }),
-  buildProduct({ id: "kit-72h", name: "Mochila 72H", category: "survival-kits", price: 299, featured: true }),
-  buildProduct({ id: "food", name: "Comida de emergencia", category: "accessories", price: 49 }),
-  buildProduct({ id: "water", name: "Potabilizador", category: "accessories", price: 39, inStock: false }),
+  buildProduct({ id: "kit-24h", name: "Mochila 24H", category: "kits", price: 199, featured: true }),
+  buildProduct({ id: "kit-72h", name: "Mochila 72H", category: "kits", price: 299, featured: true }),
+  buildProduct({ id: "food", name: "Comida de emergencia", category: "herramientas", price: 49 }),
+  buildProduct({ id: "water", name: "Potabilizador", category: "herramientas", price: 39, inStock: false }),
 ].map(toProductSnapshot);
 
 /** Renders as the page does: the server parses the same URL the client sees. */
@@ -42,14 +42,15 @@ function renderCatalog(query = "") {
   nav.searchParams = new URLSearchParams(query);
   const user = userEvent.setup();
   const initialCriteria: FilterCriteria = parseCatalogSearchParams(nav.searchParams, {
-    categories: ["survival-kits", "accessories"],
+    categories: ["kits", "herramientas"],
   });
   const view = render(<CatalogView products={products} initialCriteria={initialCriteria} />);
   return { user, ...view };
 }
 
 const productNames = () => screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
-const radioLabel = (name: RegExp) => screen.getByRole("radio", { name }).closest("label")?.textContent;
+const chip = (name: RegExp) =>
+  within(screen.getByRole("navigation", { name: "Categorías" })).getByRole("link", { name });
 
 /** URL written by the view through window.history.replaceState (the third argument). */
 let replaceState: MockInstance<History["replaceState"]>;
@@ -78,25 +79,25 @@ describe("CatalogView", () => {
 
   it("filters by category, updates the heading and syncs the URL", async () => {
     const { user } = renderCatalog();
-    await user.click(screen.getByRole("radio", { name: /Accesorios/ }));
+    await user.click(chip(/^Herramientas/));
 
-    expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Herramientas" })).toBeInTheDocument();
     expect(screen.getByText("2 productos")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Mochila 24H" })).toBeNull();
     expect(screen.getByRole("link", { name: "Comida de emergencia" })).toBeInTheDocument();
-    expect(lastUrl()).toBe("/products?category=accessories");
+    expect(lastUrl()).toBe("/products?category=herramientas");
   });
 
   it("computes category counts from the full catalog, not the filtered list", async () => {
     const { user } = renderCatalog();
-    await user.click(screen.getByRole("radio", { name: /Accesorios/ }));
+    await user.click(chip(/^Herramientas/));
     await user.click(screen.getByRole("checkbox", { name: "Solo en stock" }));
 
     expect(screen.getByText("1 producto")).toBeInTheDocument();
-    expect(radioLabel(/Todas/)).toContain("4");
-    expect(radioLabel(/Kits de supervivencia/)).toContain("2");
-    expect(radioLabel(/Accesorios/)).toContain("2");
-    expect(lastUrl()).toBe("/products?category=accessories&stock=1");
+    expect(chip(/^Todas/).textContent).toContain("(4)");
+    expect(chip(/^Kits/).textContent).toContain("(2)");
+    expect(chip(/^Herramientas/).textContent).toContain("(2)");
+    expect(lastUrl()).toBe("/products?category=herramientas&stock=1");
   });
 
   it("keeps focus and value while typing a maximum price, then filters after the debounce", async () => {
@@ -149,10 +150,10 @@ describe("CatalogView", () => {
 
   it("adopts URL changes it did not make, such as a link to another category", () => {
     const { rerender } = renderCatalog();
-    nav.searchParams = new URLSearchParams("category=survival-kits&max=250");
+    nav.searchParams = new URLSearchParams("category=kits&max=250");
     rerender(<CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
     expect(screen.getByLabelText("Máximo")).toHaveValue(250);
     expect(screen.getByText("1 producto")).toBeInTheDocument();
     expect(replaceState).not.toHaveBeenCalled();
@@ -161,24 +162,24 @@ describe("CatalogView", () => {
   it("ignores its own URL writes when Next.js syncs them back, even if they arrive late", async () => {
     const { user, rerender } = renderCatalog();
     const view = () => <CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />;
-    await user.click(screen.getByRole("radio", { name: /Accesorios/ }));
-    await user.click(screen.getByRole("radio", { name: /Kits de supervivencia/ }));
+    await user.click(chip(/^Herramientas/));
+    await user.click(chip(/^Kits/));
     expect(replaceState).toHaveBeenCalledTimes(2);
 
     // The first write reaches useSearchParams after the second one was made: keep the newer state.
-    nav.searchParams = new URLSearchParams("category=accessories");
+    nav.searchParams = new URLSearchParams("category=herramientas");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
 
-    nav.searchParams = new URLSearchParams("category=survival-kits");
+    nav.searchParams = new URLSearchParams("category=kits");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Kits de supervivencia" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
     expect(replaceState).toHaveBeenCalledTimes(2);
 
     // Once in sync, an external change to a previously written URL is adopted again.
-    nav.searchParams = new URLSearchParams("category=accessories");
+    nav.searchParams = new URLSearchParams("category=herramientas");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Accesorios" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Herramientas" })).toBeInTheDocument();
     expect(replaceState).toHaveBeenCalledTimes(2);
   });
 
@@ -200,9 +201,31 @@ describe("CatalogView", () => {
     expect(options).toEqual(["Destacados", "Precio: de menor a mayor", "Precio: de mayor a menor"]);
   });
 
-  it("toggles the filter panel on small screens with an expanded state", async () => {
+  it("renders the categories as real links that filter in memory and mark the current one", async () => {
+    const { user } = renderCatalog("sort=price-asc");
+    expect(chip(/^Herramientas/)).toHaveAttribute("href", "/products?category=herramientas&sort=price-asc");
+    expect(chip(/^Todas/)).toHaveAttribute("aria-current", "page");
+    await user.click(chip(/^Herramientas/));
+    expect(chip(/^Herramientas/)).toHaveAttribute("aria-current", "page");
+    expect(chip(/^Todas/)).not.toHaveAttribute("aria-current");
+    expect(chip(/^Todas/)).toHaveAttribute("href", "/products?sort=price-asc");
+  });
+
+  it("shows the included-in badges it is given and a quick add for single-variant products", () => {
+    nav.searchParams = new URLSearchParams();
+    render(
+      <CatalogView products={products} initialCriteria={{ sortBy: "featured" }} includedIn={{ food: ["Kit 72h"] }} />,
+    );
+    const card = screen.getByRole("link", { name: "Comida de emergencia" }).closest("article")!;
+    expect(within(card).getByText("Incluido en el Kit 72h")).toBeInTheDocument();
+    expect(within(card).getByRole("button", { name: "Añadir Comida de emergencia al carrito" })).toBeInTheDocument();
+    const soldOut = screen.getByRole("link", { name: "Potabilizador" }).closest("article")!;
+    expect(within(soldOut).queryByRole("button")).toBeNull();
+  });
+
+  it("toggles the extra filters panel with an expanded state", async () => {
     const { user } = renderCatalog();
-    const toggle = screen.getByRole("button", { name: /Filtros/ });
+    const toggle = screen.getByRole("button", { name: /^Más filtros/ });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     await user.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");

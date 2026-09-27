@@ -153,6 +153,8 @@ In the Vercel project, set the same variables for **Production** and **Preview**
 | `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | the business identity (required by the LSSI) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | your PostHog project key, EU region (optional) |
 
+For the test site (`test.bugout.es`, the `develop` branch), scope the Preview variables to `develop` and set `NEXT_PUBLIC_SITE_URL=https://test.bugout.es`, with a development store's domain and token rather than the live store's.
+
 `NEXT_PUBLIC_*` values are baked in at build time, so redeploy after changing them. The production Content-Security-Policy automatically allows your Shopify store domain for the browser's cart calls.
 
 **Checkout domain (Settings → Domains):** connect a subdomain such as `checkout.bugout.es` to Shopify, so shoppers see your brand during checkout instead of `*.myshopify.com`.

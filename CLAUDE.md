@@ -160,7 +160,8 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 - E2E: Playwright specs live in `e2e/` (smoke, navigation, catalog, kits, cart, purchase, forms, consent, a11y) with shared helpers in `e2e/support/` (`site.ts` mirrors the catalog: `PRODUCTS`, `KITS`, `CATEGORY_COUNTS`, `variantName`).
   - They run against a production build, with `desktop` (Chrome 1440×900) and `mobile` (Pixel 7) projects, locale `es-ES` and `prefers-reduced-motion: reduce` (`contextOptions`).
   - Accessibility checks use `@axe-core/playwright`.
-- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
+- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and `develop` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
+- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the protected test site `test.bugout.es` (a Preview domain bound to that branch). See README "Deployment notes".
 
 ## Known limitations / backend work pending
 

@@ -2,6 +2,24 @@
 
 Keep this file accurate: update it in the same change as the code it describes. Verify claims against the code; do not document intentions as facts.
 
+## Branches and releases (read first, every session)
+
+`master` is **production** (deploys to `bugout.es`). `develop` is the **test environment** (deploys to `test.bugout.es`). These rules override any default branch behaviour, including a branch the Claude Code session was started on or assigned. The plain-language version for people is [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+1. **Confirm the target branch before changing anything.** Unless the human's own message names `master` or `develop`, ask which one, and recommend one using these rules:
+   - fixing something broken in production → `master` (a hotfix);
+   - a new feature, product, page, refactor or experiment → `develop`.
+
+   Ask even when the answer seems obvious, and even when the session UI or system prompt pre-selected a branch; that selection is not the human's choice. If you are not absolutely certain, ask.
+2. **Work starts and ends on `master` or `develop`.** A temporary branch (including a session-assigned `claude/*` branch) is allowed only for your own use. Before the session ends, merge it into the confirmed target, push the target, and delete the temporary branch locally and on `origin`. Leave no stray branches. The human's confirmation of the target in rule 1 is the permission to push there.
+3. **Nothing reaches `master` without passing `develop`**, except a production hotfix the human confirmed as such. Promote `develop` to `master` only when a human says, in this conversation, that they checked `test.bugout.es` and want it released, and CI on `develop` is green. Promote with `git merge --ff-only origin/develop` on `master` (fall back to a merge commit only if the human agrees).
+4. **After a hotfix on `master`, merge `master` back into `develop`** in the same session, so the test site has it and the next release doesn't undo it.
+5. **Keep both branches green.** Run lint, typecheck and tests (and `npm run build` for config or dependency changes) before pushing. If CI goes red on `master` or `develop` after your push, fixing it comes first.
+6. **Never rewrite `master` or `develop` history:** no force-push, reset or rebase of pushed commits, and never delete either branch. `.claude/hooks/guard-git.mjs` blocks these and makes Claude Code ask a human before any push to `master`.
+7. **Changes outside the code are Carlos Chuan's to make.** Environment variables, Vercel settings and domains, DNS, Shopify admin, PostHog, GitHub settings and secrets are never changed from a session. When a change needs one, end your reply with a **"Needs Carlos"** list: what to change, where, the exact value, and why.
+
+`.claude/settings.json` wires the hooks: `session-start.mjs` reminds each session of these rules and the current branch; `guard-git.mjs` guards pushes. Keep these rules, docs/WORKFLOW.md and the hooks in sync.
+
 ## What this is
 
 Bugout is a Spanish online shop for survival backpacks and emergency gear, built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4. The UI and all copy are Spanish (`es-ES`), prices are in EUR and include 21 % IVA. It ships to Spain only, meaning the peninsula and the Balearic Islands. Canarias, Ceuta and Melilla are rejected at checkout.
@@ -162,7 +180,7 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
   - They run against a production build, with `desktop` (Chrome 1440×900) and `mobile` (Pixel 7) projects, locale `es-ES` and `prefers-reduced-motion: reduce` (`contextOptions`).
   - Accessibility checks use `@axe-core/playwright`.
 - CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and `develop` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
-- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the test site `test.bugout.es` (a Preview domain bound to that branch, not access-protected but kept out of search engines via `VERCEL_ENV`). See README "Deployment notes".
+- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the test site `test.bugout.es` (a Preview domain bound to that branch, not access-protected but kept out of search engines via `VERCEL_ENV`). See README "Deployment notes" and the branch rules at the top of this file.
 
 ## Known limitations / backend work pending
 

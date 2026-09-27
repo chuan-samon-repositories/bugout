@@ -91,6 +91,7 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 
 ## Deployment notes
 
+- **Branch rules:** `master` is production and `develop` is the test environment; every change goes through `develop` first. Read [docs/WORKFLOW.md](docs/WORKFLOW.md) before working on the code. Claude Code follows the same rules (CLAUDE.md, "Branches and releases"), reinforced by the hooks in `.claude/`.
 - Vercel deploys through its Git integration on every push; CI does not deploy. `master` is the Production branch (`bugout.es`). `develop` builds as a Preview deployment, and the `test.bugout.es` domain is assigned to that branch.
   - The test site is public to anyone with the URL but hidden from search engines: on every deployment whose `VERCEL_ENV` is not `production`, `next.config.ts` sends `X-Robots-Tag: noindex, nofollow` and `robots.txt` disallows everything (`siteConfig.indexable`). Vercel does this for preview URLs itself, but not for a custom domain bound to a preview branch. This doesn't stop crawlers that ignore robots rules; for real access control, use Vercel Deployment Protection.
   - Preview env vars scoped to the `develop` branch: `NEXT_PUBLIC_SITE_URL=https://test.bugout.es`, a Shopify development store (or `local`) instead of the live store, and no PostHog key (or a separate PostHog project).

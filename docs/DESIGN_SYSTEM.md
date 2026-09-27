@@ -11,7 +11,7 @@ The prototype's Catalan/English copy, language switcher, "TODO" placeholders and
 - **Buttons:** pills. The main call to action is `primary` (orange with navy text, lifted shadow `shadow-cta`). `secondary` is a navy outline. On dark backgrounds use `inverse` or `outline-inverse`.
 - **Eyebrows:** small uppercase kickers above headings (`Eyebrow`, `SectionHeading`): `text-accent` on light backgrounds, `text-orange-on-navy` on dark ones.
 - **Motion:** `ease-brand` (`cubic-bezier(.16,.84,.44,1)`), card hover lifts, scroll reveals (`Reveal`) and the breathing frog (`FrogMascot`). Everything is decorative and stops under `prefers-reduced-motion`.
-- **Mascot and brand art** live in `public/images/brand/` (mark and wordmark, flat and stacked, in cream, navy and orange) and `public/images/mascot/` (`frog.png` and the 8-frame `frog-breathe-strip.png`). Use `brandAssets` (`presentation/config/brand.ts`) for their paths and sizes. The favicon (`app/icon.png`) is the frog.
+- **Mascot and brand art** live in `public/images/brand/` (mark and wordmark, flat and stacked, in cream, navy and orange) and `public/images/mascot/` (`frog.png` and the 8-frame `frog-breathe-strip.png`). Use `brandAssets` (`presentation/config/brand.ts`) for their paths and sizes. The favicon (`app/icon.png`) is the orange mark (`mark-orange.png`, as in the prototype), padded into a transparent 512px square.
 - **Product photos** are 900×900, shot on the brand navy, in `public/images/products/<slug>.jpg`. Product media areas are `bg-navy`, so a missing photo still looks intentional.
 
 ## Tokens (`src/app/globals.css`)

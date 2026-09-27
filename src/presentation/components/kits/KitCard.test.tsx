@@ -40,6 +40,33 @@ describe("KitCard", () => {
     expect(screen.getByRole("link", { name: "Ver el kit: Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
   });
 
+  it("shows the Kit 72h's backpack turning instead of the gradient header", () => {
+    const kit72h = buildProduct({
+      id: "kit-72h",
+      name: "Kit 72h",
+      category: "kits",
+      rating: null,
+      details: details({ label: "72H" }),
+    });
+    const { container } = render(<KitCard kit={kit72h} index={1} />);
+    const media = container.querySelector("[data-media]");
+    expect(media).toHaveAttribute("data-media", "turntable");
+    expect(media?.className).not.toMatch(/bg-linear|from-/);
+    expect(media?.querySelector("[data-turntable] img")).toHaveAttribute(
+      "src",
+      "/images/turntables/mochila-30l/poster.webp",
+    );
+    expect(screen.getByText("72H")).toBeInTheDocument();
+  });
+
+  it("keeps the gradient header for kits without a turntable model", () => {
+    const { container } = render(<KitCard kit={sized(["1 persona"])} index={0} />);
+    const media = container.querySelector("[data-media]");
+    expect(media).toHaveAttribute("data-media", "gradient");
+    expect(media?.className).toContain("from-navy");
+    expect(container.querySelector("[data-turntable]")).toBeNull();
+  });
+
   it("prices a build-your-own base as a starting point", () => {
     const custom = buildProduct({
       id: "kit-custom",

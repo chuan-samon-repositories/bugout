@@ -1,4 +1,4 @@
-import { expect, test } from './support/fixtures';
+import { expect, test, type Page } from './support/fixtures';
 import { continueToReview, continueToShipping, fillAddress, fillContact } from './support/checkout';
 import {
   CART_KEY,
@@ -148,5 +148,38 @@ test.describe('kits', () => {
     await expect(summary).toContainText('Hemos añadido 7 productos al carrito.');
     await expect(builder.getByRole('radio', { name: /Ya tengo mochila/ })).toBeChecked();
     await expect(add).toHaveAttribute('aria-disabled', 'true');
+  });
+});
+
+test.describe('home kit cards', () => {
+  const kitCard = (page: Page, name: string) =>
+    page
+      .getByRole('region', { name: 'Elige según el tiempo que necesites aguantar' })
+      .getByRole('article')
+      .filter({ has: page.getByRole('heading', { name, exact: true }) });
+
+  test('the Kit 72h card shows its backpack instead of a coloured header', async ({ page }) => {
+    await openPage(page, '/');
+    const turntable = kitCard(page, KITS.kit72h.name).locator('[data-turntable]');
+    await turntable.scrollIntoViewIfNeeded();
+    // Reduced motion (the project default) keeps the still photo of the backpack.
+    await expect(turntable).toHaveAttribute('data-turntable', 'poster');
+    const poster = turntable.locator('img');
+    await expect(poster).toBeVisible();
+    await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+    await expect(kitCard(page, KITS.kit24h.name).locator('[data-turntable]')).toHaveCount(0);
+  });
+
+  test.describe('with motion allowed', () => {
+    test.use({ contextOptions: { reducedMotion: 'no-preference' } });
+
+    test('the backpack turns in 3D where WebGL works and stays a photo where it does not', async ({ page, problems }) => {
+      await openPage(page, '/');
+      const turntable = kitCard(page, KITS.kit72h.name).locator('[data-turntable]');
+      await turntable.scrollIntoViewIfNeeded();
+      const webgl = await page.evaluate(() => document.createElement('canvas').getContext('webgl') !== null);
+      await expect(turntable).toHaveAttribute('data-turntable', webgl ? 'turning' : 'poster');
+      expect(problems.pageErrors).toEqual([]);
+    });
   });
 });

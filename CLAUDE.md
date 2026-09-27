@@ -45,6 +45,8 @@ npm run e2e        # playwright test; needs `npm run build` first (it runs `next
 
 Node 22 or newer (`engines`). Before finishing a change, run lint, typecheck and tests.
 
+The 3D turntable assets are baked offline, only when their photos or shape settings change: `pip install -r scripts/turntable/requirements.txt`, then `python3 scripts/turntable/bake.py`.
+
 ## Architecture
 
 Clean Architecture. Dependencies point inward only. For details, container API and provider matrix, see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -58,6 +60,7 @@ src/infrastructure/ adapters/ (json, localStorage, shopify incl. webhooks/, anal
 src/app/api/        route handlers (Shopify order webhooks)
 shopify/            code pasted into Shopify admin (custom-pixel.js)
 scripts/posthog/    PostHog project settings and dashboards (setup.mjs)
+scripts/turntable/  bakes the 3D turntable assets from product photos (bake.py, Python; see "Design system")
 ```
 
 - `domain` imports nothing outside itself. `application` imports only `domain`. Imports use `@/` everywhere, not relative `../` paths across folders.
@@ -86,14 +89,17 @@ scripts/posthog/    PostHog project settings and dashboards (setup.mjs)
   - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header. Its nav links show from `xl` (1280px); below that the menu button (`MobileMenu`) takes over, because the links, logo, cart and "Compra ahora" do not fit one row.
   - `NavLinkList` takes `idleClassName` and `currentClassName` for state-dependent utilities (like the text colour), so a link never carries both.
   - Brand art and the frog are in `public/images/brand|mascot/` (paths via `brandAssets` in `presentation/config/brand.ts`). Product photos are `public/images/products/<slug>.jpg`, shot on navy.
-  - Motion (`Reveal`, `FrogMascot`, hover lifts) is decorative and stops under `prefers-reduced-motion`.
+  - Motion (`Reveal`, `FrogMascot`, `KitTurntable`, hover lifts) is decorative and stops under `prefers-reduced-motion`.
+  - The Kit 72h card shows its backpack (the Mochila 30L) turning in 3D on white instead of the gradient header, wherever `KitCard` is used (home, `/how-to-choose`). `turntableForKit(slug)` in `kits/turntable/models.ts` picks the model by kit slug; other kits keep the gradient.
+    - `KitTurntable` draws it with WebGL (`turntable/renderer.ts`, no library) from a baked texture and a stack of superellipse slices (`turntable/mesh.ts`). It shows the poster (the same model, still, at its start angle) first, starts only near the viewport, pauses off screen, and keeps the poster under reduced motion, without WebGL or if the texture fails to load.
+    - The model is approximate: `scripts/turntable/bake.py` builds it from three cut-out photos (side, back, front 3/4, kept in `scripts/turntable/photos/<model>/`) and writes `public/images/turntables/<model>/` (texture, poster) and `turntable/<model>.model.ts`. Never edit those by hand; rerun the script.
   - The frog mascot is **hidden**: it has no interaction with the visitor, so it is decoration only. `isMascotEnabled()` in `presentation/config/mascot.ts` (`MASCOT_ENABLED = false`) is the one switch, like `isMessagingEnabled()`. Its component, sprite, CSS and images stay in the code; gate any new use of `FrogMascot` or `brandAssets.frog` on it.
   - `cn()` does not merge Tailwind classes: never override a primitive's display or colour through `className`. Wrap it instead.
 - **Colors:** use the theme tokens in `src/app/globals.css` (`navy`, `navy-deep`, `navy-darker`, `sand`, `sand-dim`, `sand-line`, `orange`, `orange-hover`, `orange-deep`, `orange-on-navy`, `accent`, `accent-hover`, `accent-soft`, `ink`, `muted`, `danger`, `success`), never raw hex.
   - Contrast (WCAG AA) is enforced by `src/app/contrast.test.ts`; add any new text/background pair there.
   - Orange buttons, chips and badges are `bg-orange` with `text-navy-deep`. White text on orange fails AA.
   - Use `accent` for orange-family links or text on light backgrounds (white, sand, sand-dim), and `orange-on-navy` for orange text on navy.
-- **Components:** reuse the primitives in `src/presentation/components/ui`: Button (`primary`, `secondary`, `ghost`, `danger`, `inverse`, `outline-inverse`), ButtonLink, IconButton, Container, PageHeader, Breadcrumbs, Eyebrow, SectionHeading, Reveal, FrogMascot, Drawer (`tone="dark"`), TextField, TextAreaField, SelectField, CheckboxField, RadioGroupField, PriceTag, RatingStars, ProductBadge, Spinner, VisuallyHidden, `textLinkClasses`, icons and `cn`. Feature components go in `src/presentation/components/<feature>/`; kit UI (KitCard, KitComparisonTable, KitContents, KitGallery, PurchasePanel, VariantSelector) is in `kits/`.
+- **Components:** reuse the primitives in `src/presentation/components/ui`: Button (`primary`, `secondary`, `ghost`, `danger`, `inverse`, `outline-inverse`), ButtonLink, IconButton, Container, PageHeader, Breadcrumbs, Eyebrow, SectionHeading, Reveal, FrogMascot, Drawer (`tone="dark"`), TextField, TextAreaField, SelectField, CheckboxField, RadioGroupField, PriceTag, RatingStars, ProductBadge, Spinner, VisuallyHidden, `textLinkClasses`, icons and `cn`. Feature components go in `src/presentation/components/<feature>/`; kit UI (KitCard, KitComparisonTable, KitContents, KitGallery, PurchasePanel, VariantSelector, and `turntable/` with KitTurntable) is in `kits/`.
 - **Server first:** pages are Server Components that load data with `getContainer()`. Add `"use client"` only for interactive leaves.
   - Entities are class instances and cannot cross the server/client boundary. Pass products to Client Components as a `ProductSnapshot` (`toProductSnapshot`), and rebuild them with `fromProductSnapshot` in `presentation/components/catalog/productSnapshot.ts`.
   - The home page, product pages, `/how-to-choose`, `/why-prepare`, `/faq` and `sitemap.ts` export `revalidate = 300`.
@@ -217,9 +223,10 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 - Shopify purchases are tracked only once Carlos has registered the order webhooks, set `SHOPIFY_WEBHOOK_SECRET` and installed the custom pixel (docs/ANALYTICS.md). Refund events carry no visitor link (Shopify's refund payload has no cart attributes). Browser funnels and attribution cover only visitors who accept analytics; webhook revenue covers every order.
 - Google Ads is prepared, not active: click ids and UTM tags reach `order_completed`, but sending conversions to Google needs an advertising consent category in the banner first (docs/ANALYTICS.md).
 - `NEXT_PUBLIC_CONTACT_EMAIL` and the legal identity vars (`NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`) are required before launch (LSSI). Unset fields are simply hidden, so nothing fails loudly if they are missing. Until the contact backend exists, the email is the only real channel.
-- Product photos: every loose product in the local catalog has its own photo (`public/images/products/<slug>.jpg`). The kits have none yet: their pages show a decorative navy box with the kit label plus their contents' photos. Kit cards (`KitCard`) cycle navy, orange and deep-navy gradient headers; product cards (`ProductCard`) show the kit label on a navy gradient. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
+- Product photos: every loose product in the local catalog has its own photo (`public/images/products/<slug>.jpg`). The kits have none yet: their pages show a decorative navy box with the kit label plus their contents' photos. Kit cards (`KitCard`) cycle navy, orange and deep-navy gradient headers, except the Kit 72h's, which shows its backpack turning in 3D (`KitTurntable`); product cards (`ProductCard`) show the kit label on a navy gradient. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
 - The demo catalog's prices, weights, dimensions and kit contents are the partner prototype's placeholders, not confirmed business data. Replace them (in Shopify or `products.json`) before selling.
 - The Kit Custom builder has no guidance yet (for example "no has añadido ninguna fuente de luz" with light-source suggestions); a later version could use product tags for it. It offers each loose product in its selected (first in-stock) variant, with a version picker for multi-variant products; base backpacks use their default variant. Its "Desde" price is the Kit Custom product's own price, so keep that equal to the cheapest base backpack.
+- The Kit 72h's 3D backpack is an approximation from three photos: the unphotographed side is a mirror of the photographed one, straps, buckles and the handle are painted on the body rather than modelled, and seams between photos show at some angles. A true 3D model (for example a `.glb` from photogrammetry) would need new photos and a different renderer.
 - No expiry-reminder system exists, so the trust bar and FAQ no longer promise one ("te avisamos para renovar los consumibles" was removed). If the business adds reminders, build them first, then change the copy in `messages/catalog.ts` (`trustExpiry*`) and `messages/content.ts` (`faqPage.expiryAnswer`).
 - The Shopify API version default `2026-07` must stay within Shopify's supported window. Bump `DEFAULT_SHOPIFY_API_VERSION` or set the env var before it expires.
 - Shopify shipping zones and rates must be configured to match `storePricingPolicy`, including excluding Canarias, Ceuta and Melilla. The app quotes shipping and tax from that policy, while Shopify's hosted checkout charges its own.

@@ -3,7 +3,7 @@ import { comparableKits, kitsIn } from "@/application/catalog";
 import { KitCardGrid } from "@/presentation/components/kits/KitCard";
 import { KitComparisonTable } from "@/presentation/components/kits/KitComparisonTable";
 import { loadCatalogOrEmpty } from "@/presentation/components/kits/loadCatalog";
-import { Container, PageHeader } from "@/presentation/components/ui";
+import { ButtonLink, Container, PageHeader } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
@@ -34,6 +34,19 @@ export default async function HowToChoosePage() {
         breadcrumbs={[{ label: messages.common.home, href: routes.home }, { label: copy.title }]}
       />
       <Container className="flex flex-col gap-20 py-16 sm:py-20">
+        {kits.length === 0 && (
+          <section
+            aria-labelledby="no-kits-title"
+            className="mx-auto w-full max-w-[47.5rem] rounded-2xl bg-white px-7 py-10 text-center shadow-card"
+          >
+            <h2 id="no-kits-title" className="mb-3 text-xl text-navy-deep">
+              {copy.emptyTitle}
+            </h2>
+            <p className="mb-6 text-[0.9375rem] text-muted">{copy.emptyText}</p>
+            <ButtonLink href={routes.products}>{copy.emptyCta}</ButtonLink>
+          </section>
+        )}
+
         {compared.length > 0 && (
           <section aria-labelledby="compare-title" className="mx-auto w-full max-w-[55rem]">
             <h2 id="compare-title" className={sectionTitle}>

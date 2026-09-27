@@ -142,6 +142,9 @@ export const content = {
     compareTitle: 'Comparativa',
     forWhomTitle: 'Para quién es cada kit',
     kitsTitle: 'Los kits',
+    emptyTitle: 'Estamos preparando los kits',
+    emptyText: 'Todavía no hay kits a la venta. Mientras tanto, puedes ver el resto de productos del catálogo.',
+    emptyCta: 'Ver los productos',
   },
   whyPrepare: {
     title: 'Por qué prepararse',

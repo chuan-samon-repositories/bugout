@@ -34,6 +34,16 @@ describe("/how-to-choose", () => {
       "Kit Custom",
     ]);
     expect(screen.getByRole("link", { name: "Ver el kit: Kit Custom" })).toHaveAttribute("href", "/products/kit-custom");
+    expect(screen.queryByRole("region", { name: "Estamos preparando los kits" })).toBeNull();
+  });
+
+  it("points to the catalog when there are no kits", async () => {
+    const loose = (await getContainer().getGetProductsUseCase().execute()).filter((product) => !product.details?.kit);
+    vi.spyOn(getContainer().getGetProductsUseCase(), "execute").mockResolvedValueOnce(loose);
+    render(await HowToChoosePage());
+    const empty = screen.getByRole("region", { name: "Estamos preparando los kits" });
+    expect(within(empty).getByRole("link", { name: "Ver los productos" })).toHaveAttribute("href", "/products");
+    expect(screen.queryByRole("table")).toBeNull();
   });
 
   it("still renders its header when the catalog is unavailable", async () => {

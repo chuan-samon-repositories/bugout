@@ -6,14 +6,12 @@ import { siteConfig } from "@/presentation/config/site";
 import { formatNumber, messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT, LEGAL_WITHDRAWAL_DAYS } from "@/presentation/i18n/messages/content";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.terms;
 const GUARANTEE_YEARS = 3;
 
-export const metadata: Metadata = {
-  title: copy.title,
-  description: copy.description,
-};
+export const metadata: Metadata = pageMetadata({ title: copy.title, description: copy.description, path: routes.terms });
 
 export default function TermsPage() {
   const policy = getContainer().getPricingPolicy();

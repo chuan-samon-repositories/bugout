@@ -17,13 +17,11 @@ import {
 } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.about;
 
-export const metadata: Metadata = {
-  title: copy.title,
-  description: copy.description,
-};
+export const metadata: Metadata = pageMetadata({ title: copy.title, description: copy.description, path: routes.about });
 
 const linkClasses = cn("rounded-sm font-medium text-accent underline underline-offset-2 hover:no-underline", focusRing);
 const valueIcons: ComponentType<IconProps>[] = [CheckCircleIcon, InfoIcon, ShieldIcon, MailIcon];

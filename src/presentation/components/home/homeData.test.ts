@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
-import { pickFeatured, pickFlagship, summarizeReviews } from "./homeData";
+import { heroKits, pickFeatured, pickFlagship, summarizeReviews } from "./homeData";
 
 describe("pickFeatured", () => {
   it("lists loose products (never kits), featured ones first, up to the limit", () => {
@@ -10,6 +10,23 @@ describe("pickFeatured", () => {
     const c = buildProduct({ id: "c" });
     expect(pickFeatured([kit, a, b, c]).map((p) => p.slug)).toEqual(["b", "a", "c"]);
     expect(pickFeatured([a, c], 1).map((p) => p.slug)).toEqual(["a"]);
+  });
+});
+
+describe("heroKits", () => {
+  const kits = [
+    { slug: "kit-24h", label: "Kit 24h" },
+    { slug: "kit-72h", label: "Kit 72h" },
+    { slug: "kit-custom", label: "Kit Custom" },
+  ];
+
+  it("puts the flagship kit first, then the others in catalog order", () => {
+    expect(heroKits({ kits, flagshipSlug: "kit-72h" }).map((kit) => kit.slug)).toEqual(["kit-72h", "kit-24h", "kit-custom"]);
+  });
+
+  it("keeps the catalog order without a flagship", () => {
+    expect(heroKits({ kits, flagshipSlug: null }).map((kit) => kit.slug)).toEqual(["kit-24h", "kit-72h", "kit-custom"]);
+    expect(heroKits({ kits: [], flagshipSlug: null })).toEqual([]);
   });
 });
 

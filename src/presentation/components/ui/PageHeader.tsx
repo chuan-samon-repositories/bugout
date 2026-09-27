@@ -69,10 +69,26 @@ export interface PageHeaderProps {
    * title on the page background (checkout).
    */
   tone?: "hero" | "plain";
+  /**
+   * Renders the title as a paragraph that looks the same, for a loading placeholder (a Suspense fallback) that
+   * the real page header replaces: the server HTML then never holds two <h1>.
+   */
+  placeholder?: boolean;
   className?: string;
 }
 
-export function PageHeader({ title, description, breadcrumbs, actions, tone = "hero", className }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  description,
+  breadcrumbs,
+  actions,
+  tone = "hero",
+  placeholder = false,
+  className,
+}: PageHeaderProps) {
+  // The base styles of <h1> (globals.css) repeated for the placeholder paragraph.
+  const Title = placeholder ? "p" : "h1";
+  const titleBase = placeholder ? "font-extrabold tracking-[-0.02em]" : undefined;
   if (tone === "hero") {
     return (
       <header
@@ -85,7 +101,7 @@ export function PageHeader({ title, description, breadcrumbs, actions, tone = "h
           {breadcrumbs && breadcrumbs.length > 0 && (
             <Breadcrumbs items={breadcrumbs} tone="dark" className="mb-6 flex justify-center" />
           )}
-          <h1 className="text-[clamp(1.875rem,4.5vw,3rem)] leading-tight text-sand">{title}</h1>
+          <Title className={cn("text-[clamp(1.875rem,4.5vw,3rem)] leading-tight text-sand", titleBase)}>{title}</Title>
           {description && (
             <div className="mx-auto mt-3.5 max-w-[38.75rem] text-[1.0625rem] leading-relaxed text-sand/85">{description}</div>
           )}
@@ -100,7 +116,7 @@ export function PageHeader({ title, description, breadcrumbs, actions, tone = "h
       {breadcrumbs && breadcrumbs.length > 0 && <Breadcrumbs items={breadcrumbs} className="mb-4" />}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="text-3xl text-navy-deep sm:text-4xl">{title}</h1>
+          <Title className={cn("text-3xl text-navy-deep sm:text-4xl", titleBase)}>{title}</Title>
           {description && <div className="mt-3 max-w-3xl text-lg text-muted">{description}</div>}
         </div>
         {actions && <div className="shrink-0">{actions}</div>}

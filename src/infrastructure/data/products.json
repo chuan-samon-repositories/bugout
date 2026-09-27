@@ -116,6 +116,10 @@
         "bolsa-hermetica",
         "mochila-30l"
       ]
+    },
+    "seo": {
+      "title": "Kit de emergencia 24 horas para 1, 2 o 4 personas",
+      "description": "Mochila de emergencia ligera para las primeras 24 horas: agua, barritas energéticas, frontal, botiquín, manta y poncho térmicos. Ideal para el coche."
     }
   },
   {
@@ -166,7 +170,7 @@
       }
     ],
     "details": {
-      "longDescription": "El kit de referencia de Bugout. Incluye todo lo del Kit 24h más herramientas de cocina, energía y refugio para aguantar tres días enteros.",
+      "longDescription": "El kit de referencia de Bugout. Lleva lo esencial del Kit 24h, con una ración de comida para tres días en lugar de las barritas, y suma herramientas de cocina, energía y refugio para aguantar tres días enteros.",
       "features": [],
       "specifications": [
         {
@@ -279,6 +283,10 @@
         "lampara-camping",
         "mochila-65l"
       ]
+    },
+    "seo": {
+      "title": "Kit de emergencia 72 horas para 1, 2 o 4 personas",
+      "description": "Mochila de emergencia para 72 horas de autonomía, como recomienda la UE: agua, ración de comida, frontal, radio solar, botiquín, estufa y abrigo."
     }
   },
   {
@@ -321,6 +329,10 @@
         "frontal",
         "silbato"
       ]
+    },
+    "seo": {
+      "title": "Kit de emergencia a medida: monta tu mochila",
+      "description": "Parte de una mochila de supervivencia de 30 litros y añade el equipo que necesites: agua, luz, primeros auxilios, refugio, herramientas e higiene."
     }
   },
   {
@@ -384,7 +396,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Manta térmica de emergencia"
+    }
   },
   {
     "id": "poncho-termico",
@@ -405,7 +420,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Poncho térmico de emergencia"
+    }
   },
   {
     "id": "cuerda-paracaidismo",
@@ -468,7 +486,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Radio solar de emergencia"
+    }
   },
   {
     "id": "frontal",
@@ -489,7 +510,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Linterna frontal para emergencias"
+    }
   },
   {
     "id": "lampara-camping",
@@ -510,7 +534,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Lámpara de camping para apagones"
+    }
   },
   {
     "id": "kit-cocina",
@@ -573,7 +600,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Silbato de emergencia"
+    }
   },
   {
     "id": "cantimplora-1l",
@@ -594,7 +624,10 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Cantimplora de 1 litro"
+    }
   },
   {
     "id": "bolsa-hermetica",
@@ -678,6 +711,9 @@
         "height": 900
       }
     ],
-    "details": null
+    "details": null,
+    "seo": {
+      "title": "Botiquín de primeros auxilios compacto"
+    }
   }
 ]

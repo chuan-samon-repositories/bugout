@@ -1,60 +1,98 @@
-import type { Product } from "@/domain/entities/product/Product";
+import type { PricingPolicy } from "@/domain/entities/order/OrderPricing";
+import type { Product, ProductVariant } from "@/domain/entities/product/Product";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
-
-const absolute = (path: string, origin: string) => new URL(path, origin).toString();
+import {
+  absoluteUrl,
+  merchantReturnPolicy,
+  shippingDetails,
+  type JsonLdObject,
+} from "@/presentation/seo/structuredData";
 
 /** Shopify ids are GIDs ("gid://shopify/ProductVariant/…"): internal handles, not a stock-keeping unit. */
 const isShopifyGid = (id: string) => id.startsWith("gid://");
 
 const availability = (inStock: boolean) => (inStock ? "https://schema.org/InStock" : "https://schema.org/OutOfStock");
 
-/** One Offer, or an AggregateOffer spanning the variant prices (e.g. a kit for 1, 2 or 4 people). */
-function offers(product: Product, url: string): Record<string, unknown> {
+export interface ProductJsonLdContext {
+  /** Site origin (siteConfig.url, server-side only). */
+  origin: string;
+  /** The store's pricing policy, for the shipping rates of each offer. */
+  policy: PricingPolicy;
+}
+
+/** The Offer of one variant: price, stock, shipping rates and the returns policy. */
+function offer(variant: ProductVariant, url: string, policy: PricingPolicy): JsonLdObject {
+  return {
+    "@type": "Offer",
+    price: variant.price.amount.toFixed(2),
+    priceCurrency: variant.price.currency,
+    availability: availability(variant.inStock),
+    itemCondition: "https://schema.org/NewCondition",
+    url,
+    shippingDetails: shippingDetails(policy, variant.price),
+    hasMerchantReturnPolicy: merchantReturnPolicy(),
+  };
+}
+
+const sku = (variant: ProductVariant) => (isShopifyGid(variant.id.value) ? {} : { sku: variant.id.value });
+
+/**
+ * schema.org data for a product page. A product sold in several variants (a kit for 1, 2 or 4 people) is a
+ * ProductGroup whose variants differ by size (the number of people), each with its own Offer; any other
+ * product is a Product with one Offer.
+ */
+export function productJsonLd(product: Product, { origin, policy }: ProductJsonLdContext): JsonLdObject {
+  const url = absoluteUrl(routes.product(product.slug), origin);
+  const images = product.images.map((image) => absoluteUrl(image.url, origin));
+  const image = images.length > 0 ? { image: images } : {};
+  const brand = { "@type": "Brand", name: messages.catalog.product.brand };
+  const description = product.details?.longDescription ?? product.description;
+  const rating =
+    product.hasReviews() && product.rating
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating.average,
+            reviewCount: product.rating.count,
+          },
+        }
+      : {};
+
   if (!product.hasVariants()) {
     return {
-      "@type": "Offer",
-      price: product.price.amount.toFixed(2),
-      priceCurrency: product.price.currency,
-      availability: availability(product.inStock),
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: product.name,
+      description,
       url,
+      brand,
+      ...image,
+      ...sku(product.selectedVariant()),
+      ...rating,
+      offers: offer(product.selectedVariant(), url, policy),
     };
   }
-  const { min, max } = product.priceRange();
+
   return {
-    "@type": "AggregateOffer",
-    lowPrice: min.amount.toFixed(2),
-    highPrice: max.amount.toFixed(2),
-    priceCurrency: min.currency,
-    offerCount: product.variants.length,
-    availability: availability(product.variants.some((variant) => variant.inStock)),
-    url,
-  };
-}
-
-/** schema.org Product data for a product page. */
-export function productJsonLd(product: Product, origin: string): Record<string, unknown> {
-  const data: Record<string, unknown> = {
     "@context": "https://schema.org",
-    "@type": "Product",
+    "@type": "ProductGroup",
     name: product.name,
-    description: product.details?.longDescription ?? product.description,
-    brand: { "@type": "Brand", name: messages.catalog.product.brand },
-    offers: offers(product, absolute(routes.product(product.slug), origin)),
+    description,
+    url,
+    brand,
+    ...image,
+    productGroupID: product.slug,
+    variesBy: "https://schema.org/size",
+    ...rating,
+    hasVariant: product.variants.map((variant) => ({
+      "@type": "Product",
+      name: `${product.name} · ${variant.title}`,
+      description,
+      size: variant.title,
+      ...image,
+      ...sku(variant),
+      offers: offer(variant, url, policy),
+    })),
   };
-  if (product.images.length > 0) data.image = product.images.map((image) => absolute(image.url, origin));
-  if (!product.hasVariants() && !isShopifyGid(product.id.value)) data.sku = product.id.value;
-  if (product.hasReviews() && product.rating) {
-    data.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: product.rating.average,
-      reviewCount: product.rating.count,
-    };
-  }
-  return data;
-}
-
-/** JSON for a <script type="application/ld+json">, with "<" escaped so it cannot close the tag. */
-export function serializeJsonLd(data: unknown): string {
-  return JSON.stringify(data).replace(/</g, "\\u003c");
 }

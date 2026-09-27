@@ -6,17 +6,18 @@ import { loadCatalogOrEmpty } from "@/presentation/components/kits/loadCatalog";
 import { ButtonLink, Container, PageHeader } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.howToChoose;
 
 /** Built from the catalog: regenerate with the product pages. */
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: copy.title,
+export const metadata: Metadata = pageMetadata({
+  title: copy.metaTitle,
   description: copy.metaDescription,
-  alternates: { canonical: routes.howToChoose },
-};
+  path: routes.howToChoose,
+});
 
 const sectionTitle = "mb-6 text-[clamp(1.5rem,3vw,2rem)] text-navy-deep";
 

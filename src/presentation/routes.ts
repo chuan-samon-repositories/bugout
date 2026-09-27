@@ -3,7 +3,11 @@ export const routes = {
   home: '/',
   products: '/products',
   product: (slug: string) => `/products/${slug}`,
+  /** Generated share image (Open Graph) of a product without photos, e.g. a kit. */
+  productShareImage: (slug: string) => `/products/${slug}/share-image`,
   checkout: '/checkout',
+  /** The site's default share image (Open Graph). */
+  shareImage: '/share-image',
   howToChoose: '/how-to-choose',
   whyPrepare: '/why-prepare',
   faq: '/faq',

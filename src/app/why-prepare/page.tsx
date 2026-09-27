@@ -5,16 +5,17 @@ import { loadCatalogOrEmpty } from "@/presentation/components/kits/loadCatalog";
 import { ButtonLink, Container, PageHeader } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.whyPrepare;
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: copy.title,
+export const metadata: Metadata = pageMetadata({
+  title: copy.metaTitle,
   description: copy.metaDescription,
-  alternates: { canonical: routes.whyPrepare },
-};
+  path: routes.whyPrepare,
+});
 
 export default async function WhyPreparePage() {
   const [first, second] = navData(await loadCatalogOrEmpty("the why-prepare page")).kits;

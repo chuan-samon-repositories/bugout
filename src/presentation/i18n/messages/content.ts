@@ -136,6 +136,7 @@ export const content = {
   },
   howToChoose: {
     title: 'Cómo elegir tu kit',
+    metaTitle: 'Kit 24h o Kit 72h: cómo elegir tu kit de emergencia',
     description:
       'El Kit 24h y el Kit 72h, comparados lado a lado, más el Kit Custom si prefieres montártelo a medida.',
     metaDescription: 'Compara el Kit 24h y el Kit 72h de Bugout y descubre cuál necesitas según tu situación.',
@@ -148,10 +149,11 @@ export const content = {
   },
   whyPrepare: {
     title: 'Por qué prepararse',
+    metaTitle: 'Por qué tener un kit de emergencia de 72 horas',
     description:
       'Las emergencias más habituales no son catástrofes de película: son cortes de luz, temporales, inundaciones locales o evacuaciones cortas. Un kit básico reduce la incertidumbre de los primeros momentos.',
     metaDescription:
-      'Por qué vale la pena tener un kit de emergencia en casa: apagones, temporales e inundaciones, y qué recomiendan las autoridades.',
+      'Por qué vale la pena tener un kit de emergencia en casa: apagones, temporales e inundaciones, y la recomendación de la UE de poder ser autosuficiente al menos 72 horas.',
     sections: [
       {
         title: 'Apagones y cortes de suministro',
@@ -180,6 +182,7 @@ export const content = {
   },
   faqPage: {
     title: 'Preguntas frecuentes',
+    metaTitle: 'Preguntas frecuentes sobre los kits de emergencia',
     description: 'Resolvemos las dudas más habituales sobre los kits, los productos y los pedidos.',
     kitsTitle: 'Sobre los kits',
     ordersTitle: 'Pedidos, envíos y devoluciones',

@@ -4,6 +4,7 @@ import {
   type ProductDetails,
   type ProductImage,
   type ProductRating,
+  type ProductSeo,
   type ProductVariant,
 } from '@/domain/entities/product/Product';
 import { CurrencyCode, Money } from '@/domain/value-objects/Money';
@@ -125,6 +126,14 @@ function parseKit(fields: Fields): KitInfo {
   };
 }
 
+/** `seo.title` / `seo.description`, both optional; blank values count as unset. */
+function parseSeo(fields: Fields): ProductSeo | null {
+  const title = fields.optional('title', (f, k) => f.string(k))?.trim();
+  const description = fields.optional('description', (f, k) => f.string(k))?.trim();
+  if (!title && !description) return null;
+  return { ...(title ? { title } : {}), ...(description ? { description } : {}) };
+}
+
 function parseVariant(value: unknown, path: string, currency: CurrencyCode): ProductVariant {
   const fields = Fields.of(value, path);
   const title = fields.string('title');
@@ -156,6 +165,7 @@ function parseProduct(value: unknown, path: string, currency: CurrencyCode): Pro
       rating: fields.optional('rating', (f, k) => parseRating(f.object(k))),
       images: fields.array('images', parseImage),
       details: fields.optional('details', (f, k) => parseDetails(f.object(k))),
+      seo: fields.optional('seo', (f, k) => parseSeo(f.object(k))),
     };
     // A product with `variants` takes its ids, prices and stock from them.
     if (fields.has('variants')) {

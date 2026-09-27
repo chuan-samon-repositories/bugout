@@ -68,7 +68,7 @@ test.describe('catalog', () => {
 
     await chip(page, 'Luz y energía').click();
     await expect(page).toHaveURL('/products?category=luz-y-energia');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Luz y energía');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Luz y energía para apagones');
     await expect(chip(page, 'Luz y energía')).toHaveAttribute('aria-current', 'page');
     await expectProducts(page, LIGHT);
     await expectChipCounts(page);
@@ -164,15 +164,15 @@ test.describe('catalog', () => {
     const nav = await primaryNav(page, isMobile);
     await nav.getByRole('link', { name: 'Productos' }).click();
     await expect(page).toHaveURL('/products');
-    await expect(page).toHaveTitle('Productos · Bugout');
+    await expect(page).toHaveTitle('Kits y equipo de emergencia · Bugout');
     const current = await primaryNav(page, isMobile);
     await expect(current.getByRole('link', { name: 'Productos' })).toHaveAttribute('aria-current', 'page');
   });
 
   test('an unknown category in the URL is ignored and never echoed into the page', async ({ page }) => {
     await openPage(page, '/products?category=llama-al-900123456');
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Productos');
-    await expect(page).toHaveTitle('Productos · Bugout');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Kits y equipo de emergencia');
+    await expect(page).toHaveTitle('Kits y equipo de emergencia · Bugout');
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute('content', /noindex/);
     await expectProducts(page, CATALOG_SIZE);
     await expect(page.getByRole('main')).not.toContainText('llama');

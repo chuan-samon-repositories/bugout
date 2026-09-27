@@ -71,7 +71,7 @@ describe("CatalogView", () => {
     vi.useFakeTimers();
     try {
       renderCatalog();
-      expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+      expect(screen.getByRole("heading", { level: 1, name: "Kits y equipo de emergencia" })).toBeInTheDocument();
       expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
       expect(screen.getByText("4 productos")).toHaveAttribute("aria-live", "polite");
       // Past the analytics debounce, so a filter event would have been sent by now.
@@ -87,7 +87,7 @@ describe("CatalogView", () => {
     const { user } = renderCatalog();
     await user.click(chip(/^Herramientas/));
 
-    expect(screen.getByRole("heading", { level: 1, name: "Herramientas" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Herramientas y equipo de supervivencia" })).toBeInTheDocument();
     expect(screen.getByText("2 productos")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Mochila 24H" })).toBeNull();
     expect(screen.getByRole("link", { name: "Comida de emergencia" })).toBeInTheDocument();
@@ -171,7 +171,7 @@ describe("CatalogView", () => {
     nav.searchParams = new URLSearchParams("category=kits&max=250");
     rerender(<CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits de emergencia 24h, 72h y a medida" })).toBeInTheDocument();
     expect(screen.getByLabelText("Máximo")).toHaveValue(250);
     expect(screen.getByText("1 producto")).toBeInTheDocument();
     expect(replaceState).not.toHaveBeenCalled();
@@ -187,28 +187,28 @@ describe("CatalogView", () => {
     // The first write reaches useSearchParams after the second one was made: keep the newer state.
     nav.searchParams = new URLSearchParams("category=herramientas");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits de emergencia 24h, 72h y a medida" })).toBeInTheDocument();
 
     nav.searchParams = new URLSearchParams("category=kits");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Kits" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits de emergencia 24h, 72h y a medida" })).toBeInTheDocument();
     expect(replaceState).toHaveBeenCalledTimes(2);
 
     // Once in sync, an external change to a previously written URL is adopted again.
     nav.searchParams = new URLSearchParams("category=herramientas");
     rerender(view());
-    expect(screen.getByRole("heading", { level: 1, name: "Herramientas" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Herramientas y equipo de supervivencia" })).toBeInTheDocument();
     expect(replaceState).toHaveBeenCalledTimes(2);
   });
 
   it("never turns an unknown category from the URL into the heading", () => {
     const { rerender } = renderCatalog("category=llama-al-900123456");
-    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits y equipo de emergencia" })).toBeInTheDocument();
     expect(screen.getAllByRole("link", { name: /Mochila|Comida|Potabilizador/ })).toHaveLength(4);
 
     nav.searchParams = new URLSearchParams("category=otra-cosa-rara");
     rerender(<CatalogView products={products} initialCriteria={{ sortBy: "featured" }} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits y equipo de emergencia" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/llama|otra cosa rara/i);
   });
 

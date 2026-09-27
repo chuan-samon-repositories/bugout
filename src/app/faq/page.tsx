@@ -3,22 +3,21 @@ import Link from "next/link";
 import { comparableKits, kitsIn, variantOptionLabel } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { getContainer } from "@/infrastructure/config";
-import { ContactFaq, FaqItem, faqLinkClasses } from "@/presentation/components/forms/ContactFaq";
+import { ContactFaq, contactFaqEntries, FaqItem, faqLinkClasses } from "@/presentation/components/forms/ContactFaq";
 import { loadCatalogOrEmpty } from "@/presentation/components/kits/loadCatalog";
 import { Container, PageHeader } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { JsonLd } from "@/presentation/seo/JsonLd";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
+import { faqPageJsonLd, type FaqEntry } from "@/presentation/seo/structuredData";
 
 const copy = messages.content.faqPage;
 const kitCopy = messages.catalog.kit;
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: copy.title,
-  description: copy.description,
-  alternates: { canonical: routes.faq },
-};
+export const metadata: Metadata = pageMetadata({ title: copy.metaTitle, description: copy.description, path: routes.faq });
 
 /** "1, 2 o 4" across every kit sold in several sizes, in first-seen order. */
 function peopleOptions(kits: readonly Product[]): string | null {
@@ -41,9 +40,28 @@ export default async function FaqPage() {
   const sized = kits.filter((kit) => kit.hasVariants());
   const people = peopleOptions(sized);
   const custom = kits.find((kit) => kit.details?.kit?.buildYourOwn);
+  const policy = getContainer().getPricingPolicy();
+
+  // The visible questions and answers as plain text, in the same order and under the same conditions.
+  const kitEntries: FaqEntry[] = [
+    ...(compared.length > 1
+      ? [
+          {
+            question: copy.differenceQuestion,
+            answer: compared.map((kit) => `${copy.differenceTerm(kit.name)} ${kit.description}`).join(" "),
+          },
+        ]
+      : []),
+    ...(people ? [{ question: copy.peopleQuestion, answer: copy.peopleAnswer(sized.map((kit) => kit.name), people) }] : []),
+    ...(custom ? [{ question: copy.customQuestion, answer: copy.customAnswer(custom.name) }] : []),
+    { question: copy.looseQuestion, answer: copy.looseAnswer },
+    { question: copy.expiryQuestion, answer: copy.expiryAnswer },
+  ];
+  const entries = [...(kits.length > 0 ? kitEntries : []), ...contactFaqEntries(policy)];
 
   return (
     <>
+      <JsonLd data={faqPageJsonLd(entries)} />
       <PageHeader
         title={copy.title}
         description={copy.description}
@@ -101,7 +119,7 @@ export default async function FaqPage() {
             </div>
           </section>
         )}
-        <ContactFaq policy={getContainer().getPricingPolicy()} title={copy.ordersTitle} />
+        <ContactFaq policy={policy} title={copy.ordersTitle} />
       </Container>
     </>
   );

@@ -6,13 +6,11 @@ import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT, LEGAL_WITHDRAWAL_DAYS } from "@/presentation/i18n/messages/content";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.shipping;
 
-export const metadata: Metadata = {
-  title: copy.title,
-  description: copy.description,
-};
+export const metadata: Metadata = pageMetadata({ title: copy.title, description: copy.description, path: routes.shippingReturns });
 
 export default function ShippingReturnsPage() {
   const policy = getContainer().getPricingPolicy();

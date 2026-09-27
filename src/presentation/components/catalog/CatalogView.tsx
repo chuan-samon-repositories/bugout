@@ -147,12 +147,14 @@ export function CatalogView({ products: snapshots, initialCriteria, includedIn }
         )
       : null;
 
-  const title = criteria.category ? categoryLabel(criteria.category) : t.list.title;
+  const categoryPage = criteria.category ? t.categoryPages[criteria.category] : undefined;
+  const title = criteria.category ? (categoryPage?.title ?? categoryLabel(criteria.category)) : t.list.title;
+  const description = categoryPage?.intro ?? t.list.description;
   const breadcrumbs = criteria.category
     ? [
         { label: messages.common.home, href: routes.home },
         { label: messages.common.products, href: routes.products },
-        { label: title },
+        { label: categoryLabel(criteria.category) },
       ]
     : [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];
 
@@ -166,7 +168,7 @@ export function CatalogView({ products: snapshots, initialCriteria, includedIn }
 
   return (
     <>
-      <PageHeader title={title} description={t.list.description} breadcrumbs={breadcrumbs} />
+      <PageHeader title={title} description={description} breadcrumbs={breadcrumbs} />
       <Container className="pt-12 pb-24 sm:pt-14">
         <aside aria-label={t.filters.title} className="mb-9 flex flex-col gap-6">
           <CategoryChips

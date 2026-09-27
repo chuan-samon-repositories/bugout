@@ -5,6 +5,7 @@ import {
   type ProductContentItem,
   type ProductDetails,
   type ProductRating,
+  type ProductSeo,
   type ProductSpecification,
   type ProductVariant,
 } from '@/domain/entities/product/Product';
@@ -16,6 +17,7 @@ export const PRODUCT_FIELDS_FRAGMENT = /* GraphQL */ `
     handle
     title
     description
+    seo { title description }
     productType
     tags
     images(first: 10) {
@@ -70,6 +72,8 @@ export interface ShopifyProductNode {
   handle: string;
   title: string;
   description: string;
+  /** The "search engine listing" set in the Shopify admin; fields are null when not set. */
+  seo: { title: string | null; description: string | null } | null;
   productType: string;
   tags: string[];
   images: { nodes: Array<{ url: string; altText: string | null; width: number | null; height: number | null }> };
@@ -199,6 +203,14 @@ function parseDetails(node: ShopifyProductNode): ProductDetails | null {
   };
 }
 
+/** The product's search engine listing, or null when neither field is set. */
+function parseSeo(node: ShopifyProductNode): ProductSeo | null {
+  const title = node.seo?.title?.trim();
+  const description = node.seo?.description?.trim();
+  if (!title && !description) return null;
+  return { ...(title ? { title } : {}), ...(description ? { description } : {}) };
+}
+
 const isDefaultOption = ({ name, value }: { name: string; value: string }) =>
   name === 'Title' && value === 'Default Title';
 
@@ -259,6 +271,7 @@ export function mapShopifyProduct(
         height: image.height ?? undefined,
       })),
       details: parseDetails(node),
+      seo: parseSeo(node),
     },
     all.map(mapVariant),
     selected.id,

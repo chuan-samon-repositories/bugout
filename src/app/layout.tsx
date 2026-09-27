@@ -9,6 +9,7 @@ import { Header } from "@/presentation/components/layout/Header";
 import { navData, type NavData } from "@/presentation/components/layout/navigation";
 import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
+import { defaultShareImage, OG_LOCALE } from "@/presentation/seo/pageMetadata";
 import { Providers } from "./Providers";
 
 /**
@@ -23,19 +24,22 @@ const montserrat = localFont({
   display: "swap",
 });
 
-const defaultTitle = messages.shell.metadata.defaultTitle;
+const { defaultTitle, defaultDescription } = messages.shell.metadata;
 
+/** Defaults for pages without their own metadata (error pages); every indexable page uses `pageMetadata`. */
 export const metadata: Metadata = {
   metadataBase: new URL(siteConfig.url),
   title: { default: defaultTitle, template: `%s · ${siteConfig.name}` },
-  description: messages.common.tagline,
+  description: defaultDescription,
   openGraph: {
     type: "website",
-    locale: "es_ES",
+    locale: OG_LOCALE,
     siteName: siteConfig.name,
     title: defaultTitle,
-    description: messages.common.tagline,
+    description: defaultDescription,
+    images: [defaultShareImage()],
   },
+  twitter: { card: "summary_large_image" },
 };
 
 /**

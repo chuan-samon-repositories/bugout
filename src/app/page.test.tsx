@@ -36,7 +36,7 @@ describe("home page", () => {
 
   it("renders the partner design's sections from the catalog", async () => {
     render(await HomePage());
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Porque una emergencia no avisa.");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Kits de emergencia de 72 horas y mochilas de supervivencia");
     expect(screen.getByRole("link", { name: "Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
     expect(screen.getByRole("link", { name: "Kit 72h" })).toHaveAttribute("href", "/products/kit-72h");
     for (const title of [

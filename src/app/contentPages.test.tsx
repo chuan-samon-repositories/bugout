@@ -85,6 +85,20 @@ describe("/faq", () => {
     expect(screen.getByText("¿Puedo devolver un pedido?")).toBeInTheDocument();
   });
 
+  it("describes the visible questions as FAQPage structured data", async () => {
+    const { container } = render(await FaqPage());
+    const script = container.querySelector('script[type="application/ld+json"]');
+    const data = JSON.parse(script?.textContent ?? "{}");
+    expect(data["@type"]).toBe("FAQPage");
+    const questions = data.mainEntity.map((entry: { name: string }) => entry.name);
+    expect(questions).toContain("¿Puedo comprar un kit para toda la familia?");
+    expect(questions).toContain("¿Puedo devolver un pedido?");
+    // Every question in the data is one the page shows.
+    for (const question of questions) expect(screen.getByText(question)).toBeInTheDocument();
+    const shipping = data.mainEntity.find((entry: { name: string }) => entry.name === "¿A dónde enviáis y cuánto tarda?");
+    expect(shipping.acceptedAnswer.text).toMatch(/^Enviamos a la España peninsular y a las islas Baleares\..*gratis a partir de 75,00\s€/);
+  });
+
   it("promises no reply while no message reaches the shop", async () => {
     render(await FaqPage());
     expect(screen.queryByText("¿Hacéis pedidos para empresas o grupos?")).toBeNull();

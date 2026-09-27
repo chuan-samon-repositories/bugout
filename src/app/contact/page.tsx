@@ -9,14 +9,17 @@ import { Container, PageHeader } from "@/presentation/components/ui";
 import { isMessagingEnabled } from "@/presentation/config/messaging";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.forms.contact;
 
+/** `?topic=` only preselects the form, so every contact URL has the same canonical. */
 export function generateMetadata(): Metadata {
-  return {
+  return pageMetadata({
     title: copy.metadata.title,
     description: canPromiseReply() ? copy.metadata.description : copy.metadata.descriptionWithoutChannel,
-  };
+    path: routes.contact,
+  });
 }
 
 interface ContactPageProps {

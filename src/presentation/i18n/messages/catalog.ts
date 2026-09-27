@@ -13,17 +13,66 @@ export const catalog = {
     general: 'Otros',
   } as Record<string, string>,
 
+  /**
+   * Search title (also the page heading), meta description and intro of each category page. Categories without
+   * an entry use their label and the catalog's generic copy.
+   */
+  categoryPages: {
+    kits: {
+      title: 'Kits de emergencia 24h, 72h y a medida',
+      description:
+        'Kits de emergencia listos para usar: el Kit 72h, para ser autosuficiente tres días como recomienda la UE, el Kit 24h para el coche o la entrada de casa, y el Kit Custom a medida.',
+      intro: 'Mochilas de emergencia preparadas para 24 o 72 horas, o una base para montar la tuya.',
+    },
+    agua: {
+      title: 'Agua para emergencias',
+      description: 'Cantimploras y equipo para llevar agua en tu mochila de emergencia o reponer la de tu kit.',
+      intro: 'Para tener agua a mano en una evacuación o durante un corte de suministro.',
+    },
+    comida: {
+      title: 'Comida de emergencia',
+      description: 'Alimentos para tu kit de emergencia, con la fecha de caducidad indicada en cada envase.',
+      intro: 'Para comer sin cocina ni nevera durante los primeros días de una emergencia.',
+    },
+    'luz-y-energia': {
+      title: 'Luz y energía para apagones',
+      description:
+        'Linternas frontales, lámparas y radio solar para tener luz y seguir la información oficial durante un apagón.',
+      intro: 'Para ver, orientarte y seguir la información oficial cuando se va la luz.',
+    },
+    'primeros-auxilios': {
+      title: 'Botiquines de primeros auxilios',
+      description: 'Botiquines compactos para curas básicas en las primeras horas de una emergencia.',
+      intro: 'Para las curas básicas de las primeras horas, en casa o fuera.',
+    },
+    'refugio-y-abrigo': {
+      title: 'Mantas y ponchos térmicos de emergencia',
+      description: 'Mantas térmicas y ponchos de emergencia para conservar el calor y protegerte de la lluvia y el frío.',
+      intro: 'Para conservar el calor y mantenerte seco si tienes que salir de casa.',
+    },
+    herramientas: {
+      title: 'Herramientas y equipo de supervivencia',
+      description: 'Mochilas, cuerda, hornillo, bolsas estancas y más equipo para completar tu kit de emergencia.',
+      intro: 'El equipo que lleva cada kit, también por separado.',
+    },
+    higiene: {
+      title: 'Higiene para tu kit de emergencia',
+      description: 'Neceser y productos de higiene básicos para tu mochila de emergencia.',
+      intro: 'Lo básico para la higiene diaria cuando no tienes tu baño a mano.',
+    },
+  } as Record<string, { title: string; description: string; intro: string }>,
+
   card: {
     outOfStock: 'Agotado',
   },
 
   list: {
-    metaTitle: 'Productos',
-    saleMetaTitle: 'Ofertas',
+    metaTitle: 'Kits y equipo de emergencia',
+    saleMetaTitle: 'Ofertas en kits y equipo de emergencia',
     metaDescription:
       'Kit 24h, Kit 72h y Kit Custom, más el equipo de nuestros kits por separado: agua, luz y energía, primeros auxilios, refugio, herramientas e higiene.',
     description: 'El equipo de nuestros kits, también por separado.',
-    title: 'Productos',
+    title: 'Kits y equipo de emergencia',
     resultCount: (count: number, formatted: string) => `${formatted} ${count === 1 ? 'producto' : 'productos'}`,
     emptyTitle: 'No hay productos que coincidan con estos filtros',
     emptyDescription: 'Prueba a ampliar el rango de precios o a quitar alguno de los filtros.',
@@ -131,7 +180,8 @@ export const catalog = {
   },
 
   home: {
-    heroEyebrow: 'Estar preparado no es opcional',
+    /** The home page's <h1>, shown small above the slogan. */
+    heroHeading: 'Kits de emergencia de 72 horas y mochilas de supervivencia',
     heroTitleLead: 'Porque una emergencia',
     heroTitleAccent: 'no avisa.',
     heroSubtitle:

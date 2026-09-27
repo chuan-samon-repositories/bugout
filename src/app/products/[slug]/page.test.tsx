@@ -30,7 +30,7 @@ vi.mock("@/presentation/context/CartContext", () => ({
   useCart: () => cart,
 }));
 
-import ProductPage from "./page";
+import ProductPage, { generateMetadata } from "./page";
 
 const renderProduct = async (slug: string) => render(await ProductPage({ params: Promise.resolve({ slug }) }));
 
@@ -167,5 +167,40 @@ describe("/products/[slug]", () => {
     expect(screen.getAllByText("Silbato de emergencia.")).toHaveLength(1);
     expect(screen.queryByRole("region", { name: "Descripción" })).toBeNull();
     expect(screen.getAllByText("Plástico")).toHaveLength(1);
+  });
+
+  it("titles a kit with its search title and shares its generated image", async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ slug: "kit-72h" }) });
+    expect(metadata.title).toBe("Kit de emergencia 72 horas para 1, 2 o 4 personas");
+    expect(metadata.description).toMatch(/^Mochila de emergencia para 72 horas de autonomía/);
+    expect(metadata.alternates?.canonical).toBe("/products/kit-72h");
+    expect(metadata.openGraph?.images).toEqual([
+      { url: "/products/kit-72h/share-image", alt: "Kit 72h en Bugout", width: 1200, height: 630 },
+    ]);
+  });
+
+  it("falls back to the name and short description, and shares the product photo", async () => {
+    const metadata = await generateMetadata({ params: Promise.resolve({ slug: "mochila-65l" }) });
+    expect(metadata.title).toBe("Mochila de supervivencia 65L");
+    expect(metadata.description).toBe("Mochila de 65 litros para quien necesita llevar más equipo o montar un kit familiar.");
+    expect(metadata.openGraph?.images).toEqual([
+      expect.objectContaining({ url: "/images/products/mochila-65l.jpg", alt: expect.any(String) }),
+    ]);
+  });
+
+  it("describes the kit and its breadcrumbs as structured data", async () => {
+    const { container } = await renderProduct("kit-72h");
+    const [product, breadcrumbs] = JSON.parse(
+      container.querySelector('script[type="application/ld+json"]')?.textContent ?? "[]",
+    );
+    expect(product["@type"]).toBe("ProductGroup");
+    expect(product.hasVariant.map((variant: { size: string }) => variant.size)).toEqual(["1 persona", "2 personas", "4 personas"]);
+    expect(breadcrumbs["@type"]).toBe("BreadcrumbList");
+    expect(breadcrumbs.itemListElement.map((item: { name: string }) => item.name)).toEqual([
+      "Inicio",
+      "Productos",
+      "Kits",
+      "Kit 72h",
+    ]);
   });
 });

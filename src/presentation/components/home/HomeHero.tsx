@@ -7,7 +7,7 @@ import { routes } from "@/presentation/routes";
 const copy = messages.catalog.home;
 
 export interface HomeHeroProps {
-  /** The first two become the calls to action (Kit 24h, Kit 72h); without kits, one link to the catalog. */
+  /** The first two become the calls to action (Kit 72h, Kit 24h; see `heroKits`); without kits, one link to the catalog. */
   kits: readonly NavKit[];
   /** Id of the section the scroll cue jumps to. */
   scrollTargetId: string;
@@ -32,12 +32,13 @@ export function HomeHero({ kits, scrollTargetId }: HomeHeroProps) {
         className="pointer-events-none absolute inset-0 -z-10 shadow-[inset_0_-160px_160px_-80px_rgb(0_0_0/0.6),inset_0_160px_160px_-100px_rgb(0_0_0/0.4)]"
       />
       <div className="max-w-3xl">
-        <p className="mb-4 text-[0.8125rem] font-bold tracking-[0.14em] text-orange uppercase">{copy.heroEyebrow}</p>
-        <h1 className="mb-6 text-[clamp(2.625rem,7vw,5.25rem)] leading-[1.02] text-sand">
+        {/* The <h1> says what the shop sells (for search engines); the slogan below keeps the visual lead. */}
+        <h1 className="mb-4 text-[0.8125rem] font-bold tracking-[0.14em] text-orange uppercase">{copy.heroHeading}</h1>
+        <p className="mb-6 text-[clamp(2.625rem,7vw,5.25rem)] leading-[1.02] font-extrabold tracking-[-0.02em] text-sand">
           {copy.heroTitleLead}{" "}
           <br />
           <span className="text-orange">{copy.heroTitleAccent}</span>
-        </h1>
+        </p>
         <p className="mx-auto mb-10 max-w-[35rem] text-[clamp(1rem,2vw,1.1875rem)] font-medium text-sand/80">
           {copy.heroSubtitle}
         </p>

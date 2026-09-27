@@ -7,13 +7,11 @@ import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
 import { LEGAL_UPDATED_AT } from "@/presentation/i18n/messages/content";
 import { routes } from "@/presentation/routes";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
 
 const copy = messages.content.privacy;
 
-export const metadata: Metadata = {
-  title: copy.title,
-  description: copy.description,
-};
+export const metadata: Metadata = pageMetadata({ title: copy.title, description: copy.description, path: routes.privacy });
 
 interface Purpose {
   title: string;

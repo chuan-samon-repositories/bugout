@@ -2,14 +2,14 @@ import { expect, type Locator, type Page } from '@playwright/test';
 
 /** Every public route with its expected document title. */
 export const ROUTES = [
-  { path: '/', title: 'Bugout — Mochilas y kits de supervivencia' },
-  { path: '/products', title: 'Productos · Bugout' },
-  { path: '/products/kit-72h', title: 'Kit 72h · Bugout' },
-  { path: '/products/kit-custom', title: 'Kit Custom · Bugout' },
-  { path: '/products/radio-solar', title: 'Radio solar · Bugout' },
-  { path: '/how-to-choose', title: 'Cómo elegir tu kit · Bugout' },
-  { path: '/why-prepare', title: 'Por qué prepararse · Bugout' },
-  { path: '/faq', title: 'Preguntas frecuentes · Bugout' },
+  { path: '/', title: 'Kit de emergencia 72 horas y mochilas de supervivencia · Bugout' },
+  { path: '/products', title: 'Kits y equipo de emergencia · Bugout' },
+  { path: '/products/kit-72h', title: 'Kit de emergencia 72 horas para 1, 2 o 4 personas · Bugout' },
+  { path: '/products/kit-custom', title: 'Kit de emergencia a medida: monta tu mochila · Bugout' },
+  { path: '/products/radio-solar', title: 'Radio solar de emergencia · Bugout' },
+  { path: '/how-to-choose', title: 'Kit 24h o Kit 72h: cómo elegir tu kit de emergencia · Bugout' },
+  { path: '/why-prepare', title: 'Por qué tener un kit de emergencia de 72 horas · Bugout' },
+  { path: '/faq', title: 'Preguntas frecuentes sobre los kits de emergencia · Bugout' },
   { path: '/checkout', title: 'Finalizar compra · Bugout' },
   { path: '/about', title: 'Sobre nosotros · Bugout' },
   { path: '/contact', title: 'Contacto · Bugout' },

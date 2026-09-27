@@ -91,6 +91,7 @@ Create these definitions. For **each one**, enable **Storefronts** access. Custo
 Create the 3 kits and the 17 loose products of the local catalog (`src/infrastructure/data/products.json` has the Spanish copy, the prices, the contents and the cross-sells to paste; the photos are in `public/images/products/`):
 
 - **Title and description:** Spanish. For kits, the description is the short line under the title; put the longer text (`details.longDescription` in the JSON) in the `custom.long_description` metafield.
+- **Search engine listing** (Search engine listing → Edit): the page title and meta description that Google shows. The site reads them as `Product.seo` and falls back to the title and description when they are empty. Copy them from `seo` in `products.json` (the kits and several loose products have one), for example `Kit de emergencia 72 horas para 1, 2 o 4 personas`. Keep titles under about 50 characters, since the site appends " · Bugout".
 - **Handle** (Search engine listing → URL handle): this becomes the URL `/products/<handle>`. Keep the local catalog's slugs so URLs and `custom.contents` / `custom.related` handles line up: `kit-24h`, `kit-72h`, `kit-custom`, `mochila-30l`, `manta-termica`, `radio-solar`…
 - **Product type:** this becomes the category (the chips on `/products`). It is slugified for the URL, so these types give exactly the local slugs, whose Spanish labels the site already has:
 

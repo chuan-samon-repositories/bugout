@@ -1,7 +1,16 @@
 /** Copy for the shell area: layout, header, footer, consent banner and error pages. */
 export const shell = {
   metadata: {
-    defaultTitle: 'Bugout — Mochilas y kits de supervivencia',
+    /** Home page title, without the site-name suffix of the other pages. */
+    defaultTitle: 'Kit de emergencia 72 horas y mochilas de supervivencia · Bugout',
+    defaultDescription:
+      'Kits de emergencia de 72 y 24 horas y mochilas de supervivencia. La UE recomienda poder ser autosuficiente al menos 72 horas en una emergencia. Envío a la península y Baleares.',
+    /** The site's default share image (app/opengraph-image.tsx). */
+    shareImageAlt: 'Bugout: kits de emergencia de 24 y 72 horas',
+    shareTitle: 'Kits de emergencia de 24 y 72 horas',
+    shareSubtitle: 'Mochilas de supervivencia listas para ti y tu familia.',
+    /** Alt text of a product's generated share image. */
+    productShareImageAlt: (name: string) => `${name} en Bugout`,
   },
   skipToContent: 'Saltar al contenido',
   logoLabel: 'Bugout, ir al inicio',

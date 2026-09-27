@@ -10,13 +10,9 @@ test.describe('every route', () => {
       // The consent banner appears after hydration; dismissing it proves the page is interactive.
       await rejectConsent(page);
 
-      await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+      await expect(page.locator('html')).toHaveAttribute('lang', 'es-ES');
       await expect(page).toHaveTitle(route.title);
-      if (route.path === '/') {
-        await expect(page).toHaveTitle(/^Bugout — /);
-      } else {
-        await expect(page).toHaveTitle(/ · Bugout$/);
-      }
+      await expect(page).toHaveTitle(/ · Bugout$/);
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
 
       const overflow = await page.evaluate(() => ({
@@ -48,7 +44,7 @@ test.describe('not found', () => {
       expect(response?.status()).toBe(404);
       await rejectConsent(page);
 
-      await expect(page.locator('html')).toHaveAttribute('lang', 'es');
+      await expect(page.locator('html')).toHaveAttribute('lang', 'es-ES');
       await expect(page).toHaveTitle('Página no encontrada · Bugout');
       await expect(page.getByRole('heading', { level: 1 })).toHaveCount(1);
       await expect(page.getByRole('heading', { level: 1, name: 'Página no encontrada' })).toBeVisible();

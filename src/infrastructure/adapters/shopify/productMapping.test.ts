@@ -119,6 +119,18 @@ describe('mapShopifyProduct', () => {
     expect(mapShopifyProduct(productNode({ longDescription: { value: '   ' } }), variantNode(1)).details).toBeNull();
   });
 
+  it('reads the search engine listing, ignoring blank fields', () => {
+    const seo = (value: { title: string | null; description: string | null } | null) =>
+      mapShopifyProduct(productNode({ seo: value }), variantNode(1)).seo;
+    expect(seo({ title: ' Kit de emergencia 72 horas ', description: 'Tres días de autonomía.' })).toEqual({
+      title: 'Kit de emergencia 72 horas',
+      description: 'Tres días de autonomía.',
+    });
+    expect(seo({ title: null, description: 'Solo descripción' })).toEqual({ description: 'Solo descripción' });
+    expect(seo({ title: ' ', description: null })).toBeNull();
+    expect(seo(null)).toBeNull();
+  });
+
   it('keeps Shopify currency so the cart can reject mismatches', () => {
     const product = mapShopifyProduct(productNode(), variantNode(1, { price: { amount: '10.00', currencyCode: 'USD' } }));
     expect(product.price.currency).toBe('USD');

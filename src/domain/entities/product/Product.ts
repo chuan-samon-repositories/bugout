@@ -37,6 +37,12 @@ export interface KitInfo {
   buildYourOwn?: boolean;
 }
 
+/** Search-engine title and description, when they differ from the product name and short description. */
+export interface ProductSeo {
+  title?: string;
+  description?: string;
+}
+
 /** Rich, optional merchandising content shown on the product detail page. */
 export interface ProductDetails {
   longDescription?: string;
@@ -89,6 +95,8 @@ export interface ProductProps {
   rating: ProductRating | null;
   images: readonly ProductImage[];
   details: ProductDetails | null;
+  /** Search-engine title and description (Shopify's "search engine listing"); null or omitted when not set. */
+  seo?: ProductSeo | null;
   /**
    * Every variant, in display order. Omit for a single-variant product. The
    * entry whose id equals `id` is the selected one; the top-level price,
@@ -118,6 +126,7 @@ export class Product {
   readonly rating: ProductRating | null;
   readonly images: readonly ProductImage[];
   readonly details: ProductDetails | null;
+  readonly seo: ProductSeo | null;
   /** Every variant, in display order; always at least the selected one. */
   readonly variants: readonly ProductVariant[];
 
@@ -135,6 +144,7 @@ export class Product {
     this.rating = props.rating;
     this.images = props.images;
     this.details = props.details;
+    this.seo = props.seo ?? null;
     this.variants = props.variants;
   }
 

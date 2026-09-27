@@ -6,6 +6,7 @@ import { ChevronDownIcon, cn, focusRing } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
 import { formatMoney, messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import type { FaqEntry } from "@/presentation/seo/structuredData";
 import {
   deliveryEstimate,
   formatShippingPrice,
@@ -34,6 +35,31 @@ export function FaqItem({ question, children }: { question: string; children: Re
   );
 }
 
+/** "Estándar: entrega en 3–5 días laborables, 4,95 €, gratis a partir de 75,00 €." for each shipping method. */
+function shippingRateLines(policy: PricingPolicy): string[] {
+  return policy.shippingRates.map((rate) => {
+    const price = rate.freeFrom
+      ? `${formatShippingPrice(rate.price)}, ${copy.freeFrom(formatMoney(rate.freeFrom))}`
+      : formatShippingPrice(rate.price);
+    return copy.shippingRate(shippingMethodLabel(rate), deliveryEstimate(rate).toLowerCase(), price);
+  });
+}
+
+const taxAnswer = (policy: PricingPolicy) =>
+  policy.pricesIncludeTax ? copy.taxIncludedAnswer(formatTaxRate(policy)) : copy.taxExcludedAnswer(formatTaxRate(policy));
+
+/**
+ * The questions ContactFaq always shows, as plain text for the FAQ page's structured data. The "write to us"
+ * answers are left out: they are shown only with a contact channel and consist of a link.
+ */
+export function contactFaqEntries(policy: PricingPolicy): FaqEntry[] {
+  return [
+    { question: copy.returnsQuestion, answer: copy.returnsAnswer(siteConfig.returnWindowDays) },
+    { question: copy.shippingQuestion, answer: [copy.shippingAnswer, ...shippingRateLines(policy)].join(" ") },
+    { question: copy.taxQuestion, answer: taxAnswer(policy) },
+  ];
+}
+
 /**
  * Frequent questions on the contact page. Answers that consist of "write to us" (wholesale, order status) are
  * shown only when a message really reaches the shop (an email is configured or the contact form is connected).
@@ -58,14 +84,9 @@ export function ContactFaq({ policy, title = copy.title }: { policy: PricingPoli
         <FaqItem question={copy.shippingQuestion}>
           <p>{copy.shippingAnswer}</p>
           <ul className="list-disc space-y-1 pl-5">
-            {policy.shippingRates.map((rate) => {
-              const price = rate.freeFrom
-                ? `${formatShippingPrice(rate.price)}, ${copy.freeFrom(formatMoney(rate.freeFrom))}`
-                : formatShippingPrice(rate.price);
-              return (
-                <li key={rate.id}>{copy.shippingRate(shippingMethodLabel(rate), deliveryEstimate(rate).toLowerCase(), price)}</li>
-              );
-            })}
+            {shippingRateLines(policy).map((line, index) => (
+              <li key={policy.shippingRates[index].id}>{line}</li>
+            ))}
           </ul>
         </FaqItem>
         {hasChannel && (
@@ -84,11 +105,7 @@ export function ContactFaq({ policy, title = copy.title }: { policy: PricingPoli
           </FaqItem>
         )}
         <FaqItem question={copy.taxQuestion}>
-          <p>
-            {policy.pricesIncludeTax
-              ? copy.taxIncludedAnswer(formatTaxRate(policy))
-              : copy.taxExcludedAnswer(formatTaxRate(policy))}
-          </p>
+          <p>{taxAnswer(policy)}</p>
         </FaqItem>
       </div>
     </section>

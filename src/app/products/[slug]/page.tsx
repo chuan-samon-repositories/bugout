@@ -13,7 +13,7 @@ import { ProductGallery } from "@/presentation/components/catalog/ProductGallery
 import { ProductGrid } from "@/presentation/components/catalog/ProductGrid";
 import { ProductImage } from "@/presentation/components/catalog/ProductImage";
 import { productViewedProperties } from "@/presentation/components/catalog/productAnalytics";
-import { productJsonLd, serializeJsonLd } from "@/presentation/components/catalog/productJsonLd";
+import { productJsonLd } from "@/presentation/components/catalog/productJsonLd";
 import { toProductSnapshot } from "@/presentation/components/catalog/productSnapshot";
 import { ProductViewTracker } from "@/presentation/components/catalog/ProductViewTracker";
 import { KitContentsList } from "@/presentation/components/kits/KitContents";
@@ -34,6 +34,9 @@ import {
 import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
 import { catalogUrl, routes } from "@/presentation/routes";
+import { JsonLd } from "@/presentation/seo/JsonLd";
+import { pageMetadata, SHARE_IMAGE_SIZE } from "@/presentation/seo/pageMetadata";
+import { breadcrumbJsonLd } from "@/presentation/seo/structuredData";
 
 /** Product pages are prerendered and regenerated at most every 5 minutes (price and stock changes). */
 export const revalidate = 300;
@@ -76,24 +79,33 @@ export async function generateStaticParams(): Promise<Array<{ slug: string }>> {
   }
 }
 
+/**
+ * The search title and description (`product.seo`, e.g. Shopify's search engine listing) fall back to the name and
+ * short description. Products without photos (the kits, for now) share a generated image instead.
+ */
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProduct(slug);
-  return {
-    title: product.name,
-    description: product.description,
-    alternates: { canonical: routes.product(product.slug) },
-    openGraph: {
-      title: product.name,
-      description: product.description,
-      url: routes.product(product.slug),
-      images: product.images.map((image) => ({
-        url: image.url,
-        alt: image.alt,
-        ...(image.width && image.height ? { width: image.width, height: image.height } : {}),
-      })),
-    },
-  };
+  const images =
+    product.images.length > 0
+      ? product.images.map((image) => ({
+          url: image.url,
+          alt: image.alt,
+          ...(image.width && image.height ? { width: image.width, height: image.height } : {}),
+        }))
+      : [
+          {
+            url: routes.productShareImage(product.slug),
+            alt: messages.shell.metadata.productShareImageAlt(product.name),
+            ...SHARE_IMAGE_SIZE,
+          },
+        ];
+  return pageMetadata({
+    title: product.seo?.title ?? product.name,
+    description: product.seo?.description ?? product.description,
+    path: routes.product(product.slug),
+    images,
+  });
 }
 
 const sectionTitle = "mb-6 text-[clamp(1.5rem,3vw,2rem)] text-navy-deep";
@@ -116,24 +128,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
       ? crossSell
       : catalog.filter((candidate) => candidate.category === product.category && candidate.slug !== product.slug).slice(0, MAX_RELATED);
   const category = categoryLabel(product.category);
+  const breadcrumbs = [
+    { label: messages.common.home, href: routes.home },
+    { label: messages.common.products, href: routes.products },
+    { label: category, href: catalogUrl({ category: product.category }) },
+    { label: product.name },
+  ];
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: serializeJsonLd(productJsonLd(product, siteConfig.url)) }}
+      <JsonLd
+        data={[
+          productJsonLd(product, { origin: siteConfig.url, policy }),
+          breadcrumbJsonLd(breadcrumbs, routes.product(product.slug), siteConfig.url),
+        ]}
       />
       <ProductViewTracker properties={productViewedProperties(product)} />
 
       <Container className="pt-8 pb-24">
-        <Breadcrumbs
-          items={[
-            { label: messages.common.home, href: routes.home },
-            { label: messages.common.products, href: routes.products },
-            { label: category, href: catalogUrl({ category: product.category }) },
-            { label: product.name },
-          ]}
-        />
+        <Breadcrumbs items={breadcrumbs} />
 
         <div className="mt-8 mb-20 grid gap-10 lg:grid-cols-2 lg:gap-14">
           {kit ? (

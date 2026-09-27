@@ -1,6 +1,7 @@
 import type { Product } from "@/domain/entities/product/Product";
 
 import { looseProductsIn } from "@/application/catalog";
+import type { NavData, NavKit } from "@/presentation/components/layout/navigation";
 
 /** Loose products on the home page (two rows of the four-column grid). */
 export const FEATURED_LIMIT = 8;
@@ -22,6 +23,15 @@ export function pickFlagship(products: readonly Product[]): Product | null {
         : best,
     null,
   );
+}
+
+/**
+ * The kits for the hero's calls to action: the flagship kit (the one "Compra ahora" opens, the Kit 72h) first, so
+ * it gets the primary button, then the others in catalog order.
+ */
+export function heroKits({ kits, flagshipSlug }: NavData): NavKit[] {
+  const flagship = kits.find((kit) => kit.slug === flagshipSlug);
+  return flagship ? [flagship, ...kits.filter((kit) => kit !== flagship)] : [...kits];
 }
 
 /** Loose products (not kits) for "Completa o renueva tu kit": featured ones first, in catalog order. */

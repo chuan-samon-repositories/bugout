@@ -36,6 +36,23 @@ describe('parseCatalog', () => {
     expect(product.details).toBeNull();
   });
 
+  it('reads the optional search title and description, ignoring blank values', () => {
+    const [withSeo, titleOnly, blank, none] = parseCatalog(
+      [
+        { ...valid, id: 'a', slug: 'a', seo: { title: ' Kit de emergencia ', description: 'Para tres días.' } },
+        { ...valid, id: 'b', slug: 'b', seo: { title: 'Solo título' } },
+        { ...valid, id: 'c', slug: 'c', seo: { title: '  ', description: '' } },
+        { ...valid, id: 'd', slug: 'd' },
+      ],
+      'EUR',
+    );
+    expect(withSeo.seo).toEqual({ title: 'Kit de emergencia', description: 'Para tres días.' });
+    expect(titleOnly.seo).toEqual({ title: 'Solo título' });
+    expect(blank.seo).toBeNull();
+    expect(none.seo).toBeNull();
+    expect(() => parseCatalog([{ ...valid, seo: { title: 3 } }], 'EUR')).toThrow('products[0].seo.title: expected a string');
+  });
+
   it('parses details', () => {
     const details = {
       features: ['Ligera'],

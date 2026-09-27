@@ -10,6 +10,10 @@ import { AlertCircleIcon, buttonClasses, Container, PageHeader, Spinner } from "
 import { messages } from "@/presentation/i18n";
 import { catalogUrl, routes } from "@/presentation/routes";
 import { categoryLabel } from "@/presentation/components/catalog/categoryLabel";
+import { siteConfig } from "@/presentation/config/site";
+import { JsonLd } from "@/presentation/seo/JsonLd";
+import { pageMetadata } from "@/presentation/seo/pageMetadata";
+import { breadcrumbJsonLd } from "@/presentation/seo/structuredData";
 
 interface ProductsPageProps {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -27,8 +31,11 @@ async function loadCategorySlugs(): Promise<string[] | null> {
   }
 }
 
+const list = messages.catalog.list;
+
 /**
  * Category and offer views get their own title and canonical URL; other filters share the catalog's.
+ * Category pages take their title and description from `messages.catalog.categoryPages`.
  * A `category` that is not in the catalog is ignored (never echoed into the title) and the page is noindex.
  */
 export async function generateMetadata({ searchParams }: ProductsPageProps): Promise<Metadata> {
@@ -37,35 +44,37 @@ export async function generateMetadata({ searchParams }: ProductsPageProps): Pro
   const { category, onSaleOnly } = parseCatalogSearchParams(params, { categories });
   const requested = readCategoryParam(params);
   if (requested && !category) {
-    return {
-      title: messages.catalog.list.metaTitle,
-      description: messages.catalog.list.metaDescription,
-      alternates: { canonical: routes.products },
-      robots: { index: false },
-    };
+    return pageMetadata({ title: list.metaTitle, description: list.metaDescription, path: routes.products, noindex: true });
   }
   if (category) {
-    return {
-      title: categoryLabel(category),
-      description: messages.catalog.list.metaDescription,
-      alternates: { canonical: catalogUrl({ category }) },
-    };
+    const page = messages.catalog.categoryPages[category];
+    return pageMetadata({
+      title: page?.title ?? categoryLabel(category),
+      description: page?.description ?? list.metaDescription,
+      path: catalogUrl({ category }),
+    });
   }
   if (onSaleOnly) {
-    return {
-      title: messages.catalog.list.saleMetaTitle,
-      description: messages.catalog.list.metaDescription,
-      alternates: { canonical: catalogUrl({ onSale: "1" }) },
-    };
+    return pageMetadata({ title: list.saleMetaTitle, description: list.metaDescription, path: catalogUrl({ onSale: "1" }) });
   }
-  return {
-    title: messages.catalog.list.metaTitle,
-    description: messages.catalog.list.metaDescription,
-    alternates: { canonical: routes.products },
-  };
+  return pageMetadata({ title: list.metaTitle, description: list.metaDescription, path: routes.products });
 }
 
 const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label: messages.common.products }];
+
+/** The breadcrumbs CatalogView shows, as structured data: the catalog, or the catalog > a category. */
+function catalogBreadcrumbJsonLd(category: string | undefined) {
+  if (!category) return breadcrumbJsonLd(breadcrumbs, routes.products, siteConfig.url);
+  return breadcrumbJsonLd(
+    [
+      { label: messages.common.home, href: routes.home },
+      { label: messages.common.products, href: routes.products },
+      { label: categoryLabel(category) },
+    ],
+    catalogUrl({ category }),
+    siteConfig.url,
+  );
+}
 
 export default async function ProductsPage({ searchParams }: ProductsPageProps) {
   const params = await searchParams;
@@ -81,20 +90,23 @@ export default async function ProductsPage({ searchParams }: ProductsPageProps) 
   const criteria = parseCatalogSearchParams(params, { categories });
 
   return (
-    <Suspense fallback={<CatalogFallback />}>
-      <CatalogView
-        products={products.map(toProductSnapshot)}
-        initialCriteria={criteria}
-        includedIn={includedInIndex(products)}
-      />
-    </Suspense>
+    <>
+      <JsonLd data={catalogBreadcrumbJsonLd(criteria.category)} />
+      <Suspense fallback={<CatalogFallback />}>
+        <CatalogView
+          products={products.map(toProductSnapshot)}
+          initialCriteria={criteria}
+          includedIn={includedInIndex(products)}
+        />
+      </Suspense>
+    </>
   );
 }
 
 function CatalogFallback() {
   return (
     <>
-      <PageHeader title={messages.catalog.list.title} description={messages.catalog.list.description} breadcrumbs={breadcrumbs} />
+      <PageHeader title={list.title} description={list.description} breadcrumbs={breadcrumbs} placeholder />
       <div className="flex justify-center py-16 text-navy">
         <Spinner size="lg" label={messages.catalog.list.loading} />
       </div>
@@ -105,7 +117,7 @@ function CatalogFallback() {
 function CatalogUnavailable() {
   return (
     <>
-      <PageHeader title={messages.catalog.list.title} breadcrumbs={breadcrumbs} />
+      <PageHeader title={list.title} breadcrumbs={breadcrumbs} />
       <Container className="py-14">
         <div role="alert" className="flex flex-col items-start gap-4 rounded-2xl border border-danger/30 bg-white p-6 sm:flex-row">
           <AlertCircleIcon className="size-6 shrink-0 text-danger" />

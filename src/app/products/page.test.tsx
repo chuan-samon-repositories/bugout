@@ -37,22 +37,25 @@ beforeEach(() => {
 describe("/products", () => {
   it("titles a known category and lets it be indexed", async () => {
     const metadata = await metadataFor("category=luz-y-energia");
-    expect(metadata.title).toBe("Luz y energía");
+    expect(metadata.title).toBe("Luz y energía para apagones");
+    expect(metadata.description).toMatch(/apagón/);
+    expect(metadata.alternates?.canonical).toBe("/products?category=luz-y-energia");
+    expect(metadata.openGraph).toMatchObject({ title: "Luz y energía para apagones", url: "/products?category=luz-y-energia" });
     expect(metadata.robots).toBeUndefined();
     await renderPage("category=luz-y-energia");
-    expect(screen.getByRole("heading", { level: 1, name: "Luz y energía" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Luz y energía para apagones" })).toBeInTheDocument();
     expect(screen.getByText("3 productos")).toBeInTheDocument();
   });
 
   it("ignores an unknown category: default title and heading, every product, noindex", async () => {
     const metadata = await metadataFor(`category=${INJECTED}`);
-    expect(metadata.title).toBe("Productos");
+    expect(metadata.title).toBe("Kits y equipo de emergencia");
     expect(JSON.stringify(metadata)).not.toMatch(/llama|900123456/i);
     expect(metadata.robots).toEqual({ index: false });
     expect(metadata.alternates?.canonical).toBe("/products");
 
     await renderPage(`category=${INJECTED}`);
-    expect(screen.getByRole("heading", { level: 1, name: "Productos" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Kits y equipo de emergencia" })).toBeInTheDocument();
     expect(document.body).not.toHaveTextContent(/llama|900123456/i);
     expect(screen.getByText("20 productos")).toBeInTheDocument();
   });

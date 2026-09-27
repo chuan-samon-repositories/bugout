@@ -43,6 +43,7 @@ export function productNode(overrides: Partial<ShopifyProductNode> = {}): Shopif
     handle: 'mochila-24h',
     title: 'Mochila 24H',
     description: 'Kit para 24 horas',
+    seo: { title: null, description: null },
     productType: 'Survival Kits',
     tags: [],
     images: { nodes: [] },

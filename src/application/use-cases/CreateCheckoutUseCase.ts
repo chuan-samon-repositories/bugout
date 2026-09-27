@@ -1,5 +1,5 @@
 import { ValidationError } from '@/domain/errors';
-import { CheckoutSession, CommerceProvider } from '@/application/dtos/Checkout';
+import { CheckoutContext, CheckoutSession, CommerceProvider, DEFAULT_CHECKOUT_CONTEXT } from '@/application/dtos/Checkout';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { CheckoutService } from '@/application/ports/CheckoutService';
 
@@ -32,10 +32,10 @@ export class CreateCheckoutUseCase {
     private readonly provider: CommerceProvider,
   ) {}
 
-  async execute(): Promise<CheckoutSession> {
+  async execute(context: CheckoutContext = DEFAULT_CHECKOUT_CONTEXT): Promise<CheckoutSession> {
     const cart = await this.cartRepository.load();
     if (cart.isEmpty()) throw new ValidationError('Cart is empty');
-    const url = (await this.checkoutService.getCheckoutUrl(cart)).trim();
+    const url = (await this.checkoutService.getCheckoutUrl(cart, context)).trim();
     if (isHostedUrl(url)) return { url, type: 'hosted' };
     if (this.provider === 'shopify') {
       throw new Error(`Shopify checkout returned a URL that is not an absolute https:// URL: ${url}`);

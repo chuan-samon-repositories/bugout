@@ -88,7 +88,9 @@ export function AnalyticsProvider({ children }: { children: ReactNode }) {
     setDecision(stored);
     setReady(true);
     if (stored?.analytics) applyStoredConsent(true);
-  }, [repository, applyStoredConsent]);
+    // A stored rejection is a decision too: the service then holds nothing back for a later accept.
+    else if (stored) service.setConsent(false, "restored");
+  }, [repository, service, applyStoredConsent]);
 
   // Accepting or withdrawing consent in another tab applies here too.
   useEffect(() => {

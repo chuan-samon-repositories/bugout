@@ -100,6 +100,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
         cart_value: subtotal.amount,
         cart_item_count: cart.itemCount(),
         currency: cart.currency,
+        checkout_type: "local",
       },
     });
   };
@@ -107,7 +108,7 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
   const trackOrder = (confirmation: OrderConfirmation) => {
     const { totals: placed } = confirmation;
     // Order lines carry the display name only; the cart the order was placed from knows each variant.
-    const variantTitles = new Map(cart.getItems().map((item) => [item.product.id.value, item.product.variantTitle]));
+    const ordered = new Map(cart.getItems().map((item) => [item.product.id.value, item.product]));
     trackStep("review");
     analytics.track({
       name: "order_completed",
@@ -119,9 +120,11 @@ export function LocalCheckout({ cart, policy, onOrderPlaced }: LocalCheckoutProp
         currency: placed.total.currency,
         item_count: confirmation.lines.reduce((count, line) => count + line.quantity, 0),
         shipping_method: confirmation.shippingMethod,
+        checkout_type: "local",
         products: confirmation.lines.map((line) => ({
           product_id: line.productId,
-          variant_title: variantTitles.get(line.productId) ?? null,
+          product_name: ordered.get(line.productId)?.name ?? line.name,
+          variant_title: ordered.get(line.productId)?.variantTitle ?? null,
           quantity: line.quantity,
           price: Money.fromMinor(line.unitPriceMinor, placed.total.currency).amount,
         })),

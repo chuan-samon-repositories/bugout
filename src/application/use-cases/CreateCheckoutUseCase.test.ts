@@ -5,7 +5,7 @@ import { buildProduct } from '@/domain/testing/buildProduct';
 import { CreateCheckoutUseCase } from './CreateCheckoutUseCase';
 import { InMemoryCartRepository } from '@/application/testing/fakes';
 import { CheckoutService } from '@/application/ports/CheckoutService';
-import { CommerceProvider } from '@/application/dtos/Checkout';
+import { CommerceProvider, DEFAULT_CHECKOUT_CONTEXT } from '@/application/dtos/Checkout';
 
 function service(url: string): CheckoutService {
   return { getCheckoutUrl: vi.fn().mockResolvedValue(url) };
@@ -27,7 +27,17 @@ describe('CreateCheckoutUseCase', () => {
     const checkout = service('/checkout');
     const session = await new CreateCheckoutUseCase(carts, checkout, 'local').execute();
     expect(session).toEqual({ url: '/checkout', type: 'local' });
-    expect(checkout.getCheckoutUrl).toHaveBeenCalledWith(expect.objectContaining({ currency: 'EUR' }));
+    expect(checkout.getCheckoutUrl).toHaveBeenCalledWith(
+      expect.objectContaining({ currency: 'EUR' }),
+      DEFAULT_CHECKOUT_CONTEXT,
+    );
+  });
+
+  it('passes the checkout context on to the checkout service', async () => {
+    const checkout = service('https://tienda.myshopify.com/cart/c/abc');
+    const context = { analyticsConsent: true, attribution: { distinctId: 'd', campaign: { utm_source: 'google' } } };
+    await new CreateCheckoutUseCase(carts, checkout, 'shopify').execute(context);
+    expect(checkout.getCheckoutUrl).toHaveBeenCalledWith(expect.anything(), context);
   });
 
   it('returns a hosted checkout for an absolute https URL', async () => {

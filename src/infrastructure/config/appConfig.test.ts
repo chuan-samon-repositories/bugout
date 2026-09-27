@@ -3,8 +3,16 @@ import { ConfigurationError, SECRET_SHOPIFY_TOKEN_PREFIXES, parseConfig, readCon
 
 describe('parseConfig', () => {
   it('defaults to the local provider without analytics', () => {
-    expect(parseConfig({})).toEqual({ provider: 'local', posthog: null });
-    expect(parseConfig({ provider: '  ' })).toEqual({ provider: 'local', posthog: null });
+    expect(parseConfig({})).toEqual({ provider: 'local', posthog: null, environment: 'local' });
+    expect(parseConfig({ provider: '  ' })).toEqual({ provider: 'local', posthog: null, environment: 'local' });
+  });
+
+  it('reads the deployment environment and release for analytics', () => {
+    expect(parseConfig({ appEnv: ' Preview ', appRelease: 'abc1234' })).toMatchObject({
+      environment: 'preview',
+      release: 'abc1234',
+    });
+    expect(parseConfig({ appEnv: '', appRelease: '' })).toMatchObject({ environment: 'local', release: undefined });
   });
 
   it('accepts the provider case-insensitively', () => {
@@ -22,6 +30,7 @@ describe('parseConfig', () => {
     ).toEqual({
       provider: 'shopify',
       posthog: null,
+      environment: 'local',
       shopify: { storeDomain: 'bugout.myshopify.com', storefrontAccessToken: 'token', apiVersion: '2026-10' },
     });
   });
@@ -80,9 +89,13 @@ describe('readConfigFromEnv', () => {
     vi.stubEnv('NEXT_PUBLIC_SHOPIFY_API_VERSION', '2026-07');
     vi.stubEnv('NEXT_PUBLIC_POSTHOG_KEY', 'phc_key');
     vi.stubEnv('NEXT_PUBLIC_POSTHOG_HOST', '/ingest');
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', 'production');
+    vi.stubEnv('NEXT_PUBLIC_APP_RELEASE', 'abc1234');
     expect(readConfigFromEnv()).toEqual({
       provider: 'shopify',
       posthog: { apiKey: 'phc_key', apiHost: '/ingest' },
+      environment: 'production',
+      release: 'abc1234',
       shopify: { storeDomain: 'bugout.myshopify.com', storefrontAccessToken: 'token', apiVersion: '2026-07' },
     });
   });
@@ -90,6 +103,7 @@ describe('readConfigFromEnv', () => {
   it('defaults to local when nothing is set', () => {
     vi.stubEnv('NEXT_PUBLIC_COMMERCE_PROVIDER', '');
     vi.stubEnv('NEXT_PUBLIC_POSTHOG_KEY', '');
-    expect(readConfigFromEnv()).toEqual({ provider: 'local', posthog: null });
+    vi.stubEnv('NEXT_PUBLIC_APP_ENV', '');
+    expect(readConfigFromEnv()).toEqual({ provider: 'local', posthog: null, environment: 'local' });
   });
 });

@@ -52,8 +52,15 @@ const purposes: Purpose[] = [
     messaging: true,
   },
   {
+    title: "Estadísticas de ventas",
+    data: "un resumen de cada pedido sin datos de contacto: número de pedido, importes, productos, método de envío y códigos de descuento. Solo si aceptaste la analítica se relaciona con el identificador seudónimo de tu visita.",
+    purpose: "conocer las ventas, las devoluciones y qué campañas y productos funcionan.",
+    legalBasis: "nuestro interés legítimo en analizar las ventas de la tienda (art. 6.1.f RGPD).",
+    retention: "mientras sean necesarias para elaborar las estadísticas.",
+  },
+  {
     title: "Analítica web",
-    data: "un identificador seudónimo, las páginas que visitas, las acciones que realizas en la tienda (por ejemplo, ver un producto, añadirlo al carrito o avanzar en la compra), datos técnicos del navegador y del dispositivo, y la ubicación aproximada que puede deducirse de la dirección IP.",
+    data: "un identificador seudónimo, las páginas que visitas, las acciones que realizas en la tienda (por ejemplo, ver un producto, añadirlo al carrito o avanzar en la compra), la campaña que te trajo a la tienda (parámetros UTM o el identificador de clic de Google Ads), datos técnicos del navegador y del dispositivo, y la ubicación aproximada que puede deducirse de la dirección IP. Al pasar al pago, el identificador seudónimo y la campaña se añaden a tu carrito de Shopify para relacionar la compra con tu visita.",
     purpose: "elaborar estadísticas de uso para mejorar la tienda.",
     legalBasis:
       "tu consentimiento (art. 6.1.a RGPD y art. 22.2 de la LSSI). Sin tu consentimiento no se carga la herramienta de analítica ni se envía ningún dato.",
@@ -132,8 +139,9 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>PostHog Inc.</strong>, proveedor de analítica, con los datos alojados en su región de la Unión
-          Europea. Solo recibe datos si aceptas las cookies de analítica. Las peticiones pasan por el propio dominio de
-          la tienda antes de llegar a PostHog.
+          Europea. Solo recibe datos de tu navegación si aceptas las cookies de analítica; las peticiones pasan por el
+          propio dominio de la tienda antes de llegar a PostHog. De los pedidos recibe el resumen sin datos de contacto
+          descrito en «Estadísticas de ventas».
         </li>
         <li>
           <strong>Shopify</strong>, cuando se utiliza como plataforma de pago, y los proveedores de pago integrados en

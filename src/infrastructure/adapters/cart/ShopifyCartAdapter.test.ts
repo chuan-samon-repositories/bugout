@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ManageCartUseCase } from '@/application/use-cases/ManageCartUseCase';
 import { InMemoryProductRepository } from '@/application/testing/fakes';
 import { ShopifyCartAdapter } from './ShopifyCartAdapter';
-import { ShopifyCheckoutAdapter } from '@/infrastructure/adapters/checkout/ShopifyCheckoutAdapter';
 import {
   SHOPIFY_CART_ID_KEY,
   SHOPIFY_CART_REVISION_KEY,
@@ -466,28 +465,6 @@ describe('ShopifyCartAdapter', () => {
     await expect(adapter.save(cart)).rejects.toThrow('Too many');
     // The removal went through before the update failed.
     expect(storage.getItem(SHOPIFY_CART_REVISION_KEY)).not.toBeNull();
-  });
-
-  it('remembers the checkout URL of the loaded cart so checkout needs no extra request', async () => {
-    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
-    const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 2 }]);
-    const fetch = queuedFetch({ data: { cart: remote } });
-    const cartIds = new ShopifyCartIdStore(storage);
-    const client = testClient(fetch);
-    const cart = await new ShopifyCartAdapter(client, cartIds, 'EUR').load();
-
-    await expect(new ShopifyCheckoutAdapter(client, cartIds).getCheckoutUrl(cart)).resolves.toBe(remote.checkoutUrl);
-    expect(fetch).toHaveBeenCalledOnce();
-  });
-
-  it('remembers the checkout URL of a cart it just created', async () => {
-    const created = cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
-    const fetch = queuedFetch(mutationResult('cartCreate', created));
-    const cartIds = new ShopifyCartIdStore(storage);
-    const cart = new Cart('EUR');
-    cart.addItem(product(1), new Quantity(1));
-    await new ShopifyCartAdapter(testClient(fetch), cartIds, 'EUR').save(cart);
-    expect(cartIds.checkoutUrl()).toBe(created.checkoutUrl);
   });
 
   it('clear forgets the cart id', async () => {

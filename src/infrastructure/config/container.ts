@@ -127,8 +127,20 @@ export class AppContainer {
 
   getAnalyticsService(): AnalyticsService {
     return this.once('analytics', () =>
-      this.config.posthog ? new PostHogAnalyticsAdapter(this.config.posthog) : new NoopAnalyticsAdapter(),
+      this.config.posthog
+        ? new PostHogAnalyticsAdapter({ ...this.config.posthog, superProperties: this.analyticsSuperProperties() })
+        : new NoopAnalyticsAdapter(),
     );
+  }
+
+  /** Properties sent with every analytics event, browser and server alike. */
+  analyticsSuperProperties(): Record<string, string> {
+    const properties: Record<string, string> = {
+      app_env: this.config.environment ?? 'local',
+      commerce_provider: this.config.provider,
+    };
+    if (this.config.release) properties.app_release = this.config.release;
+    return properties;
   }
 
   getConsentRepository(): ConsentRepository {

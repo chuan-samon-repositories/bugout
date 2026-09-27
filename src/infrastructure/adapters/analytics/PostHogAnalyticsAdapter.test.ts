@@ -11,6 +11,9 @@ const posthog = vi.hoisted(() => ({
   opt_in_capturing: vi.fn(),
   opt_out_capturing: vi.fn(),
   reset: vi.fn(),
+  register: vi.fn(),
+  get_distinct_id: vi.fn(),
+  get_session_id: vi.fn(),
 }));
 
 vi.mock('posthog-js', () => ({ default: posthog }));
@@ -55,6 +58,12 @@ describe('PostHogAnalyticsAdapter', () => {
       opt_out_persistence_by_default: true,
       disable_session_recording: true,
       advanced_disable_flags: true,
+      disable_surveys: true,
+      autocapture: { dom_event_allowlist: ['click'], css_selector_allowlist: ['a', 'button', 'summary', '[role="button"]'] },
+      enable_heatmaps: false,
+      capture_heatmaps: false,
+      capture_dead_clicks: false,
+      capture_performance: false,
     });
     // A visitor's accept is announced with the SDK's default `$opt_in` event.
     expect(posthog.opt_in_capturing).toHaveBeenCalledOnce();
@@ -154,6 +163,82 @@ describe('PostHogAnalyticsAdapter', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
   });
 
+  it('holds events tracked before the decision and sends them, with their time, once the visitor accepts', async () => {
+    vi.useFakeTimers({ now: new Date('2026-09-01T10:00:00Z') });
+    const adapter = create();
+    adapter.track(event);
+    vi.setSystemTime(new Date('2026-09-01T10:00:30Z'));
+    await Promise.resolve();
+    expect(posthog.init).not.toHaveBeenCalled();
+
+    adapter.setConsent(true, 'visitor');
+    vi.useRealTimers();
+    await adapter.whenIdle();
+    expect(posthog.capture).toHaveBeenCalledWith('cart_viewed', event.properties, {
+      timestamp: new Date('2026-09-01T10:00:00Z'),
+    });
+  });
+
+  it('discards held events when the visitor rejects, and holds nothing after a decision', async () => {
+    const adapter = create();
+    adapter.track(event);
+    adapter.setConsent(false, 'visitor');
+    adapter.track(event);
+    adapter.setConsent(true, 'visitor');
+    await adapter.whenIdle();
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
+  it('holds at most 50 events before the decision', async () => {
+    const adapter = create();
+    for (let i = 0; i < 60; i++) adapter.track(event);
+    adapter.setConsent(true, 'restored');
+    await adapter.whenIdle();
+    expect(posthog.capture).toHaveBeenCalledTimes(50);
+  });
+
+  it('registers the super properties after init', async () => {
+    const adapter = new PostHogAnalyticsAdapter({ apiKey: 'k', superProperties: { app_env: 'production' } });
+    adapter.setConsent(true, 'visitor');
+    await adapter.whenIdle();
+    expect(posthog.register).toHaveBeenCalledWith({ app_env: 'production' });
+    expect(posthog.init.mock.invocationCallOrder[0]).toBeLessThan(posthog.register.mock.invocationCallOrder[0]);
+  });
+
+  it('sends checkout_started with a beacon, since the page navigates to the hosted checkout right after', async () => {
+    const adapter = create();
+    adapter.setConsent(true, 'visitor');
+    await adapter.whenIdle();
+    const started: AnalyticsEvent = {
+      name: 'checkout_started',
+      properties: { cart_value: 18, cart_item_count: 1, currency: 'EUR', checkout_type: 'hosted' },
+    };
+    adapter.track(started);
+    expect(posthog.capture).toHaveBeenCalledWith('checkout_started', started.properties, {
+      send_instantly: true,
+      transport: 'sendBeacon',
+    });
+  });
+
+  it('gives the checkout the visitor and session ids and the landing campaign only with consent', async () => {
+    vi.stubGlobal('window', { location: { search: '?utm_source=google&utm_campaign=kits&gclid=Cj0K&ref=x' } });
+    posthog.get_distinct_id.mockReturnValue('visitor-1');
+    posthog.get_session_id.mockReturnValue('session-1');
+    const adapter = create();
+    expect(adapter.checkoutAttribution()).toEqual({ campaign: {} });
+
+    adapter.setConsent(true, 'visitor');
+    await adapter.whenIdle();
+    expect(adapter.checkoutAttribution()).toEqual({
+      distinctId: 'visitor-1',
+      sessionId: 'session-1',
+      campaign: { utm_source: 'google', utm_campaign: 'kits', gclid: 'Cj0K' },
+    });
+
+    adapter.setConsent(false, 'visitor');
+    expect(adapter.checkoutAttribution()).toEqual({ campaign: {} });
+  });
+
   it('does nothing on the server', async () => {
     vi.unstubAllGlobals();
     const loader = vi.fn();
@@ -206,5 +291,6 @@ describe('NoopAnalyticsAdapter', () => {
       adapter.track(event);
       adapter.captureException(new Error('x'));
     }).not.toThrow();
+    expect(adapter.checkoutAttribution()).toEqual({ campaign: {} });
   });
 });

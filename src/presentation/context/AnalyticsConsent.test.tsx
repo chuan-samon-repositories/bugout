@@ -110,6 +110,19 @@ describe("AnalyticsProvider consent restore", () => {
     expect(setConsent).toHaveBeenCalledWith(true, "restored");
   });
 
+  it("tells the service about a stored rejection, so nothing tracked meanwhile is held for a later accept", () => {
+    const setConsent = vi.spyOn(fakes.service, "setConsent");
+    fakes.repository.stored = decision(false);
+    render(
+      <AnalyticsProvider>
+        <ViewTracker />
+      </AnalyticsProvider>,
+    );
+    expect(setConsent).toHaveBeenCalledTimes(1);
+    expect(setConsent).toHaveBeenCalledWith(false, "restored");
+    expect(fakes.service.tracked).toEqual([]);
+  });
+
   it("tracks nothing on mount when there is no stored consent", () => {
     render(
       <AnalyticsProvider>

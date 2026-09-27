@@ -222,6 +222,5 @@ export class ShopifyCartAdapter implements CartRepository {
 
   private remember(cart: ShopifyCartNode): void {
     this.snapshot = toSnapshot(cart);
-    this.cartIds.rememberCheckoutUrl(cart.id, cart.checkoutUrl);
   }
 }

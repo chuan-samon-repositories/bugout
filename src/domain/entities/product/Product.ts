@@ -80,7 +80,7 @@ export interface ProductProps {
   price: Money;
   /** Previous price when the product is discounted. */
   originalPrice: Money | null;
-  /** Category slug, e.g. "survival-kits". */
+  /** Category slug, e.g. "kits" or "luz-y-energia". */
   category: string;
   inStock: boolean;
   badge: string | null;

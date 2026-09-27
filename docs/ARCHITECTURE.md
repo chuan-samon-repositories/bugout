@@ -62,6 +62,7 @@ Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) use lo
 
 Pure helpers:
 - `application/catalog/`: `applyFilterCriteria(products, criteria)`, `summarizeCategories(products)` and `priceBounds(products)`. Sort options are `featured | price-asc | price-desc | rating | reviews`.
+- `application/catalog/kits.ts`: `kitsIn`, `looseProductsIn`, `comparableKits` (kits that are not build-your-own), `kitsContaining(slug, products)` and `includedInIndex(products)` (the "Incluido en el Kit X" badges, always derived from kit contents, never stored), `resolveContents(kit, products)`, `relatedProducts(product, products)`, `compareKits(kits)` (typed rows for the comparison table: starting price, variant options, every spec label, item count) and `findByVariantId(products, id)`.
 - `application/checkout/`: `validateCheckoutDetails(details, 'contact' | 'shipping' | 'all')`, `isValidSpanishPhone`, `isShippablePostalCode`, `NON_SHIPPABLE_POSTAL_PREFIXES`, `SHIPPING_COUNTRY` (`'ES'`), and `SHIPPABLE_PROVINCES` / `provinceForPostalCode(code)` (`provinces.ts`).
 
 `FormValidationError` (`application/errors.ts`) carries `fieldErrors: Record<string, ValidationCode>`, keyed by field path (e.g. `customer.email`). `ValidationCode` is `'required' | 'invalidEmail' | 'invalidPhone' | 'invalidPostalCode' | 'unsupportedRegion' | 'postalCodeMismatch' | 'tooShort' | 'tooLong'`. The UI maps codes to copy (`presentation/components/forms/validationMessages.ts`).
@@ -70,7 +71,9 @@ Pure helpers:
 
 - `Money` is integer minor units plus an ISO currency. Never do arithmetic on `amount` (major units, for display and analytics); use `add`, `subtract`, `multiply` and so on. `discountPercentage(price, original)` (same file) is the one discount calculation, used by `Product.discountPercentage()` and `PriceTag`. `SHIPPING_METHOD_IDS` / `isShippingMethodId()` (`OrderPricing.ts`) list the valid shipping-method ids.
 - `Cart` (`addItem`, `setQuantity`, `deleteItem`, `clear`) holds at most `MAX_QUANTITY_PER_ITEM` (99) per product and rejects out-of-stock products and mixed currencies. Violations throw `BusinessRuleError` with a `code` (`MAX_QUANTITY_EXCEEDED`, `OUT_OF_STOCK`, `CURRENCY_MISMATCH`).
-- `Product.slug` is the URL handle. `Product.id` is the backend id (a Shopify variant GID when Shopify is active). Product JSON-LD omits `image` when there are no images and omits `sku` for Shopify GIDs.
+- `Product.slug` is the URL handle. `Product.id` is the backend id of the **selected variant** (a Shopify variant GID when Shopify is active); `price`, `originalPrice` and `inStock` describe that variant too. Product JSON-LD omits `image` when there are no images, omits `sku` for Shopify GIDs and for multi-variant products, and uses an `AggregateOffer` when there are several variants.
+- **Variants:** `Product.variants` lists every `ProductVariant` (`id`, `title`, `options`, `price`, `originalPrice`, `inStock`); a plain product has one implicit variant. `Product.fromVariants(base, variants, selectedId?)` selects the given variant or the first in stock, and `withVariant(id)` switches. `variantTitle` (e.g. "2 personas", null without options) and `displayName` ("Kit 72h · 2 personas") name cart and order lines; `hasVariants()`, `priceRange()` and `hasPriceRange()` drive the variant chips and "Desde" prices. Cart lines are keyed by the variant id, so two sizes of a kit are two lines, and `findById` in every product adapter resolves a variant id to its product with that variant selected.
+- **Kits:** a product is a kit when `details.kit` is set (`KitInfo`: `label` such as "72H", optional `idealFor` and `buildYourOwn`). Kit contents (`details.contents`) may reference catalog products with `productSlug`; `details.related` lists cross-sell slugs. The kits' category is `kits`; loose products use Spanish category slugs that equal `slugifyCategory()` of the Shopify product type (`agua`, `luz-y-energia`, `primeros-auxilios`, `refugio-y-abrigo`, `herramientas`, `higiene`), with labels in `messages.catalog.categories`.
 - `rating` is `null` when there is no review data, which is true of every product in the demo catalog. `RatingStars`, the JSON-LD `aggregateRating` and the rating and reviews sort options appear only when a product has reviews (`hasReviews()`), for example from Shopify `reviews.*` metafields.
 - Shipping and tax come only from `PricingPolicy` (`calculateOrderTotals`, `shippingCost`, `freeShippingThreshold` in `domain/entities/order/OrderPricing.ts`). The store policy (`infrastructure/config/pricingPolicy.ts`) has three rates and 21 % IVA included:
   - standard 4,95 €, free from 75 €
@@ -84,11 +87,11 @@ Pure helpers:
 
 - **Copy:** short UI copy lives in `presentation/i18n/messages/<area>.ts` (Spanish), and components read `messages.<area>.<key>`. Long-form prose lives in the page components: the legal and shipping pages (`app/{privacy,cookies,terms,shipping-returns}/page.tsx`, rendered with `LegalPage` / `Prose`) and `app/about/page.tsx`. Use `ContactChannel` (`presentation/components/content/`) whenever copy tells customers how to reach the shop: it shows the email when configured, otherwise the contact form when messaging is enabled, and otherwise a neutral link to the contact page ("visita nuestra página de contacto"). `canPromiseReply()` (an email is configured or messaging is enabled) gates every reply promise and invitation to write, including the about page's "Contactar" button and the "write to us" FAQ answers. Shipping-method names come only from `messages.common.shippingMethods`. Format prices with `formatMoney` and map errors with `toUserMessage`.
 - **Routes:** build links with `presentation/routes.ts` (`routes`, `catalogUrl`). Don't link to pages that don't exist.
-- **Colors:** use theme tokens from `globals.css` (`bg-navy`, `text-accent`, `bg-accent`, `border-sand`, …), not raw hex.
-  - Orange buttons use `bg-accent`; white text on it passes WCAG AA.
-  - Orange text on navy uses `text-orange-on-navy`.
-  - `orange` is decorative only.
-- **Components:** reuse the primitives in `presentation/components/ui`: Button, ButtonLink, IconButton, Container, PageHeader, Breadcrumbs, Drawer, TextField, TextAreaField, SelectField, CheckboxField, RadioGroupField, PriceTag, RatingStars, ProductBadge, Spinner, VisuallyHidden and icons. Feature components live in `presentation/components/<feature>/`.
+- **Visual design:** the UI follows the partner design in [DESIGN_SYSTEM.md](DESIGN_SYSTEM.md): Montserrat, a sand page with white cards, navy heroes and orange pill buttons.
+- **Colors:** use theme tokens from `globals.css` (`bg-navy`, `bg-navy-deep`, `bg-navy-darker`, `bg-sand`, `bg-sand-dim`, `bg-orange`, `text-accent`, …), not raw hex. `src/app/contrast.test.ts` checks every text/background pair against WCAG AA.
+  - Orange buttons are `bg-orange` with `text-navy-deep` (white on orange fails AA).
+  - Orange-family text on light backgrounds uses `text-accent`; on navy, `text-orange-on-navy`.
+- **Components:** reuse the primitives in `presentation/components/ui`: Button, ButtonLink, IconButton, Container, PageHeader (`tone="hero" | "plain"`), Breadcrumbs, Eyebrow, SectionHeading, Reveal, FrogMascot, Drawer (`tone="dark"` for the mobile menu), TextField, TextAreaField, SelectField, CheckboxField, RadioGroupField, PriceTag, RatingStars, ProductBadge, Spinner, VisuallyHidden, `textLinkClasses` and icons. Feature components live in `presentation/components/<feature>/` (kit components in `kits/`).
 - **State:** three providers are mounted once in `app/Providers.tsx`:
   - `CartProvider` (`useCart`):
     - `addItem(...)` resolves `Promise<boolean>` and shows no success toast; the opening drawer is the confirmation.
@@ -103,8 +106,9 @@ Pure helpers:
     - A reopened banner focuses its first button. Escape (or `dismiss()`) closes it without changing the decision and returns focus.
     - The banner reserves its height with an in-flow spacer.
 - **Server first:** pages are Server Components that load data via the container; only interactive parts are Client Components. Entities can't cross into Client Components, so pages pass a plain `ProductSnapshot` (`toProductSnapshot`) and the client rebuilds the entity with `fromProductSnapshot` (`presentation/components/catalog/productSnapshot.ts`). Other server-side behaviour:
-  - The home page, product pages and `sitemap.ts` export `revalidate = 300`.
-  - The root layout loads the catalog once and passes its categories to the header, mobile menu and footer.
+  - The home page, product pages, `/how-to-choose`, `/why-prepare`, `/faq` and `sitemap.ts` export `revalidate = 300`.
+  - The root layout loads the catalog once and passes `navData(products)` (the kits and the flagship kit, the one with the most contents) to the header, mobile menu and footer.
+  - `/products/[slug]` renders kits with `KitGallery`, `PurchasePanel` (variant chips, price, stock, quantity, spec table) and the contents list; loose products share the frame and link the kits that include them.
   - `/products` parses filters with `parseCatalogSearchParams(input, { categories })`. Unknown categories are ignored, and the page is `noindex` for them. The catalog view syncs filters back to the URL with `window.history.replaceState` (no navigation).
   - The order confirmation view sets the tab title.
   - `CopyrightNotice` is a small client component that updates the year after hydration.
@@ -119,7 +123,7 @@ Pure helpers:
 
 ## Analytics
 
-Events are typed in `application/analytics/events.ts` and sent only through `AnalyticsService` (`track`, `captureException`, `setConsent(granted, origin)`). There is no `identify`: events never carry personal data. Checkout containers that show customer data have the `ph-no-capture` class, so autocapture skips them.
+Events are typed in `application/analytics/events.ts` (product events carry `variant_title`; `product_added_to_cart.source` is `product_page`, `product_card` or `cart_drawer`) and sent only through `AnalyticsService` (`track`, `captureException`, `setConsent(granted, origin)`). There is no `identify`: events never carry personal data. Checkout containers that show customer data have the `ph-no-capture` class, so autocapture skips them.
 
 `PostHogAnalyticsAdapter` does nothing on the server and drops every call until consent is granted. `ConsentOrigin` distinguishes the two ways that happens:
 - `'visitor'`: the visitor clicks Accept, and exactly one `$opt_in` event is sent;
@@ -143,5 +147,5 @@ PostHog is proxied through `/ingest` to the EU region (see `next.config.ts`). A 
 ## Testing
 
 - `npm test`: Vitest covering domain, application and infrastructure (node environment) plus React components, contexts and hooks (jsdom via a first-line `// @vitest-environment jsdom` docblock, Testing Library).
-- `npm run e2e`: Playwright end-to-end tests (`e2e/`) against a production build (`npm run build` first).
+- `npm run e2e`: Playwright end-to-end tests (`e2e/`) against a production build (`npm run build` first). Browsers run with `prefers-reduced-motion: reduce` (`contextOptions`), so decorative animations never keep `document.getAnimations()` busy.
 - `npm run lint`, `npm run typecheck`, `npm run build`: all must pass. CI runs `npm ci`, lint, typecheck, `npm test`, build, `npx playwright install --with-deps chromium` and `npm run e2e`.

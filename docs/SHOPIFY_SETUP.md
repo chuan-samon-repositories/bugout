@@ -59,7 +59,7 @@ The app quotes shipping from `src/infrastructure/config/pricingPolicy.ts`, while
 - **Settings → Checkout:**
   - Ask for email as the contact method.
   - Keep **"Show a checkbox for email marketing at checkout"** on, so buyers can give newsletter consent natively in Shopify. Customers who tick it appear as subscribed in Shopify, and you can email them later with Shopify Messaging.
-  - Use the **checkout branding** editor to match the site: navy `#243C58`, button orange `#B84D00` (the accessible orange; don't use `#FF780C` behind white text), and the Bugout logo.
+  - Use the **checkout branding** editor to match the site: navy `#243C58`, button orange `#FF780C` with navy text `#172938` (white text on that orange fails WCAG AA), background `#EEE8CE`, the Montserrat font if offered, and the Bugout logo (`public/images/brand/`).
 - **Settings → Customer privacy:** enable the cookie banner / privacy settings for the EU region. The site asks for consent itself (the PostHog banner). Passing that decision to the checkout (`visitorConsent`) is a pending code change; see step 14.
 - **Settings → Policies:** add the refund, privacy, terms and shipping policies. Shopify links them in the checkout footer. Reuse the texts of `/shipping-returns`, `/privacy` and `/terms` so the site and checkout say the same.
 
@@ -72,7 +72,12 @@ Create these definitions. For **each one**, enable **Storefronts** access. Custo
 | `custom.badge` | Single line text | Product badge | `PREMIUM`, `SALE` or `BESTSELLER` (shown as "Premium", "Oferta", "Más vendido"; any other text is shown as-is) |
 | `custom.features` | List of single line text | "Características" list | `Diseño ligero`, `Comida y agua para 24 horas` |
 | `custom.specifications` | JSON | "Especificaciones" table | `[{"label":"Peso","value":"3,2 kg"},{"label":"Capacidad","value":"35 l"}]` |
-| `custom.contents` | JSON | "Contenido del kit" list | `[{"item":"Manta térmica","quantity":"2"},{"item":"Linterna","quantity":"1 LED"}]` |
+| `custom.contents` | JSON | Kit contents ("Contenido completo" and the "Qué hay dentro" grid) | `[{"item":"Manta térmica","quantity":"2","handle":"manta-termica"},{"item":"Botellas de agua de 330 ml","quantity":"6"}]` |
+| `custom.kit` | JSON | Marks the product as a kit | `{"label":"72H","idealFor":"Pensado para evacuaciones…"}`; the Kit Custom adds `"buildYourOwn":true` |
+| `custom.related` | List of single line text | "Añade productos" cross-sell, in order | `lampara-camping`, `mochila-65l` (product handles) |
+
+- In `custom.contents`, `handle` is optional: give it when the line is a product sold separately, and the site shows its photo, links to it and adds "Incluido en el Kit 72h" to that product's card. Lines without a handle (water, food rations…) show a placeholder.
+- A product is shown as a kit (kit card, variant chips, comparison table, contents) only when `custom.kit` has a `label`. The comparison table rows come from the kits' `custom.specifications`, so use the same labels on every kit (`Peso`, `Dimensiones`, `Caducidad de los consumibles`).
 
 - Ratings are optional. If you install a reviews app that writes the standard `reviews.rating` and `reviews.rating_count` metafields (for example Judge.me, or Shopify's own product reviews metafields), the site shows stars, rating sort options and schema.org ratings automatically. Without them, no rating UI appears.
 - Only show a badge you can back up. "SALE" makes sense when the product has a compare-at price; avoid "BESTSELLER" without sales data.
@@ -80,21 +85,32 @@ Create these definitions. For **each one**, enable **Storefronts** access. Custo
 
 ## 9. Products (Products → Add product)
 
-For each of the six products (the local catalog in `src/infrastructure/data/products.json` has the Spanish copy to paste):
+Create the 3 kits and the 17 loose products of the local catalog (`src/infrastructure/data/products.json` has the Spanish copy, the prices, the contents and the cross-sells to paste; the photos are in `public/images/products/`):
 
-- **Title and description:** Spanish.
-- **Handle** (Search engine listing → URL handle): this becomes the URL `/products/<handle>`. Keeping the local catalog's ids keeps URLs stable: `24h-survival-backpack`, `72h-survival-backpack`, `custom-survival-kit`, `emergency-food-pack`, `water-purification-kit`, `first-aid-pro`.
-- **Product type:** this becomes the category (filters, header and footer menus). It is slugified for the URL (`?category=`) and the label is rebuilt from that slug, so avoid accents in the type name. Use exactly two types:
-  - `Kits de supervivencia` → category `kits-de-supervivencia`
-  - `Accesorios` → category `accesorios`
-- **Tags:** add `featured` to the two backpacks. Featured products lead the home page, and the kit with the most listed contents becomes the showcase.
+- **Title and description:** Spanish. For kits, the description is the short line under the title; `details.longDescription` in the JSON is not read from Shopify.
+- **Handle** (Search engine listing → URL handle): this becomes the URL `/products/<handle>`. Keep the local catalog's slugs so URLs and `custom.contents` / `custom.related` handles line up: `kit-24h`, `kit-72h`, `kit-custom`, `mochila-30l`, `manta-termica`, `radio-solar`…
+- **Product type:** this becomes the category (the chips on `/products`). It is slugified for the URL, so these types give exactly the local slugs, whose Spanish labels the site already has:
+
+  | Product type | Category slug |
+  |---|---|
+  | `Kits` | `kits` |
+  | `Agua` | `agua` |
+  | `Comida` | `comida` |
+  | `Luz y energía` | `luz-y-energia` |
+  | `Primeros auxilios` | `primeros-auxilios` |
+  | `Refugio y abrigo` | `refugio-y-abrigo` |
+  | `Herramientas` | `herramientas` |
+  | `Higiene` | `higiene` |
+
+- **Variants (kits):** give the Kit 24h and the Kit 72h an option named **`Personas`** with the values `1`, `2` and `4`, and name the variants "1 persona", "2 personas", "4 personas" (Shopify builds the variant title from the value; edit it if needed). Each variant has its own price, compare-at price and stock. The site shows the option as chips, selects the first variant in stock and puts each size in the cart as its own line ("Kit 72h · 2 personas"). The Kit Custom and the loose products keep Shopify's single default variant.
+- **Tags:** add `featured` to the Kit 24h and the Kit 72h. The kit with the most contents becomes the "Compra ahora" target and the "Qué hay dentro" showcase.
 - **Price** and **Compare-at price:** the compare-at price shows as the struck-through "previous price". Under the EU/Spanish price-reduction rule, it must be the lowest price of the previous 30 days.
-- **Inventory:** track quantity and set stock. Out-of-stock products show as "Agotado" and cannot be added to the cart.
+- **Inventory:** track quantity and set stock. Out-of-stock products or variants show as "Agotado" and cannot be added to the cart.
 - **Shipping:** "This is a physical product", plus a weight.
-- **Media:** square photos, 1024 px or larger, with alt text. Products without photos show a neutral placeholder. The site allows `cdn.shopify.com` images.
-- **Metafields:** fill in the four definitions from step 8.
+- **Media:** square photos, 900 px or larger, ideally on the brand navy like the catalog photos, with alt text. Kits without photos show a "Foto del kit cerrado próximamente" box and a grid of their contents' photos. The site allows `cdn.shopify.com` images.
+- **Metafields:** fill in the definitions from step 8 (`custom.kit`, `custom.contents` and `custom.related` on kits).
 - **Publishing / sales channels:** make sure every product is available on the **Headless** channel (step 10), or the Storefront API won't return it.
-- Each product uses a single variant. The site sells the product's first variant.
+- The site reads up to 20 variants per product.
 
 ## 10. Headless channel and API tokens
 
@@ -118,8 +134,9 @@ NEXT_PUBLIC_SHOPIFY_STOREFRONT_TOKEN=<public token>
 
 Then run `npm run dev` and check:
 
-- **Catalog:** `/products` lists the six products, and the category filter shows "Kits de supervivencia" and "Accesorios".
-- **Product pages:** a product page shows price, stock, badge, details from metafields and photos.
+- **Catalog:** `/products` lists the 20 products, and the category chips show "Kits", "Herramientas", "Luz y energía"…
+- **Kit pages:** `/products/kit-72h` shows the "Número de personas" chips; picking one changes the price, and the cart line reads "Kit 72h · 2 personas". The contents link to the loose products, which show "Incluido en el Kit 72h".
+- **Home:** the header lists the kits, and the kit cards, comparison table and "Qué hay dentro" grid are filled.
 - **Cart and checkout:** add to cart → **Finalizar compra** takes you to the Shopify checkout. Shipping options and prices there match the site's quotes (step 5).
 - **Test order:** pay with the test card from Shopify Payments test mode (or the Bogus Gateway). The order appears in **Orders**, and the site's cart is empty on return.
 
@@ -146,7 +163,7 @@ In the Vercel project, set the same variables for **Production** and **Preview**
 - [ ] Shopify Payments **test mode off**.
 - [ ] Shipping rates in Shopify match `pricingPolicy.ts`, and Canarias/Ceuta/Melilla are excluded.
 - [ ] Taxes: IVA included in prices.
-- [ ] All products published to Headless, with photos, weights, stock and metafields.
+- [ ] All products published to Headless, with photos, weights, stock and metafields; kits with their `Personas` variants and `custom.kit`.
 - [ ] Compare-at prices comply with the 30-day lowest-price rule.
 - [ ] Policies filled in Shopify and consistent with the site's legal pages (ideally reviewed by a lawyer).
 - [ ] Vercel env vars set, including the site URL, contact email and legal identity.

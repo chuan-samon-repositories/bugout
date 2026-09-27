@@ -2,7 +2,7 @@
 
 Online shop for survival backpacks and emergency gear (*"La revolución de las mochilas de supervivencia para todos los públicos"*). The storefront UI is in Spanish (`es-ES`), prices are in euros with 21 % IVA included, and orders ship within Spain: the peninsula and the Balearic Islands.
 
-Built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4, following Clean Architecture (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)).
+Built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4, following Clean Architecture (see [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)). The shop is organised around three kits (Kit 24h and Kit 72h, each for 1, 2 or 4 people, and the build-your-own Kit Custom) plus the loose products they contain. The visual design (Montserrat, sand/navy/orange palette, the pixel-art frog) is documented in [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md).
 
 ## Requirements
 
@@ -38,7 +38,7 @@ No variable is required for local development. With no configuration the app run
 
 ### `local` (default)
 
-- Catalog: `src/infrastructure/data/products.json` (6 products, in the categories `survival-kits` and `accessories`).
+- Catalog: `src/infrastructure/data/products.json`: 3 kits (the Kit 24h and the Kit 72h with 1/2/4-person variants) and 17 loose products with photos, in the categories `kits`, `agua`, `luz-y-energia`, `primeros-auxilios`, `refugio-y-abrigo`, `herramientas` and `higiene`. Prices, weights and contents are placeholder demo data.
 - Cart: stored in `localStorage` as product ids and quantities. Prices are always re-read from the catalog.
 - Checkout: the in-app `/checkout` page (contact → shipping → review). It is a demo: no payment is taken and no real order is placed.
 
@@ -55,9 +55,10 @@ NEXT_PUBLIC_SHOPIFY_API_VERSION=2026-07
 ```
 
 - Catalog and cart come from the Storefront API.
-  - Categories come from the product type.
+  - Categories come from the product type (use the Spanish names in the setup guide, e.g. `Luz y energía` → `luz-y-energia`).
+  - Kit sizes are Shopify variants with a `Personas` option; each size is its own cart line.
   - Products tagged `featured` are featured.
-  - `custom.badge`, `custom.features`, `custom.specifications` and `custom.contents` metafields provide merchandising content.
+  - `custom.badge`, `custom.features`, `custom.specifications`, `custom.contents` (with optional product `handle`s), `custom.kit` and `custom.related` metafields provide merchandising content and mark kits.
   - `reviews.rating` and `reviews.rating_count` metafields provide ratings. Ratings and rating-based sorting appear only when real review data exists; the demo catalog has none.
   - Products that can't be mapped are skipped with a warning in the server log.
 - All Storefront API calls use the Spain context (`@inContext(country: ES, language: ES)`), so the Shopify market for Spain must sell in EUR. A cart priced in another currency fails with an error.
@@ -84,7 +85,7 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 - `npm run e2e` runs Playwright specs from `e2e/` against a production build.
   - Playwright starts `next start` on port 3100 (`E2E_PORT`).
   - Set `E2E_SKIP_SERVER=1` to target an already running server.
-  - It runs desktop and mobile (Pixel 7) projects. Specs cover smoke, navigation, catalog, cart, purchase, forms, consent and accessibility (axe).
+  - It runs desktop and mobile (Pixel 7) projects with reduced motion. Specs cover smoke, navigation, catalog, kits, cart, purchase, forms, consent and accessibility (axe).
   - Install browsers once with `npx playwright install --with-deps chromium`, the same command CI uses.
 - CI (`.github/workflows/ci.yml`) runs on pushes to `master` and on pull requests: lint, typecheck, unit tests, build and E2E.
 
@@ -95,7 +96,7 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 - `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.
   - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain. A custom absolute PostHog host is added to `script-src` and `connect-src`, together with its `-assets` host for PostHog Cloud.
   - The CSP blocks third-party scripts, so the Vercel and PostHog toolbars don't load in production.
-- Home, product pages and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
+- Home, product pages, the kit guide pages (`/how-to-choose`, `/why-prepare`, `/faq`) and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
 - Shopify product images from `cdn.shopify.com` are allowed in `images.remotePatterns`.
 - The `/ingest/*` PostHog proxy is a Next.js rewrite, so it works on any host that runs the Next.js server.
 - `/checkout` is excluded in `robots.txt` and marked `noindex`.
@@ -105,8 +106,9 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 
 ```
 src/
-  app/             Routes: /, /products, /products/[slug], /checkout, /about, /contact,
-                   /shipping-returns, /privacy, /cookies, /terms, sitemap.ts, robots.ts
+  app/             Routes: /, /products, /products/[slug], /how-to-choose, /why-prepare, /faq,
+                   /checkout, /about, /contact, /shipping-returns, /privacy, /cookies, /terms,
+                   sitemap.ts, robots.ts
   presentation/    React components (ui/ design system + feature folders), contexts,
                    hooks, i18n (Spanish copy and formatting), routes.ts, config/site.ts
   application/     Use cases, ports (interfaces), DTOs, analytics event catalogue
@@ -114,8 +116,8 @@ src/
   infrastructure/  Adapters (JSON catalog, localStorage, Shopify, PostHog), DI container,
                    env parsing, pricing policy, bundled catalog data
 e2e/               Playwright specs
-docs/              Architecture and backend notes
-public/images/     Hero and product images
+docs/              Architecture, design system and backend notes
+public/images/     Brand art, the frog mascot and product photos
 ```
 
 For AI coding agents, see [CLAUDE.md](CLAUDE.md).

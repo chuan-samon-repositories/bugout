@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Montserrat } from "next/font/google";
+import localFont from "next/font/local";
 import { cache } from "react";
 import "./globals.css";
 import { getContainer } from "@/infrastructure/config";
@@ -11,11 +11,16 @@ import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
 import { Providers } from "./Providers";
 
-/** The brand typeface; next/font self-hosts it, so no request leaves the site (CSP font-src 'self'). */
-const montserrat = Montserrat({
+/**
+ * The brand typeface, served from the repo (no request to Google at build or run time; CSP font-src 'self').
+ * One variable file covers weights 100–900 for the Latin subset; see fonts/OFL.txt for its licence.
+ */
+const montserrat = localFont({
+  src: "./fonts/montserrat-latin-wght-normal.woff2",
   variable: "--font-montserrat",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
 });
 
 const defaultTitle = messages.shell.metadata.defaultTitle;

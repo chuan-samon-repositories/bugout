@@ -40,7 +40,7 @@ type Env = Record<string, string | undefined>;
  *   PostHog's scripts load same-origin through /ingest/static and /ingest/array, or from its own hosts when
  *   NEXT_PUBLIC_POSTHOG_HOST is an absolute URL.
  * - Images: next/image serves optimised images from /_next/image; Shopify's CDN is allowed for unoptimised ones.
- * - Fonts: next/font self-hosts Montserrat.
+ * - Fonts: Montserrat is served from the repo through next/font/local (src/app/fonts).
  * - Connections: PostHog goes through the same-origin /ingest proxy unless pointed at its own host; the Shopify
  *   Storefront API is called from the browser when that provider is set up.
  */

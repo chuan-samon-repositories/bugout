@@ -55,7 +55,7 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
 - **Formatting and errors:** format prices with `formatMoney` (plus `formatNumber`, `formatRating`, `formatDate`) from `@/presentation/i18n`. Turn thrown errors into user text with `toUserMessage(error, { productName })`. Never show `error.message`.
 - **Links:** build URLs from `src/presentation/routes.ts`, using `routes.*` (including `howToChoose`, `whyPrepare`, `faq`) and `catalogUrl({ category, sort, priceMin, priceMax, inStock, onSale })`. Do not hardcode paths or link to pages that do not exist. Kits live at `routes.product(slug)` like any product.
 - **Design system:** follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). In short:
-  - Montserrat (`next/font`, variable on `<html>`); a sand page (`bg-sand`) with white cards (`rounded-2xl bg-white shadow-card`); navy heroes, header and footer; container `max-w-site` (via `Container`).
+  - Montserrat (self-hosted variable font in `src/app/fonts/` via `next/font/local`, variable on `<html>`); a sand page (`bg-sand`) with white cards (`rounded-2xl bg-white shadow-card`); navy heroes, header and footer; container `max-w-site` (via `Container`).
   - Pages open with `PageHeader` (default `tone="hero"`, a full-width navy banner rendered outside any `Container`; `tone="plain"` for checkout). Sections open with `SectionHeading` / `Eyebrow`.
   - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header.
   - Brand art and the frog are in `public/images/brand|mascot/` (paths via `brandAssets` in `presentation/config/brand.ts`). Product photos are `public/images/products/<slug>.jpg`, shot on navy.

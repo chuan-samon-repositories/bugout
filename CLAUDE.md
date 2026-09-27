@@ -143,6 +143,7 @@ See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild af
 | `NEXT_PUBLIC_POSTHOG_HOST` | `/ingest` (set in `PostHogAnalyticsAdapter`) | `appConfig.ts`, `next.config.ts` (CSP) | PostHog ingestion host. An absolute host is supported: `posthogOrigins()` adds it to CSP `script-src` and `connect-src`, plus the `-assets` host for `*.i.posthog.com` |
 | `NEXT_PUBLIC_SITE_URL` | see next row | `presentation/config/site.ts` | Canonical origin (metadata, sitemap, robots, JSON-LD) |
 | `VERCEL_PROJECT_PRODUCTION_URL` | set by Vercel | `site.ts` | Fallback origin `https://<value>`, then `http://localhost:3000`. A production build warns when neither is set. A bare host in `NEXT_PUBLIC_SITE_URL` gets `https://` added |
+| `VERCEL_ENV` | set by Vercel; unset elsewhere | `site.ts` (`isIndexableDeployment` → `siteConfig.indexable`), `next.config.ts` (`robotsHeaders`) | Anything but `production` (the test site, previews) sends `X-Robots-Tag: noindex, nofollow` and a `robots.txt` that disallows everything. Unset (local, CI) is indexable |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Support email on contact and legal pages, and via `ContactChannel` |
 | `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Seller identity on legal pages |
 | `E2E_PORT` / `E2E_SKIP_SERVER` / `CI` | `3100` / unset | `playwright.config.ts` | E2E server port, reuse a running server, CI mode |
@@ -161,7 +162,7 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
   - They run against a production build, with `desktop` (Chrome 1440×900) and `mobile` (Pixel 7) projects, locale `es-ES` and `prefers-reduced-motion: reduce` (`contextOptions`).
   - Accessibility checks use `@axe-core/playwright`.
 - CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and `develop` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
-- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the protected test site `test.bugout.es` (a Preview domain bound to that branch). See README "Deployment notes".
+- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the test site `test.bugout.es` (a Preview domain bound to that branch, not access-protected but kept out of search engines via `VERCEL_ENV`). See README "Deployment notes".
 
 ## Known limitations / backend work pending
 

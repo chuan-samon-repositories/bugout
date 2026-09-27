@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { contentSecurityPolicy, posthogOrigins } from "./next.config";
+import { contentSecurityPolicy, posthogOrigins, robotsHeaders } from "./next.config";
 
 const directive = (csp: string, name: string) =>
   csp
@@ -38,5 +38,19 @@ describe("contentSecurityPolicy", () => {
     const csp = contentSecurityPolicy({ NEXT_PUBLIC_SHOPIFY_STORE_DOMAIN: "tienda.myshopify.com" });
     expect(directive(csp, "connect-src")).toEqual(["'self'", "https://tienda.myshopify.com"]);
     expect(directive(csp, "script-src")).toEqual(["'self'", "'unsafe-inline'"]);
+  });
+});
+
+describe("robotsHeaders", () => {
+  it("sends noindex on Vercel preview and development deployments", () => {
+    for (const VERCEL_ENV of ["preview", "development"]) {
+      expect(robotsHeaders({ VERCEL_ENV })).toEqual([{ key: "X-Robots-Tag", value: "noindex, nofollow" }]);
+    }
+  });
+
+  it("sends nothing in production or off Vercel", () => {
+    for (const VERCEL_ENV of ["production", undefined, ""]) {
+      expect(robotsHeaders({ VERCEL_ENV })).toEqual([]);
+    }
   });
 });

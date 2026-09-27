@@ -65,6 +65,16 @@ export function contentSecurityPolicy(env: Env = process.env): string {
   ].join("; ");
 }
 
+/**
+ * `X-Robots-Tag: noindex, nofollow` on Vercel preview and development deployments, so search engines never index
+ * the test site (test.bugout.es, a custom domain bound to the develop branch, which Vercel leaves indexable).
+ * Same rule as `isIndexableDeployment` in src/presentation/config/site.ts, which also drives robots.txt.
+ */
+export function robotsHeaders(env: Env = process.env): { key: string; value: string }[] {
+  const vercelEnv = env.VERCEL_ENV?.trim();
+  return vercelEnv && vercelEnv !== "production" ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : [];
+}
+
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
@@ -94,7 +104,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers: [...securityHeaders, ...robotsHeaders()] }];
   },
 };
 

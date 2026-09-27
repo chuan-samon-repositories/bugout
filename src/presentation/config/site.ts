@@ -26,6 +26,17 @@ export function resolveSiteUrl({ siteUrl, vercelProductionUrl }: SiteUrlSources)
   return { url: LOCAL_SITE_URL, configured: false };
 }
 
+/**
+ * Whether search engines may index this deployment: everywhere except Vercel preview and development deployments
+ * (VERCEL_ENV other than "production"). Vercel adds `X-Robots-Tag: noindex` to preview URLs itself, but not to a
+ * custom domain bound to a preview branch such as test.bugout.es, so the app does it (see robots.ts and
+ * next.config.ts, which applies the same rule). Off Vercel (local, CI) VERCEL_ENV is unset and the site is indexable.
+ */
+export function isIndexableDeployment(vercelEnv: string | undefined): boolean {
+  const env = vercelEnv?.trim();
+  return !env || env === "production";
+}
+
 // Read with literal process.env names so Next.js can inline NEXT_PUBLIC_* values.
 // VERCEL_* values are never inlined into client bundles: siteConfig.url is only correct on the
 // server, so only use it from Server Components, route handlers and metadata functions.
@@ -45,6 +56,8 @@ export const siteConfig = {
   name: "Bugout",
   /** Canonical origin for metadata, sitemap, robots and structured data. Server-side only (see above). */
   url: siteUrl.url,
+  /** False on Vercel preview deployments (the test site): robots.txt then disallows everything. Server-side only. */
+  indexable: isIndexableDeployment(process.env.VERCEL_ENV),
   /** Shown on the contact page only when configured. */
   contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || null,
   /** Days a customer has to return an order (store policy, above the 14-day legal minimum). */

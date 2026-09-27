@@ -4,6 +4,9 @@ export const routes = {
   products: '/products',
   product: (slug: string) => `/products/${slug}`,
   checkout: '/checkout',
+  howToChoose: '/how-to-choose',
+  whyPrepare: '/why-prepare',
+  faq: '/faq',
   about: '/about',
   contact: '/contact',
   privacy: '/privacy',
@@ -12,7 +15,7 @@ export const routes = {
   shippingReturns: '/shipping-returns',
 } as const;
 
-/** Query-string keys understood by the catalog page (`/products?category=accessories&sale=1`). */
+/** Query-string keys understood by the catalog page (`/products?category=herramientas&sale=1`). */
 export const catalogParams = {
   category: 'category',
   sort: 'sort',

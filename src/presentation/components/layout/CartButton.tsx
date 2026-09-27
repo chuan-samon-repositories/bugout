@@ -18,18 +18,17 @@ export function CartButton() {
       aria-label={label}
       onClick={openCart}
       className={cn(
-        "relative inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-full px-2.5 text-white transition-colors hover:bg-white/10 sm:rounded-lg sm:px-3",
+        "relative inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-white/8 text-sand transition-colors hover:bg-white/18",
         focusRing,
-        "focus-visible:ring-offset-navy",
+        "focus-visible:ring-offset-navy-darker",
       )}
     >
-      <CartIcon className="size-6" />
-      <span className="hidden text-sm font-semibold sm:inline">{copy.label}</span>
+      <CartIcon className="size-5" />
       {itemCount > 0 && (
         <span
           key={itemCount}
           aria-hidden="true"
-          className="absolute -top-0.5 -right-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-white px-1 text-xs font-bold text-navy transition-transform duration-200 starting:scale-125 motion-reduce:transition-none sm:static sm:-ml-1"
+          className="absolute -top-1 -right-1 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-orange px-1 text-[0.625rem] font-extrabold text-navy-deep transition-transform duration-200 starting:scale-125 motion-reduce:transition-none"
         >
           {itemCount > 99 ? "99+" : formatNumber(itemCount)}
         </span>

@@ -33,7 +33,7 @@ export function ClearCartControl({ disabled, onConfirm }: ClearCartControlProps)
   }
 
   return (
-    <div role="group" aria-label={copy.clear} className="flex flex-wrap items-center gap-2 rounded-lg border border-sand p-3">
+    <div role="group" aria-label={copy.clear} className="flex flex-wrap items-center gap-2 rounded-xl border-[1.5px] border-sand-line p-3">
       <p className="w-full text-sm font-medium text-ink">{copy.clearConfirm}</p>
       <Button
         variant="danger"

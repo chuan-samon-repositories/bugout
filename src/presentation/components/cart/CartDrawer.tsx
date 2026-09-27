@@ -74,8 +74,8 @@ export function CartDrawer() {
       <div className="flex flex-col gap-3">
         <FreeShippingProgress subtotal={subtotal} policy={policy} />
         <div className="flex items-baseline justify-between gap-4">
-          <span className="font-semibold text-ink">{copy.subtotal}</span>
-          <span className="text-lg font-bold text-ink">{formatMoney(subtotal)}</span>
+          <span className="font-bold text-navy-deep">{copy.subtotal}</span>
+          <span className="text-xl font-extrabold text-navy-deep">{formatMoney(subtotal)}</span>
         </div>
         <p className="text-xs text-muted">{policy.pricesIncludeTax ? copy.taxIncluded : copy.taxExcluded}</p>
         <Button fullWidth size="lg" loading={checkingOut || pending} onClick={onCheckout}>
@@ -97,14 +97,14 @@ export function CartDrawer() {
         ) : loadError && !hasItems ? (
           <div role="alert" className="flex flex-col items-center gap-3 py-12 text-center">
             <AlertCircleIcon className="size-12 text-danger" />
-            <p className="text-lg font-semibold text-ink">{copy.loadError}</p>
+            <p className="text-lg font-bold text-navy-deep">{copy.loadError}</p>
             <Button variant="secondary" onClick={() => void onRetry()} loading={retrying} className="mt-2">
               {copy.retryLoad}
             </Button>
           </div>
         ) : hasItems ? (
           <>
-            <ul aria-label={copy.lines} className="-mt-4 divide-y divide-sand">
+            <ul aria-label={copy.lines} className="-mt-4 divide-y divide-sand-line">
               {items.map((item) => (
                 <CartLine
                   key={item.product.id.value}
@@ -122,8 +122,8 @@ export function CartDrawer() {
           </>
         ) : (
           <div className="flex flex-col items-center gap-3 py-12 text-center">
-            <CartIcon className="size-12 text-navy/40" />
-            <p className="text-lg font-semibold text-ink">{copy.empty}</p>
+            <CartIcon className="size-12 text-navy/50" />
+            <p className="text-lg font-bold text-navy-deep">{copy.empty}</p>
             <p className="text-muted">{copy.emptyHint}</p>
             <ButtonLink href={routes.products} onClick={closeCart} className="mt-2">
               {copy.browseProducts}

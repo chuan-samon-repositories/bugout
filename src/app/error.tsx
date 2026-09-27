@@ -16,14 +16,16 @@ export default function ErrorPage({ error, reset }: { error: Error & { digest?: 
   }, [analytics, error]);
 
   return (
-    <Container className="pb-16">
+    <>
       <PageHeader title={copy.title} description={copy.description} />
-      <div className="flex flex-wrap gap-3">
-        <Button onClick={reset}>{copy.retry}</Button>
-        <ButtonLink href={routes.home} variant="secondary">
-          {copy.home}
-        </ButtonLink>
-      </div>
-    </Container>
+      <Container className="flex justify-center py-14 sm:py-20">
+        <div className="flex flex-wrap justify-center gap-3">
+          <Button onClick={reset}>{copy.retry}</Button>
+          <ButtonLink href={routes.home} variant="secondary">
+            {copy.home}
+          </ButtonLink>
+        </div>
+      </Container>
+    </>
   );
 }

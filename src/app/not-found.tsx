@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ButtonLink, Container, PageHeader } from "@/presentation/components/ui";
+import { ButtonLink, Container, FrogMascot, PageHeader } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
@@ -11,14 +11,17 @@ export const metadata: Metadata = {
 
 export default function NotFound() {
   return (
-    <Container className="pb-16">
+    <>
       <PageHeader title={copy.title} description={copy.description} />
-      <div className="flex flex-wrap gap-3">
-        <ButtonLink href={routes.home}>{copy.home}</ButtonLink>
-        <ButtonLink href={routes.products} variant="secondary">
-          {copy.products}
-        </ButtonLink>
-      </div>
-    </Container>
+      <Container className="flex flex-col items-center gap-8 py-14 sm:py-20">
+        <FrogMascot className="[--frog-size:144px]" />
+        <div className="flex flex-wrap justify-center gap-3">
+          <ButtonLink href={routes.home}>{copy.home}</ButtonLink>
+          <ButtonLink href={routes.products} variant="secondary">
+            {copy.products}
+          </ButtonLink>
+        </div>
+      </Container>
+    </>
   );
 }

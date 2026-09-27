@@ -19,7 +19,7 @@ const shopColumn = () => screen.getByRole("heading", { level: 2, name: "Tienda" 
 const renderFooter = () =>
   render(
     <Providers>
-      <Footer categories={[{ slug: "camping-gear", label: "Camping" }]} />
+      <Footer kits={[{ slug: "kit-24h", label: "Kit 24h" }]} />
     </Providers>,
   );
 
@@ -40,7 +40,9 @@ describe("Footer", () => {
     expect(screen.queryByRole("button", { name: "Suscribirme" })).not.toBeInTheDocument();
     expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
     const columns = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
-    expect(columns).toEqual(["Tienda", "Ayuda", "Empresa", "Legal"]);
+    expect(columns).toEqual(["Tienda", "Empresa", "Ayuda", "Legal"]);
+    expect(screen.getByRole("img", { name: "Bugout" })).toBeInTheDocument();
+    expect(screen.getByText("Hecho para quien no deja nada al azar.")).toBeInTheDocument();
     expect(screen.getByText(/Todos los derechos reservados/)).toBeInTheDocument();
   });
 
@@ -51,18 +53,33 @@ describe("Footer", () => {
     expect(screen.getByRole("button", { name: "Suscribirme" })).toBeInTheDocument();
   });
 
-  it("lists the catalog's categories in the shop column", () => {
+  it("lists the kits, the catalog and the kit guide in the shop column", () => {
     render(
       <Providers>
-        <Footer categories={[{ slug: "camping-gear", label: "Camping" }]} />
+        <Footer kits={[{ slug: "kit-24h", label: "Kit 24h" }]} />
       </Providers>,
     );
     const links = within(shopColumn()).getAllByRole("link");
     expect(links.map((link) => [link.textContent, link.getAttribute("href")])).toEqual([
-      ["Todos los productos", "/products"],
-      ["Camping", "/products?category=camping-gear"],
-      ["Ofertas", "/products?sale=1"],
+      ["Kit 24h", "/products/kit-24h"],
+      ["Productos sueltos", "/products"],
+      ["Cómo elegir tu kit", "/how-to-choose"],
     ]);
+  });
+
+  it("links the help and company pages", () => {
+    renderFooter();
+    const footer = screen.getByRole("contentinfo");
+    for (const [name, href] of [
+      ["Preguntas frecuentes", "/faq"],
+      ["Envíos y devoluciones", "/shipping-returns"],
+      ["Por qué prepararse", "/why-prepare"],
+      ["Contacto", "/contact"],
+      ["Condiciones de venta", "/terms"],
+    ]) {
+      expect(within(footer).getByRole("link", { name })).toHaveAttribute("href", href);
+    }
+    expect(within(footer).getByRole("button", { name: "Configurar cookies" })).toBeInTheDocument();
   });
 });
 

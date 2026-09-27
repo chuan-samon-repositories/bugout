@@ -6,7 +6,7 @@ import { getContainer } from "@/infrastructure/config";
 import { ConsentBanner } from "@/presentation/components/consent/ConsentBanner";
 import { Footer } from "@/presentation/components/layout/Footer";
 import { Header } from "@/presentation/components/layout/Header";
-import { navCategories, type NavCategory } from "@/presentation/components/layout/navigation";
+import { navData, type NavData } from "@/presentation/components/layout/navigation";
 import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
 import { Providers } from "./Providers";
@@ -34,21 +34,21 @@ export const metadata: Metadata = {
 };
 
 /**
- * Categories for the header, mobile menu and footer, read from the catalog once per render
+ * Kits for the header, mobile menu and footer, read from the catalog once per render
  * (React cache dedupes calls within a request). A catalog failure must not break every page,
- * so it falls back to an empty list and the navigation keeps only its fixed links.
+ * so it falls back to no kits and the navigation keeps only its fixed links.
  */
-const loadNavCategories = cache(async (): Promise<NavCategory[]> => {
+const loadNavData = cache(async (): Promise<NavData> => {
   try {
-    return navCategories(await getContainer().getGetProductsUseCase().execute());
+    return navData(await getContainer().getGetProductsUseCase().execute());
   } catch (error) {
-    console.error("Could not load catalog categories for the navigation", error);
-    return [];
+    console.error("Could not load the kits for the navigation", error);
+    return { kits: [], flagshipSlug: null };
   }
 });
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const categories = await loadNavCategories();
+  const nav = await loadNavData();
 
   return (
     <html lang={HTML_LANG}>
@@ -60,11 +60,11 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
           {messages.shell.skipToContent}
         </a>
         <Providers>
-          <Header categories={categories} />
-          <main id="main-content" tabIndex={-1} className="flex-1 outline-none">
+          <Header nav={nav} />
+          <main id="main-content" tabIndex={-1} className="flex-1 pt-(--header-height) outline-none">
             {children}
           </main>
-          <Footer categories={categories} />
+          <Footer kits={nav.kits} />
           <ConsentBanner />
         </Providers>
       </body>

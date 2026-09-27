@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
-import { isCurrentLink, MAX_NAV_CATEGORIES, navCategories, primaryLinks, shopLinks } from "./navigation";
+import { isCurrentLink, MAX_NAV_KITS, navData, primaryLinks, shopLinks } from "./navigation";
 
 describe("isCurrentLink", () => {
   const search = (query: string) => new URLSearchParams(query);
@@ -12,56 +12,70 @@ describe("isCurrentLink", () => {
 
   it("matches catalog links by category and sale filters, ignoring sorting and prices", () => {
     expect(isCurrentLink("/products", "/products", search("sort=price-asc&min=10"))).toBe(true);
-    expect(isCurrentLink("/products", "/products", search("category=accessories"))).toBe(false);
-    expect(isCurrentLink("/products?category=accessories", "/products", search("category=accessories&sort=rating"))).toBe(true);
+    expect(isCurrentLink("/products", "/products", search("category=herramientas"))).toBe(false);
+    expect(isCurrentLink("/products?category=herramientas", "/products", search("category=herramientas&sort=rating"))).toBe(true);
     expect(isCurrentLink("/products?sale=1", "/products", search("sale=1"))).toBe(true);
-    expect(isCurrentLink("/products?sale=1", "/products", search("sale=1&category=accessories"))).toBe(false);
+    expect(isCurrentLink("/products?sale=1", "/products", search("sale=1&category=herramientas"))).toBe(false);
   });
 
   it("never marks catalog links before the search params are known or on product pages", () => {
     expect(isCurrentLink("/products", "/products", null)).toBe(false);
-    expect(isCurrentLink("/products", "/products/first-aid-pro", search(""))).toBe(false);
+    expect(isCurrentLink("/products", "/products/kit-medicina", search(""))).toBe(false);
   });
 });
 
-describe("navCategories", () => {
-  it("lists the catalog's categories once, in first-seen order, with Spanish labels", () => {
-    const products = [
-      buildProduct({ id: "a", category: "survival-kits" }),
-      buildProduct({ id: "b", category: "accessories" }),
-      buildProduct({ id: "c", category: "survival-kits" }),
-      buildProduct({ id: "d", category: "camping-gear" }),
-    ];
-    expect(navCategories(products)).toEqual([
-      { slug: "survival-kits", label: "Kits de supervivencia" },
-      { slug: "accessories", label: "Accesorios" },
-      { slug: "camping-gear", label: "Camping gear" },
-    ]);
+const details = (contents: number, kit = true) => ({
+  features: [],
+  specifications: [],
+  contents: Array.from({ length: contents }, (_, index) => ({ item: `Item ${index}`, quantity: "1" })),
+  ...(kit ? { kit: { label: "KIT" } } : {}),
+});
+
+describe("navData", () => {
+  const catalog = [
+    buildProduct({ id: "kit-24h", name: "Kit 24h", details: details(9) }),
+    buildProduct({ id: "manta", name: "Manta", details: details(0, false) }),
+    buildProduct({ id: "kit-72h", name: "Kit 72h", details: details(18) }),
+    buildProduct({ id: "kit-custom", name: "Kit Custom", details: details(1) }),
+  ];
+
+  it("lists the kits in catalog order and picks the most complete one as flagship", () => {
+    expect(navData(catalog)).toEqual({
+      kits: [
+        { slug: "kit-24h", label: "Kit 24h" },
+        { slug: "kit-72h", label: "Kit 72h" },
+        { slug: "kit-custom", label: "Kit Custom" },
+      ],
+      flagshipSlug: "kit-72h",
+    });
   });
 
-  it(`shows at most ${MAX_NAV_CATEGORIES} categories`, () => {
-    const products = ["a", "b", "c", "d", "e", "f"].map((slug) => buildProduct({ id: slug, category: `cat-${slug}` }));
-    expect(navCategories(products).map((category) => category.slug)).toEqual(["cat-a", "cat-b", "cat-c", "cat-d"]);
-    expect(navCategories([])).toEqual([]);
+  it(`caps the kits at ${MAX_NAV_KITS} and copes with a catalog without kits`, () => {
+    const many = Array.from({ length: 6 }, (_, index) => buildProduct({ id: `kit-${index}`, details: details(1) }));
+    expect(navData(many).kits).toHaveLength(MAX_NAV_KITS);
+    expect(navData([buildProduct()])).toEqual({ kits: [], flagshipSlug: null });
   });
 });
 
 describe("shopLinks and primaryLinks", () => {
-  const categories = [
-    { slug: "survival-kits", label: "Kits de supervivencia" },
-    { slug: "camping-gear", label: "Camping" },
+  const kits = [
+    { slug: "kit-24h", label: "Kit 24h" },
+    { slug: "kit-72h", label: "Kit 72h" },
   ];
 
-  it("links every category between all products and offers", () => {
-    expect(shopLinks(categories)).toEqual([
-      { href: "/products", label: "Todos los productos" },
-      { href: "/products?category=survival-kits", label: "Kits de supervivencia" },
-      { href: "/products?category=camping-gear", label: "Camping" },
-      { href: "/products?sale=1", label: "Ofertas" },
+  it("links every kit, then the catalog and content pages", () => {
+    expect(primaryLinks(kits)).toEqual([
+      { href: "/products/kit-24h", label: "Kit 24h" },
+      { href: "/products/kit-72h", label: "Kit 72h" },
+      { href: "/products", label: "Productos" },
+      { href: "/how-to-choose", label: "Cómo elegir" },
+      { href: "/about", label: "Sobre nosotros" },
+      { href: "/why-prepare", label: "Prepárate" },
     ]);
+    expect(shopLinks(kits).map((link) => link.label)).toEqual(["Kit 24h", "Kit 72h", "Productos sueltos", "Cómo elegir tu kit"]);
   });
 
   it("keeps the fixed links when the catalog could not be loaded", () => {
-    expect(primaryLinks([]).map((link) => link.href)).toEqual(["/products", "/products?sale=1", "/about", "/contact"]);
+    expect(primaryLinks([]).map((link) => link.href)).toEqual(["/products", "/how-to-choose", "/about", "/why-prepare"]);
   });
 });

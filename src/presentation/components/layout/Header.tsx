@@ -1,50 +1,49 @@
-import Link from "next/link";
-import { Container, focusRing } from "@/presentation/components/ui";
-import { cn } from "@/presentation/components/ui/cn";
 import { CartDrawer } from "@/presentation/components/cart/CartDrawer";
+import { ButtonLink, Container, focusRing } from "@/presentation/components/ui";
+import { cn } from "@/presentation/components/ui/cn";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
+import { BrandLogo } from "./BrandLogo";
 import { CartButton } from "./CartButton";
+import { HeaderShell } from "./HeaderShell";
 import { MobileMenu } from "./MobileMenu";
 import { NavLinkList } from "./NavLinkList";
-import { primaryLinks, type NavCategory } from "./navigation";
-
-const onNavyFocus = cn(focusRing, "focus-visible:ring-orange-on-navy focus-visible:ring-offset-navy");
+import { primaryLinks, type NavData } from "./navigation";
 
 export interface HeaderProps {
-  /** Catalog categories to link to, loaded once by the root layout (empty when the catalog is unavailable). */
-  categories: readonly NavCategory[];
+  /** Kits and the flagship kit, loaded once by the root layout (empty when the catalog is unavailable). */
+  nav: NavData;
 }
 
-export function Header({ categories }: HeaderProps) {
-  const links = primaryLinks(categories);
+export function Header({ nav }: HeaderProps) {
+  const links = primaryLinks(nav.kits);
+  const ctaHref = nav.flagshipSlug ? routes.product(nav.flagshipSlug) : routes.products;
   return (
-    <header className="sticky top-0 z-40 h-16 bg-navy text-white shadow-md">
-      <Container className="flex h-full items-center gap-2">
-        <MobileMenu categories={categories} />
-        <Link
-          href={routes.home}
-          aria-label={messages.shell.logoLabel}
-          className={cn("rounded-sm px-1 text-xl font-extrabold tracking-wider text-white hover:text-orange-on-navy", onNavyFocus)}
-        >
-          {messages.common.brand}
-        </Link>
-        <nav aria-label={messages.shell.nav.primary} className="ml-6 hidden min-w-0 lg:block">
+    <HeaderShell>
+      <Container className="flex h-full items-center gap-4">
+        <BrandLogo />
+        <nav aria-label={messages.shell.nav.primary} className="hidden min-w-0 flex-1 justify-center lg:flex">
           <NavLinkList
             links={links}
-            className="flex items-center gap-1"
+            className="flex items-center gap-1 xl:gap-2"
             linkClassName={cn(
-              "inline-flex min-h-11 items-center rounded-md px-2.5 text-sm font-medium whitespace-nowrap text-white/90 hover:text-orange-on-navy xl:px-3",
-              onNavyFocus,
+              "relative inline-flex min-h-11 items-center rounded-md px-1.5 text-[0.8125rem] font-semibold whitespace-nowrap text-sand/85 transition-colors hover:text-sand xl:px-2",
+              "after:absolute after:bottom-2 after:left-1.5 after:h-0.5 after:w-0 after:bg-orange after:transition-[width] after:duration-250 after:ease-brand hover:after:w-[calc(100%-0.75rem)] xl:after:left-2 xl:hover:after:w-[calc(100%-1rem)]",
+              focusRing,
+              "focus-visible:ring-offset-navy-darker",
             )}
-            currentClassName="text-white underline decoration-orange-on-navy decoration-2 underline-offset-8"
+            currentClassName="text-sand after:w-[calc(100%-0.75rem)] xl:after:w-[calc(100%-1rem)]"
           />
         </nav>
-        <div className="ml-auto flex items-center">
+        <div className="ml-auto flex items-center gap-2 lg:ml-0 lg:gap-3.5">
           <CartButton />
+          <ButtonLink href={ctaHref} size="md" className="hidden sm:inline-flex">
+            {messages.shell.nav.cta}
+          </ButtonLink>
+          <MobileMenu kits={nav.kits} ctaHref={ctaHref} />
         </div>
       </Container>
       <CartDrawer />
-    </header>
+    </HeaderShell>
   );
 }

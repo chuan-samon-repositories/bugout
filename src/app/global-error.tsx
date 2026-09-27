@@ -9,15 +9,15 @@ const copy = messages.shell.globalError;
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
     <html lang={HTML_LANG}>
-      <body className="flex min-h-dvh items-center justify-center bg-white p-4 font-sans text-ink">
+      <body className="flex min-h-dvh items-center justify-center bg-navy-darker p-4 font-sans text-sand">
         <main className="max-w-md text-center">
-          <p className="text-2xl font-extrabold tracking-wider text-navy">{messages.common.brand}</p>
-          <h1 className="mt-6 text-2xl font-bold">{copy.title}</h1>
-          <p className="mt-3 text-muted">{copy.description}</p>
+          <p className="text-2xl font-extrabold tracking-wider text-orange-on-navy">{messages.common.brand}</p>
+          <h1 className="mt-6 text-2xl">{copy.title}</h1>
+          <p className="mt-3 text-sand/85">{copy.description}</p>
           <button
             type="button"
             onClick={reset}
-            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-accent px-5 font-semibold text-white hover:bg-accent-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2"
+            className="mt-6 inline-flex min-h-11 items-center justify-center rounded-full bg-orange px-6 font-bold text-navy-deep hover:bg-orange-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-on-navy focus-visible:ring-offset-2 focus-visible:ring-offset-navy-darker"
           >
             {copy.retry}
           </button>

@@ -62,23 +62,27 @@ export function ConsentBanner() {
         role="region"
         aria-label={copy.region}
         onKeyDown={onKeyDown}
-        className="ph-no-capture fixed inset-x-0 bottom-0 z-50 border-t border-sand bg-white shadow-[0_-4px_16px_rgb(0_0_0/0.08)]"
+        className="ph-no-capture fixed inset-x-0 bottom-0 z-50 bg-navy-deep text-sand shadow-[0_-12px_32px_-12px_rgb(0_0_0/0.45)]"
       >
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:gap-6 lg:px-8">
-          <p className="min-w-0 flex-1 text-sm text-ink">
+        <div className="mx-auto flex w-full max-w-site flex-col gap-3 px-4 py-4 sm:px-6 md:flex-row md:items-center md:gap-6 lg:px-8">
+          <p className="min-w-0 flex-1 text-sm text-sand">
             {copy.text}{" "}
             <Link
               href={routes.cookies}
-              className={cn("rounded-sm font-medium text-accent underline underline-offset-4 hover:text-accent-hover", focusRing)}
+              className={cn(
+                "rounded-sm font-semibold text-orange-on-navy underline underline-offset-4 hover:text-sand",
+                focusRing,
+                "focus-visible:ring-offset-navy-deep",
+              )}
             >
               {copy.policyLink}
             </Link>
           </p>
           <div className="grid shrink-0 grid-cols-2 gap-3 md:w-72">
-            <Button ref={firstButton} variant="secondary" size="md" onClick={reject}>
+            <Button ref={firstButton} variant="outline-inverse" size="md" onClick={reject}>
               {copy.reject}
             </Button>
-            <Button variant="secondary" size="md" onClick={accept}>
+            <Button variant="outline-inverse" size="md" onClick={accept}>
               {copy.accept}
             </Button>
           </div>

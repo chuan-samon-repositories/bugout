@@ -7,10 +7,13 @@ export const shell = {
   logoLabel: 'Bugout, ir al inicio',
   nav: {
     primary: 'Principal',
-    allProducts: 'Todos los productos',
-    offers: 'Ofertas',
+    products: 'Productos',
+    howToChoose: 'Cómo elegir',
     about: 'Sobre nosotros',
+    whyPrepare: 'Prepárate',
     contact: 'Contacto',
+    /** Header call to action, linking to the flagship kit. */
+    cta: 'Compra ahora',
   },
   menu: {
     open: 'Abrir menú',
@@ -23,14 +26,19 @@ export const shell = {
       `Carrito, ${formattedCount} ${count === 1 ? 'artículo' : 'artículos'}`,
   },
   footer: {
-    blurb:
-      'Bugout prepara mochilas y kits de supervivencia listos para usar, para que cualquier persona pueda afrontar una emergencia con lo necesario a mano.',
+    brandLabel: 'Bugout',
+    blurb: 'Equipamiento de emergencia diseñado para aguantarlo todo.',
+    closing: 'Hecho para quien no deja nada al azar.',
     columns: {
       shop: 'Tienda',
-      help: 'Ayuda',
       company: 'Empresa',
+      help: 'Ayuda',
       legal: 'Legal',
     },
+    looseProducts: 'Productos sueltos',
+    howToChoose: 'Cómo elegir tu kit',
+    whyPrepare: 'Por qué prepararse',
+    faq: 'Preguntas frecuentes',
     shippingReturns: 'Envíos y devoluciones',
     privacy: 'Privacidad',
     cookies: 'Cookies',

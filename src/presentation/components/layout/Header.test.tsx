@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Providers } from "@/app/Providers";
 import { resetContainer } from "@/infrastructure/config";
 import { Header } from "./Header";
+import type { NavData } from "./navigation";
 
 const navigation = vi.hoisted(() => ({ pathname: "/", search: "" }));
 
@@ -14,15 +15,18 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(navigation.search),
 }));
 
-const categories = [
-  { slug: "survival-kits", label: "Kits de supervivencia" },
-  { slug: "accessories", label: "Accesorios" },
-];
+const defaultNav: NavData = {
+  kits: [
+    { slug: "kit-24h", label: "Kit 24h" },
+    { slug: "kit-72h", label: "Kit 72h" },
+  ],
+  flagshipSlug: "kit-72h",
+};
 
-function renderHeader(navCategories: typeof categories = categories) {
+function renderHeader(nav: NavData = defaultNav) {
   return render(
     <Providers>
-      <Header categories={navCategories} />
+      <Header nav={nav} />
     </Providers>,
   );
 }
@@ -41,35 +45,50 @@ describe("Header", () => {
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
   });
 
-  it("renders the primary navigation and marks the current catalog filter", () => {
-    navigation.pathname = "/products";
-    navigation.search = "category=accessories&sort=rating";
+  it("renders the kits and content pages and marks the current page", () => {
+    navigation.pathname = "/products/kit-72h";
     renderHeader();
     const nav = screen.getByRole("navigation", { name: "Principal" });
     const links = within(nav).getAllByRole("link");
     expect(links.map((link) => link.textContent)).toEqual([
-      "Todos los productos",
-      "Kits de supervivencia",
-      "Accesorios",
-      "Ofertas",
+      "Kit 24h",
+      "Kit 72h",
+      "Productos",
+      "Cómo elegir",
       "Sobre nosotros",
-      "Contacto",
+      "Prepárate",
     ]);
-    expect(within(nav).getByRole("link", { name: "Accesorios" })).toHaveAttribute("aria-current", "page");
-    expect(within(nav).getByRole("link", { name: "Accesorios" })).toHaveAttribute("href", "/products?category=accessories");
-    expect(within(nav).getByRole("link", { name: "Todos los productos" })).not.toHaveAttribute("aria-current");
+    expect(within(nav).getByRole("link", { name: "Kit 72h" })).toHaveAttribute("aria-current", "page");
+    expect(within(nav).getByRole("link", { name: "Kit 24h" })).not.toHaveAttribute("aria-current");
   });
 
-  it("lists whatever categories the catalog has, and only the fixed links without a catalog", () => {
-    const { unmount } = renderHeader([{ slug: "camping-gear", label: "Camping" }]);
-    const nav = screen.getByRole("navigation", { name: "Principal" });
-    expect(within(nav).getByRole("link", { name: "Camping" })).toHaveAttribute("href", "/products?category=camping-gear");
-    expect(within(nav).queryByRole("link", { name: "Accesorios" })).toBeNull();
+  it("links the call to action to the flagship kit, or to the catalog without kits", () => {
+    const { unmount } = renderHeader();
+    expect(screen.getAllByRole("link", { name: "Compra ahora" })[0]).toHaveAttribute("href", "/products/kit-72h");
     unmount();
 
-    renderHeader([]);
+    renderHeader({ kits: [], flagshipSlug: null });
+    expect(screen.getByRole("link", { name: "Compra ahora" })).toHaveAttribute("href", "/products");
     const fixed = within(screen.getByRole("navigation", { name: "Principal" })).getAllByRole("link");
-    expect(fixed.map((link) => link.textContent)).toEqual(["Todos los productos", "Ofertas", "Sobre nosotros", "Contacto"]);
+    expect(fixed.map((link) => link.textContent)).toEqual(["Productos", "Cómo elegir", "Sobre nosotros", "Prepárate"]);
+  });
+
+  it("is transparent over the home hero until the visitor scrolls, and solid elsewhere", () => {
+    const { unmount } = renderHeader();
+    const header = screen.getByRole("banner");
+    expect(header).toHaveAttribute("data-transparent", "true");
+
+    act(() => {
+      Object.defineProperty(window, "scrollY", { configurable: true, value: 120 });
+      window.dispatchEvent(new Event("scroll"));
+    });
+    expect(header).not.toHaveAttribute("data-transparent");
+    unmount();
+
+    Object.defineProperty(window, "scrollY", { configurable: true, value: 0 });
+    navigation.pathname = "/about";
+    renderHeader();
+    expect(screen.getByRole("banner")).not.toHaveAttribute("data-transparent");
   });
 
   it("toggles aria-expanded and opens the menu drawer", async () => {
@@ -82,15 +101,12 @@ describe("Header", () => {
 
     expect(menuButton).toHaveAttribute("aria-expanded", "true");
     const dialog = screen.getByRole("dialog", { name: "Menú" });
-    expect(within(dialog).getByRole("link", { name: "Ofertas" })).toHaveAttribute("href", "/products?sale=1");
-    expect(within(dialog).getByRole("link", { name: "Kits de supervivencia" })).toHaveAttribute(
-      "href",
-      "/products?category=survival-kits",
-    );
+    expect(within(dialog).getByRole("link", { name: "Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
+    expect(within(dialog).getByRole("link", { name: "Compra ahora" })).toHaveAttribute("href", "/products/kit-72h");
 
     const preventNavigation = (event: MouseEvent) => event.preventDefault();
     document.addEventListener("click", preventNavigation);
-    await user.click(within(dialog).getByRole("link", { name: "Contacto" }));
+    await user.click(within(dialog).getByRole("link", { name: "Sobre nosotros" }));
     document.removeEventListener("click", preventNavigation);
     expect(screen.queryByRole("dialog", { name: "Menú" })).toBeNull();
     expect(menuButton).toHaveAttribute("aria-expanded", "false");
@@ -102,8 +118,8 @@ describe("Header", () => {
       JSON.stringify({
         version: 2,
         items: [
-          { productId: "first-aid-pro", quantity: 1 },
-          { productId: "emergency-food-pack", quantity: 1 },
+          { productId: "kit-medicina", quantity: 1 },
+          { productId: "kit-24h-2p", quantity: 1 },
         ],
       }),
     );

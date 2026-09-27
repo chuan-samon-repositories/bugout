@@ -20,15 +20,15 @@ export function FreeShippingProgress({ subtotal, policy }: FreeShippingProgressP
   const percent = reached ? 100 : Math.round((subtotal.minor / threshold.minor) * 100);
 
   return (
-    <div className="rounded-lg bg-sand/50 px-3 py-2.5">
-      <p className="text-sm font-medium text-ink">
+    <div className="rounded-xl bg-sand px-4 py-3">
+      <p className="text-sm font-semibold text-navy-deep">
         {reached
           ? copy.freeShippingReached(method)
           : copy.freeShippingRemaining(formatMoney(threshold.subtract(subtotal)), method)}
       </p>
       <div aria-hidden="true" className="mt-2 h-1.5 overflow-hidden rounded-full bg-white">
         <div
-          className={reached ? "h-full rounded-full bg-success" : "h-full rounded-full bg-accent"}
+          className={reached ? "h-full rounded-full bg-success" : "h-full rounded-full bg-orange"}
           style={{ width: `${percent}%` }}
         />
       </div>

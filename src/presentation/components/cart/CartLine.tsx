@@ -26,7 +26,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
 
   return (
     <li className="flex gap-3 py-4">
-      <div aria-hidden="true" className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-sand/40">
+      <div aria-hidden="true" className="relative size-20 shrink-0 overflow-hidden rounded-lg bg-navy">
         <ProductImage product={product} sizes="80px" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col gap-2">
@@ -35,7 +35,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
             <Link
               href={routes.product(product.slug)}
               onClick={onNavigate}
-              className={cn("rounded-sm font-semibold break-words text-ink hover:text-accent hover:underline", focusRing)}
+              className={cn("rounded-sm font-bold break-words text-navy-deep hover:text-accent hover:underline", focusRing)}
             >
               {product.displayName}
             </Link>
@@ -49,7 +49,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
           </IconButton>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center rounded-full border border-sand">
+          <div className="flex items-center rounded-full border-[1.5px] border-sand-line">
             <IconButton
               label={copy.decrease(product.displayName)}
               onClick={() => onQuantityChange(id, quantity - 1)}
@@ -57,7 +57,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
             >
               <MinusIcon className="size-4" />
             </IconButton>
-            <span aria-live="polite" aria-atomic="true" className="min-w-8 text-center font-semibold tabular-nums text-ink">
+            <span aria-live="polite" aria-atomic="true" className="min-w-8 text-center font-bold tabular-nums text-navy-deep">
               <span className="sr-only">{copy.quantity}: </span>
               {quantity}
             </span>
@@ -69,7 +69,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
               <PlusIcon className="size-4" />
             </IconButton>
           </div>
-          <p className="font-semibold text-ink">
+          <p className="font-extrabold text-navy-deep">
             <span className="sr-only">{copy.lineSubtotal}: </span>
             {formatMoney(item.subtotal())}
           </p>

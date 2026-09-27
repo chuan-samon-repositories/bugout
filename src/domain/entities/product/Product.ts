@@ -1,4 +1,4 @@
-import { ValidationError } from '@/domain/errors';
+import { NotFoundError, ValidationError } from '@/domain/errors';
 import { Money, discountPercentage } from '@/domain/value-objects/Money';
 import { ProductId } from '@/domain/value-objects/ProductId';
 
@@ -23,6 +23,18 @@ export interface ProductSpecification {
 export interface ProductContentItem {
   item: string;
   quantity: string;
+  /** Slug of the catalog product this line is, when it is sold separately too. */
+  productSlug?: string;
+}
+
+/** Marks a product as a kit (Kit 24h, Kit 72h, Kit Custom) and holds its kit-only copy. */
+export interface KitInfo {
+  /** Short label shown on kit cards and as the eyebrow, e.g. "24H". */
+  label: string;
+  /** Who the kit is for, shown on the "how to choose" page. */
+  idealFor?: string;
+  /** The kit is a base the customer completes with loose products (Kit Custom). */
+  buildYourOwn?: boolean;
 }
 
 /** Rich, optional merchandising content shown on the product detail page. */
@@ -31,10 +43,35 @@ export interface ProductDetails {
   features: string[];
   specifications: ProductSpecification[];
   contents: ProductContentItem[];
+  /** Set only for kits. */
+  kit?: KitInfo;
+  /** Slugs of products to cross-sell, in display order. */
+  related?: string[];
+}
+
+export interface ProductVariantOption {
+  name: string;
+  value: string;
+}
+
+/** One sellable option of a product (for kits: the number of people). */
+export interface ProductVariant {
+  /** Identifier understood by the commerce backend (JSON id or Shopify variant GID). */
+  id: ProductId;
+  /** Human title, e.g. "2 personas". Empty for a product's only, implicit variant. */
+  title: string;
+  options: ProductVariantOption[];
+  price: Money;
+  originalPrice: Money | null;
+  inStock: boolean;
 }
 
 export interface ProductProps {
-  /** Identifier understood by the commerce backend (JSON id or Shopify variant GID). */
+  /**
+   * Identifier of the selected variant, understood by the commerce backend
+   * (JSON id or Shopify variant GID). `id`, `price`, `originalPrice` and
+   * `inStock` always describe the selected variant.
+   */
   id: ProductId;
   /** URL-safe handle used in routes (`/products/{slug}`). */
   slug: string;
@@ -50,8 +87,15 @@ export interface ProductProps {
   featured: boolean;
   /** Null when the backend has no review data. */
   rating: ProductRating | null;
-  images: ProductImage[];
+  images: readonly ProductImage[];
   details: ProductDetails | null;
+  /**
+   * Every variant, in display order. Omit for a single-variant product. The
+   * entry whose id equals `id` is the selected one; the top-level price,
+   * original price and stock win over that entry's values. A lone entry with a
+   * different id is replaced by the top-level values.
+   */
+  variants?: readonly ProductVariant[];
 }
 
 const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -74,8 +118,10 @@ export class Product {
   readonly rating: ProductRating | null;
   readonly images: readonly ProductImage[];
   readonly details: ProductDetails | null;
+  /** Every variant, in display order; always at least the selected one. */
+  readonly variants: readonly ProductVariant[];
 
-  private constructor(props: ProductProps) {
+  private constructor(props: ProductProps & { variants: readonly ProductVariant[] }) {
     this.id = props.id;
     this.slug = props.slug;
     this.name = props.name;
@@ -89,6 +135,7 @@ export class Product {
     this.rating = props.rating;
     this.images = props.images;
     this.details = props.details;
+    this.variants = props.variants;
   }
 
   static create(props: ProductProps): Product {
@@ -113,7 +160,88 @@ export class Product {
         throw new ValidationError('Reviews count must be a non-negative integer');
       }
     }
-    return new Product({ ...props, images: [...props.images] });
+    return new Product({ ...props, images: [...props.images], variants: normalizeVariants(props) });
+  }
+
+  /**
+   * Builds a product from its variants, selecting `selectedId` or, by default,
+   * the first variant in stock (the first one when none is).
+   */
+  static fromVariants(
+    base: Omit<ProductProps, 'id' | 'price' | 'originalPrice' | 'inStock' | 'variants'>,
+    variants: readonly ProductVariant[],
+    selectedId?: string,
+  ): Product {
+    if (variants.length === 0) {
+      throw new ValidationError('A product needs at least one variant');
+    }
+    const selected = selectedId
+      ? variants.find((variant) => variant.id.value === selectedId)
+      : (variants.find((variant) => variant.inStock) ?? variants[0]);
+    if (!selected) {
+      throw new NotFoundError(`Variant ${selectedId} not found in product ${base.slug}`);
+    }
+    return Product.create({
+      ...base,
+      id: selected.id,
+      price: selected.price,
+      originalPrice: selected.originalPrice,
+      inStock: selected.inStock,
+      variants,
+    });
+  }
+
+  /** The same product with another variant selected. */
+  withVariant(variantId: string): Product {
+    if (variantId === this.id.value) return this;
+    return Product.fromVariants(this, this.variants, variantId);
+  }
+
+  /** The variant `id`, `price` and `inStock` describe. */
+  selectedVariant(): ProductVariant {
+    return this.variants.find((variant) => variant.id.equals(this.id)) ?? this.variants[0];
+  }
+
+  /** True when the customer has to pick between several variants. */
+  hasVariants(): boolean {
+    return this.variants.length > 1;
+  }
+
+  /**
+   * Title of the selected variant (e.g. "2 personas"), or null when the variant
+   * has no options (a product's only, implicit variant). Works even when only
+   * the selected variant is known, as for Shopify cart lines.
+   */
+  get variantTitle(): string | null {
+    const variant = this.selectedVariant();
+    return variant.options.length > 0 && variant.title ? variant.title : null;
+  }
+
+  /** The product name plus the selected variant, e.g. "Kit 72h · 2 personas". */
+  get displayName(): string {
+    const title = this.variantTitle;
+    return title ? `${this.name} · ${title}` : this.name;
+  }
+
+  /** Lowest and highest variant prices. */
+  priceRange(): { min: Money; max: Money } {
+    let min = this.variants[0].price;
+    let max = min;
+    for (const { price } of this.variants) {
+      if (min.greaterThan(price)) min = price;
+      if (price.greaterThan(max)) max = price;
+    }
+    return { min, max };
+  }
+
+  /** True when variants have different prices, so a card shows "Desde". */
+  hasPriceRange(): boolean {
+    const { min, max } = this.priceRange();
+    return !min.equals(max);
+  }
+
+  isKit(): boolean {
+    return this.details?.kit !== undefined;
   }
 
   isOnSale(): boolean {
@@ -137,4 +265,45 @@ export class Product {
   hasReviews(): boolean {
     return this.rating !== null && this.rating.count > 0;
   }
+}
+
+function normalizeVariants(props: ProductProps): ProductVariant[] {
+  const selected = (base?: ProductVariant): ProductVariant => ({
+    id: props.id,
+    title: base?.title ?? '',
+    options: base ? base.options.map((option) => ({ ...option })) : [],
+    price: props.price,
+    originalPrice: props.originalPrice,
+    inStock: props.inStock,
+  });
+
+  const given = props.variants ?? [];
+  if (given.length === 0) return [selected()];
+
+  const index = given.findIndex((variant) => variant.id.equals(props.id));
+  if (index === -1) {
+    if (given.length === 1) return [selected(given[0])];
+    throw new ValidationError(`Selected variant ${props.id.value} is not one of the variants of ${props.slug}`);
+  }
+
+  const variants = given.map((variant, i) =>
+    i === index ? selected(variant) : { ...variant, options: variant.options.map((option) => ({ ...option })) },
+  );
+  const ids = new Set<string>();
+  for (const variant of variants) {
+    if (ids.has(variant.id.value)) {
+      throw new ValidationError(`Duplicate variant id ${variant.id.value} in ${props.slug}`);
+    }
+    ids.add(variant.id.value);
+    if (variant.price.currency !== props.price.currency) {
+      throw new ValidationError('All variants must use the same currency');
+    }
+    if (variant.price.isZero()) {
+      throw new ValidationError('Variant price must be positive');
+    }
+    if (variant.originalPrice && variant.originalPrice.currency !== variant.price.currency) {
+      throw new ValidationError('Original price must use the same currency as price');
+    }
+  }
+  return variants;
 }

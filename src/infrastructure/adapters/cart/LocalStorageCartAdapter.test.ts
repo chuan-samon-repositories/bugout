@@ -62,6 +62,30 @@ describe('LocalStorageCartAdapter', () => {
     expect(restored.totalAmount().minor).toBe(44700);
   });
 
+  it('restores each kit variant as its own line, priced from that variant', async () => {
+    const kit = buildProduct({
+      id: 'kit-72h',
+      variants: [
+        { id: 'kit-72h-1p', title: '1 persona', price: 119 },
+        { id: 'kit-72h-2p', title: '2 personas', price: 199 },
+      ],
+    });
+    const withKit = new LocalStorageCartAdapter(new InMemoryProductRepository([kit]), 'EUR', storage);
+    store(CART_STORAGE_KEY, {
+      version: 2,
+      items: [
+        { productId: 'kit-72h-2p', quantity: 1 },
+        { productId: 'kit-72h-1p', quantity: 2 },
+      ],
+    });
+    const cart = await withKit.load();
+    expect(cart.getItems().map((item) => [item.product.displayName, item.quantity.value])).toEqual([
+      ['Producto de prueba · 2 personas', 1],
+      ['Producto de prueba · 1 persona', 2],
+    ]);
+    expect(cart.totalAmount().amount).toBe(199 + 2 * 119);
+  });
+
   it('ignores a tampered price and uses the catalog price', async () => {
     store(CART_STORAGE_KEY, { version: 2, items: [{ productId: 'kit', quantity: 1, price: 0.01, product: { price: 0.01 } }] });
     const cart = await adapter.load();

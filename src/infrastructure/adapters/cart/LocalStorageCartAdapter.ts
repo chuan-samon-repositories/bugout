@@ -1,3 +1,4 @@
+import { findByVariantId } from '@/application/catalog/kits';
 import { CartRepository } from '@/application/ports/CartRepository';
 import { ProductRepository } from '@/application/ports/ProductRepository';
 import { Cart, MAX_QUANTITY_PER_ITEM } from '@/domain/entities/cart/Cart';
@@ -65,9 +66,9 @@ export class LocalStorageCartAdapter implements CartRepository {
     try {
       const lines = this.readLines(storage);
       if (lines.length === 0) return cart;
-      const products = new Map((await this.productRepository.findAll()).map((product) => [product.id.value, product]));
+      const products = await this.productRepository.findAll();
       for (const line of lines) {
-        const product = products.get(line.productId);
+        const product = findByVariantId(products, line.productId);
         if (!product) continue;
         try {
           cart.addItem(product, new Quantity(Math.min(line.quantity, MAX_QUANTITY_PER_ITEM - cart.quantityOf(product.id))));

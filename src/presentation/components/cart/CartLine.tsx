@@ -37,21 +37,21 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
               onClick={onNavigate}
               className={cn("rounded-sm font-semibold break-words text-ink hover:text-accent hover:underline", focusRing)}
             >
-              {product.name}
+              {product.displayName}
             </Link>
             <p className="mt-0.5 text-sm text-muted">
               <span className="sr-only">{copy.unitPrice}: </span>
               {formatMoney(product.price)}
             </p>
           </div>
-          <IconButton label={copy.remove(product.name)} onClick={() => onRemove(id)} disabled={disabled} className="-mt-2 -mr-2">
+          <IconButton label={copy.remove(product.displayName)} onClick={() => onRemove(id)} disabled={disabled} className="-mt-2 -mr-2">
             <TrashIcon className="size-5" />
           </IconButton>
         </div>
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center rounded-full border border-sand">
             <IconButton
-              label={copy.decrease(product.name)}
+              label={copy.decrease(product.displayName)}
               onClick={() => onQuantityChange(id, quantity - 1)}
               disabled={disabled || quantity <= 1}
             >
@@ -62,7 +62,7 @@ export function CartLine({ item, disabled, onQuantityChange, onRemove, onNavigat
               {quantity}
             </span>
             <IconButton
-              label={copy.increase(product.name)}
+              label={copy.increase(product.displayName)}
               onClick={() => onQuantityChange(id, quantity + 1)}
               disabled={disabled || quantity >= MAX_QUANTITY_PER_ITEM}
             >

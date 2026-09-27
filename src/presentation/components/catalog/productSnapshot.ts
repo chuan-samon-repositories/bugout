@@ -25,6 +25,16 @@ export interface ProductSnapshot {
   rating: ProductRating | null;
   images: ProductImage[];
   details: ProductDetails | null;
+  variants: VariantSnapshot[];
+}
+
+interface VariantSnapshot {
+  id: string;
+  title: string;
+  options: { name: string; value: string }[];
+  price: MoneySnapshot;
+  originalPrice: MoneySnapshot | null;
+  inStock: boolean;
 }
 
 const toMoneySnapshot = (money: Money): MoneySnapshot => ({ minor: money.minor, currency: money.currency });
@@ -49,18 +59,34 @@ export function toProductSnapshot(product: Product): ProductSnapshot {
           features: [...product.details.features],
           specifications: product.details.specifications.map((spec) => ({ ...spec })),
           contents: product.details.contents.map((item) => ({ ...item })),
+          ...(product.details.kit ? { kit: { ...product.details.kit } } : {}),
+          ...(product.details.related ? { related: [...product.details.related] } : {}),
         }
       : null,
+    variants: product.variants.map((variant) => ({
+      id: variant.id.value,
+      title: variant.title,
+      options: variant.options.map((option) => ({ ...option })),
+      price: toMoneySnapshot(variant.price),
+      originalPrice: variant.originalPrice ? toMoneySnapshot(variant.originalPrice) : null,
+      inStock: variant.inStock,
+    })),
   };
 }
+
+const fromMoneySnapshot = (money: MoneySnapshot): Money => Money.fromMinor(money.minor, money.currency);
 
 export function fromProductSnapshot(snapshot: ProductSnapshot): Product {
   return Product.create({
     ...snapshot,
     id: new ProductId(snapshot.id),
-    price: Money.fromMinor(snapshot.price.minor, snapshot.price.currency),
-    originalPrice: snapshot.originalPrice
-      ? Money.fromMinor(snapshot.originalPrice.minor, snapshot.originalPrice.currency)
-      : null,
+    price: fromMoneySnapshot(snapshot.price),
+    originalPrice: snapshot.originalPrice ? fromMoneySnapshot(snapshot.originalPrice) : null,
+    variants: snapshot.variants.map((variant) => ({
+      ...variant,
+      id: new ProductId(variant.id),
+      price: fromMoneySnapshot(variant.price),
+      originalPrice: variant.originalPrice ? fromMoneySnapshot(variant.originalPrice) : null,
+    })),
   });
 }

@@ -1,241 +1,683 @@
 [
   {
-    "id": "24h-survival-backpack",
-    "slug": "24h-survival-backpack",
-    "name": "Mochila de supervivencia 24H",
-    "description": "Kit de supervivencia esencial para las primeras 24 horas de una emergencia. Compacto y ligero.",
-    "price": 199,
-    "originalPrice": 249,
-    "category": "survival-kits",
-    "inStock": true,
+    "slug": "kit-24h",
+    "name": "Kit 24h",
+    "description": "Lo esencial para aguantar las primeras 24 horas de una emergencia.",
+    "category": "kits",
     "badge": null,
     "featured": true,
     "rating": null,
-    "images": [
-      { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 24H", "width": 1024, "height": 1536 }
+    "images": [],
+    "variants": [
+      {
+        "id": "kit-24h-1p",
+        "title": "1 persona",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "1"
+          }
+        ],
+        "price": 39,
+        "inStock": true
+      },
+      {
+        "id": "kit-24h-2p",
+        "title": "2 personas",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "2"
+          }
+        ],
+        "price": 69,
+        "inStock": true
+      },
+      {
+        "id": "kit-24h-4p",
+        "title": "4 personas",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "4"
+          }
+        ],
+        "price": 129,
+        "inStock": true
+      }
     ],
     "details": {
-      "longDescription": "Pensada para las primeras 24 horas de cualquier emergencia, esta mochila compacta y ligera reúne todo lo imprescindible para superar el primer día, el más crítico.",
-      "features": [
-        "Diseño ligero y fácil de transportar",
-        "Comida y agua para 24 horas",
-        "Material de refugio de emergencia",
-        "Primeros auxilios básicos",
-        "Herramientas para hacer fuego",
-        "Dispositivos de comunicación de emergencia"
-      ],
+      "longDescription": "Pensado para cortes de luz, evacuaciones cortas o como primer kit en el coche o en la entrada de casa. Ligero y compacto para que siempre esté a mano.",
+      "features": [],
       "specifications": [
-        { "label": "Peso", "value": "3,2 kg" },
-        { "label": "Dimensiones", "value": "45 × 30 × 15 cm" },
-        { "label": "Capacidad", "value": "35 l" },
-        { "label": "Material", "value": "Nailon ripstop 600D" },
-        { "label": "Resistente al agua", "value": "Sí" },
-        { "label": "Garantía legal", "value": "3 años" }
+        {
+          "label": "Peso",
+          "value": "1,8 kg"
+        },
+        {
+          "label": "Dimensiones",
+          "value": "25 × 18 × 12 cm"
+        },
+        {
+          "label": "Caducidad de los consumibles",
+          "value": "El agua y las barritas tienen su propia fecha de caducidad, indicada en cada envase."
+        }
       ],
       "contents": [
-        { "item": "Barritas energéticas de emergencia", "quantity": "6 × 400 kcal" },
-        { "item": "Pastillas potabilizadoras", "quantity": "20 pastillas" },
-        { "item": "Manta térmica de emergencia", "quantity": "2" },
-        { "item": "Botiquín de primeros auxilios", "quantity": "1 completo" },
-        { "item": "Multiherramienta", "quantity": "1" },
-        { "item": "Kit para encender fuego", "quantity": "1" },
-        { "item": "Silbato de emergencia", "quantity": "1" },
-        { "item": "Linterna", "quantity": "1 LED" }
+        {
+          "item": "Manta térmica",
+          "quantity": "1",
+          "productSlug": "manta-termica"
+        },
+        {
+          "item": "Poncho térmico",
+          "quantity": "1",
+          "productSlug": "poncho-termico"
+        },
+        {
+          "item": "Silbato",
+          "quantity": "1",
+          "productSlug": "silbato"
+        },
+        {
+          "item": "Frontal",
+          "quantity": "1",
+          "productSlug": "frontal"
+        },
+        {
+          "item": "Kit de primeros auxilios",
+          "quantity": "1",
+          "productSlug": "kit-medicina"
+        },
+        {
+          "item": "Cantimplora de 1L",
+          "quantity": "1",
+          "productSlug": "cantimplora-1l"
+        },
+        {
+          "item": "Barritas energéticas",
+          "quantity": "2"
+        },
+        {
+          "item": "Botellas de agua de 330 ml",
+          "quantity": "2"
+        },
+        {
+          "item": "Mascarilla y guantes desechables",
+          "quantity": "1"
+        }
+      ],
+      "kit": {
+        "label": "24H",
+        "idealFor": "Ideal como primer kit, para el coche, o para cortes de suministro cortos donde la ayuda llega en pocas horas."
+      },
+      "related": [
+        "cinta-adhesiva",
+        "bolsa-hermetica",
+        "mochila-30l"
       ]
     }
   },
   {
-    "id": "72h-survival-backpack",
-    "slug": "72h-survival-backpack",
-    "name": "Mochila de supervivencia 72H",
-    "description": "La solución completa para 3 días, pensada para quien se toma en serio la preparación ante emergencias.",
-    "price": 299,
-    "originalPrice": 399,
-    "category": "survival-kits",
-    "inStock": true,
-    "badge": "PREMIUM",
+    "slug": "kit-72h",
+    "name": "Kit 72h",
+    "description": "Autonomía completa para 3 días si tienes que evacuar o quedarte aislado en casa.",
+    "category": "kits",
+    "badge": null,
     "featured": true,
     "rating": null,
-    "images": [
-      { "url": "/images/products/backpack.png", "alt": "Mochila de supervivencia 72H", "width": 1024, "height": 1536 }
+    "images": [],
+    "variants": [
+      {
+        "id": "kit-72h-1p",
+        "title": "1 persona",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "1"
+          }
+        ],
+        "price": 119,
+        "inStock": true
+      },
+      {
+        "id": "kit-72h-2p",
+        "title": "2 personas",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "2"
+          }
+        ],
+        "price": 199,
+        "inStock": true
+      },
+      {
+        "id": "kit-72h-4p",
+        "title": "4 personas",
+        "options": [
+          {
+            "name": "Personas",
+            "value": "4"
+          }
+        ],
+        "price": 359,
+        "inStock": true
+      }
     ],
     "details": {
-      "longDescription": "Una solución de supervivencia completa para 3 días. Este kit integral contiene todo lo necesario para que una persona resista 72 horas en cualquier situación de emergencia.",
-      "features": [
-        "Solución completa para 72 horas",
-        "Equipamiento de calidad profesional",
-        "Reserva ampliada de comida y agua",
-        "Sistemas avanzados de refugio y abrigo",
-        "Material sanitario completo",
-        "Comunicación y señalización de emergencia"
-      ],
+      "longDescription": "El kit de referencia de Bugout. Incluye todo lo del Kit 24h más herramientas de cocina, energía y refugio para aguantar tres días enteros.",
+      "features": [],
       "specifications": [
-        { "label": "Peso", "value": "6,8 kg" },
-        { "label": "Dimensiones", "value": "55 × 35 × 20 cm" },
-        { "label": "Capacidad", "value": "65 l" },
-        { "label": "Material", "value": "Cordura 1000D" },
-        { "label": "Resistente al agua", "value": "IPX6" },
-        { "label": "Garantía comercial", "value": "5 años" }
+        {
+          "label": "Peso",
+          "value": "5,4 kg"
+        },
+        {
+          "label": "Dimensiones",
+          "value": "45 × 30 × 20 cm"
+        },
+        {
+          "label": "Caducidad de los consumibles",
+          "value": "El agua y la ración alimentaria tienen su propia fecha de caducidad, indicada en cada envase."
+        }
       ],
       "contents": [
-        { "item": "Raciones de comida de emergencia", "quantity": "9 comidas" },
-        { "item": "Sistema de potabilización de agua", "quantity": "1 completo" },
-        { "item": "Refugio de emergencia", "quantity": "1 tienda" },
-        { "item": "Botiquín sanitario", "quantity": "1 avanzado" },
-        { "item": "Juego de multiherramientas", "quantity": "3 herramientas" },
-        { "item": "Kit para encender fuego", "quantity": "1 avanzado" },
-        { "item": "Radio de emergencia", "quantity": "1 solar" },
-        { "item": "Equipo para dormir", "quantity": "1 completo" }
+        {
+          "item": "Mochila de supervivencia 30L",
+          "quantity": "1",
+          "productSlug": "mochila-30l"
+        },
+        {
+          "item": "Manta térmica",
+          "quantity": "2",
+          "productSlug": "manta-termica"
+        },
+        {
+          "item": "Poncho térmico",
+          "quantity": "2",
+          "productSlug": "poncho-termico"
+        },
+        {
+          "item": "Silbato",
+          "quantity": "1",
+          "productSlug": "silbato"
+        },
+        {
+          "item": "Frontal",
+          "quantity": "1",
+          "productSlug": "frontal"
+        },
+        {
+          "item": "Kit de primeros auxilios",
+          "quantity": "1",
+          "productSlug": "kit-medicina"
+        },
+        {
+          "item": "Cantimplora de 1L",
+          "quantity": "1",
+          "productSlug": "cantimplora-1l"
+        },
+        {
+          "item": "Cuerda de paracaidismo",
+          "quantity": "1",
+          "productSlug": "cuerda-paracaidismo"
+        },
+        {
+          "item": "Mini estufa de gas",
+          "quantity": "1",
+          "productSlug": "mini-estufa-gas"
+        },
+        {
+          "item": "Kit de cocina // taza",
+          "quantity": "1",
+          "productSlug": "kit-cocina"
+        },
+        {
+          "item": "Radio solar",
+          "quantity": "1",
+          "productSlug": "radio-solar"
+        },
+        {
+          "item": "Bolsa seca (8L)",
+          "quantity": "1",
+          "productSlug": "bolsa-seca"
+        },
+        {
+          "item": "Bolsa hermética para documentos",
+          "quantity": "1",
+          "productSlug": "bolsa-hermetica"
+        },
+        {
+          "item": "Cinta adhesiva táctica",
+          "quantity": "1",
+          "productSlug": "cinta-adhesiva"
+        },
+        {
+          "item": "Neceser",
+          "quantity": "1",
+          "productSlug": "neceser"
+        },
+        {
+          "item": "Ración alimentaria (3 días)",
+          "quantity": "1"
+        },
+        {
+          "item": "Botellas de agua de 330 ml",
+          "quantity": "6"
+        },
+        {
+          "item": "Mascarilla y guantes desechables",
+          "quantity": "2"
+        }
+      ],
+      "kit": {
+        "label": "72H",
+        "idealFor": "Pensado para evacuaciones, aislamiento en casa o zonas de mayor riesgo, donde se necesita autonomía de varios días."
+      },
+      "related": [
+        "lampara-camping",
+        "mochila-65l"
       ]
     }
   },
   {
-    "id": "custom-survival-kit",
-    "slug": "custom-survival-kit",
-    "name": "Kit de supervivencia personalizable",
-    "description": "Una base modular con lo esencial para que completes tu kit con los artículos que mejor se adapten a ti.",
-    "price": 149,
-    "originalPrice": 199,
-    "category": "survival-kits",
-    "inStock": true,
-    "badge": "SALE",
-    "featured": false,
-    "rating": null,
-    "images": [
-      { "url": "/images/products/backpack.png", "alt": "Kit de supervivencia personalizable", "width": 1024, "height": 1536 }
-    ],
-    "details": {
-      "longDescription": "Parte de una mochila modular con los elementos básicos de señalización, luz y abrigo, y amplíala con nuestros accesorios de comida, agua y primeros auxilios según tu entorno y el tamaño de tu familia.",
-      "features": [
-        "Mochila con compartimentos modulares",
-        "Incluye lo básico para luz, abrigo y señalización",
-        "Espacio para añadir comida, agua y botiquín",
-        "Compatible con todos nuestros accesorios"
-      ],
-      "specifications": [
-        { "label": "Capacidad", "value": "30 l" },
-        { "label": "Peso (con la base)", "value": "1,6 kg" },
-        { "label": "Compartimentos", "value": "6 modulares" },
-        { "label": "Material", "value": "Nailon ripstop 600D" },
-        { "label": "Resistente al agua", "value": "Sí" }
-      ],
-      "contents": [
-        { "item": "Mochila modular", "quantity": "1 (30 l)" },
-        { "item": "Manta térmica de emergencia", "quantity": "2" },
-        { "item": "Linterna", "quantity": "1 LED" },
-        { "item": "Silbato de emergencia", "quantity": "1" },
-        { "item": "Cuerda de paracord", "quantity": "15 m" },
-        { "item": "Bolsas estancas", "quantity": "3" }
-      ]
-    }
-  },
-  {
-    "id": "emergency-food-pack",
-    "slug": "emergency-food-pack",
-    "name": "Pack de comida de emergencia",
-    "description": "Reserva de comida de emergencia para 72 horas, con 2400 kcal al día.",
-    "price": 49,
-    "originalPrice": null,
-    "category": "accessories",
+    "id": "kit-custom",
+    "slug": "kit-custom",
+    "name": "Kit Custom",
+    "description": "Empieza por una mochila base y monta el kit exacto que necesitas.",
+    "price": 59,
+    "category": "kits",
     "inStock": true,
     "badge": null,
     "featured": false,
     "rating": null,
     "images": [],
     "details": {
-      "longDescription": "Raciones listas para comer que cubren 3 días a razón de 2400 kcal diarias para una persona. No necesitan cocción ni agua y se conservan durante años en su envase.",
-      "features": [
-        "3 días × 2400 kcal para una persona",
-        "Listas para comer, sin cocinar ni añadir agua",
-        "Raciones individuales envasadas al vacío",
-        "Larga conservación a temperatura ambiente"
-      ],
+      "longDescription": "Elige la mochila base y añade los productos sueltos del catálogo para adaptar el kit a tu familia, tu zona o el equipo que ya tienes. Ideal si ya tienes parte del equipamiento o quieres ampliar un Kit 24h o 72h.",
+      "features": [],
       "specifications": [
-        { "label": "Duración", "value": "72 horas (1 persona)" },
-        { "label": "Aporte energético", "value": "2400 kcal/día (7200 kcal en total)" },
-        { "label": "Peso", "value": "1,5 kg" },
-        { "label": "Consumo preferente", "value": "5 años desde la fabricación" },
-        { "label": "Conservación", "value": "Lugar fresco y seco" }
+        {
+          "label": "Caducidad de los consumibles",
+          "value": "Depende de los productos que añadas."
+        }
       ],
       "contents": [
-        { "item": "Barritas energéticas de 400 kcal", "quantity": "18 (6 al día)" }
+        {
+          "item": "Mochila de supervivencia 30L",
+          "quantity": "1",
+          "productSlug": "mochila-30l"
+        }
+      ],
+      "kit": {
+        "label": "CUSTOM",
+        "idealFor": "Para quien ya tiene parte del equipamiento, quiere adaptar el kit a su familia o necesita algo muy concreto.",
+        "buildYourOwn": true
+      },
+      "related": [
+        "manta-termica",
+        "kit-medicina",
+        "cantimplora-1l",
+        "frontal",
+        "silbato"
       ]
     }
   },
   {
-    "id": "water-purification-kit",
-    "slug": "water-purification-kit",
-    "name": "Kit de potabilización de agua",
-    "description": "Sistema completo de filtrado y potabilización de agua para situaciones de emergencia.",
-    "price": 39,
-    "originalPrice": null,
-    "category": "accessories",
+    "id": "mochila-30l",
+    "slug": "mochila-30l",
+    "name": "Mochila de supervivencia 30L",
+    "description": "Mochila de 30 litros, la base del Kit 72h y del Kit Custom.",
+    "price": 59,
+    "category": "herramientas",
     "inStock": true,
     "badge": null,
     "featured": false,
     "rating": null,
-    "images": [],
-    "details": {
-      "longDescription": "Combina un filtro portátil de fibra hueca con pastillas potabilizadoras para obtener agua apta para el consumo a partir de ríos, fuentes o depósitos cuando falla el suministro.",
-      "features": [
-        "Filtro portátil y pastillas para una doble protección",
-        "Para agua de ríos, fuentes y depósitos",
-        "Ligero y compacto",
-        "Bolsa plegable para recoger y filtrar agua"
-      ],
-      "specifications": [
-        { "label": "Filtro", "value": "Fibra hueca de 0,1 µm" },
-        { "label": "Vida útil del filtro", "value": "Hasta 1000 l" },
-        { "label": "Pastillas", "value": "1 pastilla por litro" },
-        { "label": "Peso", "value": "250 g" }
-      ],
-      "contents": [
-        { "item": "Filtro de agua portátil", "quantity": "1" },
-        { "item": "Pastillas potabilizadoras", "quantity": "50 pastillas" },
-        { "item": "Bolsa plegable para agua", "quantity": "1 (2 l)" },
-        { "item": "Prefiltro de tela", "quantity": "1" }
-      ]
-    }
+    "images": [
+      {
+        "url": "/images/products/mochila-30l.jpg",
+        "alt": "Mochila de supervivencia 30L",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
   },
   {
-    "id": "first-aid-pro",
-    "slug": "first-aid-pro",
-    "name": "Botiquín de primeros auxilios Pro",
-    "description": "Material sanitario de calidad profesional para prestar primeros auxilios en una emergencia.",
+    "id": "mochila-65l",
+    "slug": "mochila-65l",
+    "name": "Mochila de supervivencia 65L",
+    "description": "Mochila de 65 litros para quien necesita llevar más equipo o montar un kit familiar.",
     "price": 89,
-    "originalPrice": 119,
-    "category": "accessories",
+    "category": "herramientas",
     "inStock": true,
-    "badge": "SALE",
+    "badge": null,
     "featured": false,
     "rating": null,
-    "images": [],
-    "details": {
-      "longDescription": "Un botiquín completo y ordenado por compartimentos para atender heridas, quemaduras, torceduras y hemorragias hasta recibir asistencia médica.",
-      "features": [
-        "Compartimentos etiquetados para encontrarlo todo rápido",
-        "Material para heridas, quemaduras y torceduras",
-        "Estuche resistente al agua con anclaje MOLLE",
-        "Guía rápida de primeros auxilios en español"
-      ],
-      "specifications": [
-        { "label": "Piezas", "value": "120" },
-        { "label": "Dimensiones", "value": "24 × 17 × 9 cm" },
-        { "label": "Peso", "value": "900 g" },
-        { "label": "Estuche", "value": "Nailon 600D resistente al agua" }
-      ],
-      "contents": [
-        { "item": "Tiritas de varios tamaños", "quantity": "40" },
-        { "item": "Gasas estériles", "quantity": "10" },
-        { "item": "Vendas elásticas", "quantity": "3" },
-        { "item": "Esparadrapo", "quantity": "1 rollo" },
-        { "item": "Toallitas antisépticas", "quantity": "20" },
-        { "item": "Tijeras y pinzas", "quantity": "1 de cada" },
-        { "item": "Guantes de nitrilo", "quantity": "2 pares" },
-        { "item": "Manta térmica de emergencia", "quantity": "1" },
-        { "item": "Torniquete", "quantity": "1" },
-        { "item": "Guía de primeros auxilios", "quantity": "1" }
-      ]
-    }
+    "images": [
+      {
+        "url": "/images/products/mochila-65l.jpg",
+        "alt": "Mochila de supervivencia 65L",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "manta-termica",
+    "slug": "manta-termica",
+    "name": "Manta térmica",
+    "description": "Manta de emergencia plegada en muy poco espacio, para conservar el calor corporal.",
+    "price": 6,
+    "category": "refugio-y-abrigo",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/manta-termica.jpg",
+        "alt": "Manta térmica",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "poncho-termico",
+    "slug": "poncho-termico",
+    "name": "Poncho térmico",
+    "description": "Poncho de emergencia para protegerte de la lluvia y el frío con las manos libres.",
+    "price": 9,
+    "category": "refugio-y-abrigo",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/poncho-termico.jpg",
+        "alt": "Poncho térmico",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "cuerda-paracaidismo",
+    "slug": "cuerda-paracaidismo",
+    "name": "Cuerda de paracaidismo",
+    "description": "Cuerda tipo paracord para atar, colgar, improvisar un refugio o reparar equipo.",
+    "price": 8,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/cuerda-paracaidismo.jpg",
+        "alt": "Cuerda de paracaidismo",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "mini-estufa-gas",
+    "slug": "mini-estufa-gas",
+    "name": "Mini estufa de gas",
+    "description": "Hornillo compacto para calentar agua y comida cuando no hay suministro.",
+    "price": 19,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/mini-estufa-gas.jpg",
+        "alt": "Mini estufa de gas",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "radio-solar",
+    "slug": "radio-solar",
+    "name": "Radio solar",
+    "description": "Radio para seguir la información oficial durante un corte de luz, con carga solar.",
+    "price": 24,
+    "category": "luz-y-energia",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/radio-solar.jpg",
+        "alt": "Radio solar",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "frontal",
+    "slug": "frontal",
+    "name": "Frontal",
+    "description": "Linterna frontal para tener luz y las dos manos libres.",
+    "price": 14,
+    "category": "luz-y-energia",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/frontal.jpg",
+        "alt": "Frontal",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "lampara-camping",
+    "slug": "lampara-camping",
+    "name": "Lámpara de camping",
+    "description": "Lámpara para iluminar una habitación o una tienda durante un apagón.",
+    "price": 16,
+    "category": "luz-y-energia",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/lampara-camping.jpg",
+        "alt": "Lámpara de camping",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "kit-cocina",
+    "slug": "kit-cocina",
+    "name": "Kit de cocina // taza",
+    "description": "Recipiente y taza para cocinar y beber con la mini estufa.",
+    "price": 22,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/kit-cocina.jpg",
+        "alt": "Kit de cocina // taza",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "bolsa-seca",
+    "slug": "bolsa-seca",
+    "name": "Bolsa seca (8L)",
+    "description": "Bolsa estanca de 8 litros para mantener secos la ropa y los objetos importantes.",
+    "price": 15,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/bolsa-seca.jpg",
+        "alt": "Bolsa seca (8L)",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "silbato",
+    "slug": "silbato",
+    "name": "Silbato",
+    "description": "Silbato de emergencia para hacerte oír sin gastar energía.",
+    "price": 5,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/silbato.jpg",
+        "alt": "Silbato",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "cantimplora-1l",
+    "slug": "cantimplora-1l",
+    "name": "Cantimplora de 1L",
+    "description": "Cantimplora de un litro para llevar agua contigo.",
+    "price": 12,
+    "category": "agua",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/cantimplora-1l.jpg",
+        "alt": "Cantimplora de 1L",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "bolsa-hermetica",
+    "slug": "bolsa-hermetica",
+    "name": "Bolsa hermética para documentos",
+    "description": "Funda estanca para proteger documentos, dinero y el móvil del agua.",
+    "price": 8,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/bolsa-hermetica.jpg",
+        "alt": "Bolsa hermética para documentos",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "cinta-adhesiva",
+    "slug": "cinta-adhesiva",
+    "name": "Cinta adhesiva táctica",
+    "description": "Cinta americana resistente para reparaciones rápidas.",
+    "price": 6,
+    "category": "herramientas",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/cinta-adhesiva.jpg",
+        "alt": "Cinta adhesiva táctica",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "neceser",
+    "slug": "neceser",
+    "name": "Neceser",
+    "description": "Neceser para llevar juntos los productos de higiene básicos.",
+    "price": 11,
+    "category": "higiene",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/neceser.jpg",
+        "alt": "Neceser",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
+  },
+  {
+    "id": "kit-medicina",
+    "slug": "kit-medicina",
+    "name": "Kit de primeros auxilios",
+    "description": "Botiquín compacto para curas básicas en las primeras horas.",
+    "price": 18,
+    "category": "primeros-auxilios",
+    "inStock": true,
+    "badge": null,
+    "featured": false,
+    "rating": null,
+    "images": [
+      {
+        "url": "/images/products/kit-medicina.jpg",
+        "alt": "Kit de primeros auxilios",
+        "width": 900,
+        "height": 900
+      }
+    ],
+    "details": null
   }
 ]

@@ -14,6 +14,7 @@ import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
 import {
   cartNode,
   mutationResult,
+  peopleVariant,
   productNode,
   queuedFetch,
   sentRequest,
@@ -69,6 +70,17 @@ describe('ShopifyCartAdapter', () => {
     expect(cart.quantityOf(pid(2))).toBe(0);
     expect(cart.quantityOf(pid(3))).toBe(99);
     expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-1' });
+  });
+
+  it('keeps the variant title of kit lines so the drawer shows "2 personas"', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const fetch = queuedFetch({
+      data: { cart: cartNode('cart-1', [{ lineId: 'l1', variant: 12, quantity: 1, merchandise: peopleVariant(12, 2, '199.0') }]) },
+    });
+    const [item] = (await adapterWith(fetch).load()).getItems();
+    expect(item.product.id.value).toBe(variantGid(12));
+    expect(item.product.variantTitle).toBe('2 personas');
+    expect(item.product.displayName).toBe('Producto 12 · 2 personas');
   });
 
   it('creates the cart on the first save and stores its id', async () => {

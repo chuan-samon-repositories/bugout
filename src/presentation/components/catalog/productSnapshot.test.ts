@@ -32,6 +32,36 @@ describe("product snapshots", () => {
     expect(rebuilt.rating).toEqual(product.rating);
   });
 
+  it("keeps variants, the selected one, kit info and cross-sells", () => {
+    const kit = buildProduct({
+      id: "kit-24h",
+      variants: [
+        { id: "kit-24h-1p", title: "1 persona", price: 39 },
+        { id: "kit-24h-2p", title: "2 personas", price: 69, originalPrice: 79 },
+      ],
+      details: {
+        features: [],
+        specifications: [],
+        contents: [{ item: "Manta", quantity: "1", productSlug: "manta-termica" }],
+        kit: { label: "24H", buildYourOwn: false },
+        related: ["silbato"],
+      },
+    }).withVariant("kit-24h-2p");
+
+    const snapshot = toProductSnapshot(kit);
+    expect(JSON.parse(JSON.stringify(snapshot))).toEqual(snapshot);
+    const rebuilt = fromProductSnapshot(snapshot);
+    expect(rebuilt.id.value).toBe("kit-24h-2p");
+    expect(rebuilt.variantTitle).toBe("2 personas");
+    expect(rebuilt.isOnSale()).toBe(true);
+    expect(rebuilt.variants.map((variant) => [variant.id.value, variant.price.amount])).toEqual([
+      ["kit-24h-1p", 39],
+      ["kit-24h-2p", 69],
+    ]);
+    expect(rebuilt.details).toEqual(kit.details);
+    expect(rebuilt.isKit()).toBe(true);
+  });
+
   it("keeps null prices, ratings and details", () => {
     const rebuilt = fromProductSnapshot(toProductSnapshot(buildProduct({ rating: null })));
     expect(rebuilt.originalPrice).toBeNull();

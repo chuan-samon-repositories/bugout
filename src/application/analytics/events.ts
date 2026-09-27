@@ -8,6 +8,8 @@ interface ProductProperties {
   product_id: string;
   product_slug: string;
   product_name: string;
+  /** Selected variant (e.g. "2 personas"); null for single-variant products. */
+  variant_title: string | null;
   category: string;
   price: number;
   currency: string;
@@ -23,7 +25,7 @@ export type AnalyticsEvent =
   | { name: 'product_viewed'; properties: ProductProperties & { badge: string | null; in_stock: boolean } }
   | {
       name: 'product_added_to_cart';
-      properties: ProductProperties & CartProperties & { quantity: number; source: 'product_page' | 'cart_drawer' };
+      properties: ProductProperties & CartProperties & { quantity: number; source: 'product_page' | 'product_card' | 'cart_drawer' };
     }
   | { name: 'product_removed_from_cart'; properties: ProductProperties & CartProperties & { quantity: number } }
   | {

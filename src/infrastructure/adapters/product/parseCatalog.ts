@@ -1,4 +1,11 @@
-import { Product, ProductDetails, ProductImage, ProductRating } from '@/domain/entities/product/Product';
+import {
+  Product,
+  type KitInfo,
+  type ProductDetails,
+  type ProductImage,
+  type ProductRating,
+  type ProductVariant,
+} from '@/domain/entities/product/Product';
 import { CurrencyCode, Money } from '@/domain/value-objects/Money';
 import { ProductId } from '@/domain/value-objects/ProductId';
 
@@ -52,6 +59,10 @@ class Fields {
     return value === undefined || value === null ? null : read(this, key);
   }
 
+  has(key: string): boolean {
+    return this.value[key] !== undefined && this.value[key] !== null;
+  }
+
   object(key: string): Fields {
     return Fields.of(this.value[key], `${this.path}.${key}`);
   }
@@ -92,28 +103,71 @@ function parseDetails(fields: Fields): ProductDetails {
     }),
     contents: fields.array('contents', (item, path) => {
       const content = Fields.of(item, path);
-      return { item: content.string('item'), quantity: content.string('quantity') };
+      const productSlug = content.optional('productSlug', (f, k) => f.string(k));
+      return {
+        item: content.string('item'),
+        quantity: content.string('quantity'),
+        ...(productSlug ? { productSlug } : {}),
+      };
     }),
+    ...(fields.has('kit') ? { kit: parseKit(fields.object('kit')) } : {}),
+    ...(fields.has('related') ? { related: fields.array('related', parseString) } : {}),
+  };
+}
+
+function parseKit(fields: Fields): KitInfo {
+  const idealFor = fields.optional('idealFor', (f, k) => f.string(k));
+  const buildYourOwn = fields.optional('buildYourOwn', (f, k) => f.boolean(k));
+  return {
+    label: fields.string('label'),
+    ...(idealFor ? { idealFor } : {}),
+    ...(buildYourOwn ? { buildYourOwn } : {}),
+  };
+}
+
+function parseVariant(value: unknown, path: string, currency: CurrencyCode): ProductVariant {
+  const fields = Fields.of(value, path);
+  const title = fields.string('title');
+  return {
+    id: new ProductId(fields.string('id')),
+    title,
+    options: fields.has('options')
+      ? fields.array('options', (item, optionPath) => {
+          const option = Fields.of(item, optionPath);
+          return { name: option.string('name'), value: option.string('value') };
+        })
+      : [],
+    price: Money.fromMajor(fields.number('price'), currency),
+    originalPrice: fields.optional('originalPrice', (f, k) => Money.fromMajor(f.number(k), currency)),
+    inStock: fields.boolean('inStock'),
   };
 }
 
 function parseProduct(value: unknown, path: string, currency: CurrencyCode): Product {
   const fields = Fields.of(value, path);
   try {
-    return Product.create({
-      id: new ProductId(fields.string('id')),
+    const base = {
       slug: fields.string('slug'),
       name: fields.string('name'),
       description: fields.string('description'),
-      price: Money.fromMajor(fields.number('price'), currency),
-      originalPrice: fields.optional('originalPrice', (f, k) => Money.fromMajor(f.number(k), currency)),
       category: fields.string('category'),
-      inStock: fields.boolean('inStock'),
       badge: fields.optional('badge', (f, k) => f.string(k)),
       featured: fields.boolean('featured'),
       rating: fields.optional('rating', (f, k) => parseRating(f.object(k))),
       images: fields.array('images', parseImage),
       details: fields.optional('details', (f, k) => parseDetails(f.object(k))),
+    };
+    // A product with `variants` takes its ids, prices and stock from them.
+    if (fields.has('variants')) {
+      const variants = fields.array('variants', (item, variantPath) => parseVariant(item, variantPath, currency));
+      return Product.fromVariants(base, variants);
+    }
+    return Product.create({
+      ...base,
+      id: new ProductId(fields.string('id')),
+      price: Money.fromMajor(fields.number('price'), currency),
+      originalPrice: fields.optional('originalPrice', (f, k) => Money.fromMajor(f.number(k), currency)),
+      inStock: fields.boolean('inStock'),
     });
   } catch (error) {
     if (error instanceof CatalogFormatError) throw error;
@@ -130,10 +184,28 @@ export function parseCatalog(data: unknown, currency: CurrencyCode): Product[] {
   const products = data.map((item, index) => parseProduct(item, `products[${index}]`, currency));
   const seen = new Set<string>();
   for (const product of products) {
-    for (const key of [`id:${product.id.value}`, `slug:${product.slug}`]) {
+    const keys = [...product.variants.map((variant) => `id:${variant.id.value}`), `slug:${product.slug}`];
+    for (const key of keys) {
       if (seen.has(key)) throw new CatalogFormatError('products', `duplicate ${key.replace(':', ' ')}`);
       seen.add(key);
     }
   }
+  products.forEach((product, index) => checkReferences(product, `products[${index}]`, seen));
   return products;
+}
+
+/** Every slug a kit's contents or cross-sell points to must be in the catalog. */
+function checkReferences(product: Product, path: string, seen: Set<string>): void {
+  const details = product.details;
+  if (!details) return;
+  details.contents.forEach(({ productSlug }, index) => {
+    if (productSlug && !seen.has(`slug:${productSlug}`)) {
+      throw new CatalogFormatError(`${path}.details.contents[${index}].productSlug`, `unknown product ${productSlug}`);
+    }
+  });
+  details.related?.forEach((slug, index) => {
+    if (!seen.has(`slug:${slug}`)) {
+      throw new CatalogFormatError(`${path}.details.related[${index}]`, `unknown product ${slug}`);
+    }
+  });
 }

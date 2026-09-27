@@ -2,8 +2,14 @@
 export const catalog = {
   /** Spanish labels for known category slugs. Unknown slugs are humanised by `categoryLabel`. */
   categories: {
-    'survival-kits': 'Kits de supervivencia',
-    accessories: 'Accesorios',
+    kits: 'Kits',
+    agua: 'Agua',
+    comida: 'Comida',
+    'luz-y-energia': 'Luz y energía',
+    'primeros-auxilios': 'Primeros auxilios',
+    'refugio-y-abrigo': 'Refugio y abrigo',
+    herramientas: 'Herramientas',
+    higiene: 'Higiene',
     general: 'Otros',
   } as Record<string, string>,
 

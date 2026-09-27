@@ -4,6 +4,7 @@ import { NotFoundError } from '@/domain/errors';
 import { ProductId } from '@/domain/value-objects/ProductId';
 import { CATALOG_REVALIDATE_SECONDS, STOREFRONT_CONTEXT, ShopifyApiError } from '@/infrastructure/adapters/shopify/ShopifyClient';
 import {
+  peopleVariant,
   productNode,
   productWithVariants,
   queuedFetch,
@@ -141,5 +142,33 @@ describe('ShopifyProductAdapter', () => {
     const untouched = queuedFetch();
     await expect(new ShopifyProductAdapter(testClient(untouched)).findById(new ProductId('24h-survival-backpack'))).rejects.toBeInstanceOf(NotFoundError);
     expect(untouched).not.toHaveBeenCalled();
+  });
+
+  describe('variants', () => {
+    const kitVariants = [
+      peopleVariant(11, 1, '119.0', { availableForSale: false }),
+      peopleVariant(12, 2, '199.0'),
+      peopleVariant(14, 4, '359.0'),
+    ];
+
+    it('maps every variant and selects the first one for sale', async () => {
+      const fetch = queuedFetch({ data: { product: productWithVariants({ handle: 'kit-72h' }, kitVariants) } });
+      const kit = await new ShopifyProductAdapter(testClient(fetch)).findBySlug('kit-72h');
+      expect(kit.variants.map((variant) => variant.title)).toEqual(['1 persona', '2 personas', '4 personas']);
+      expect(kit.id.value).toBe(variantGid(12));
+      expect(kit.price.amount).toBe(199);
+      expect(sentRequest(fetch, 0).query).toContain('variants(first: 20)');
+      expect(sentRequest(fetch, 0).query).toContain('selectedOptions { name value }');
+    });
+
+    it('resolves a variant id to its product with that variant selected and all variants known', async () => {
+      const fetch = queuedFetch({
+        data: { node: { ...kitVariants[2], product: productWithVariants({ handle: 'kit-72h' }, kitVariants) } },
+      });
+      const kit = await new ShopifyProductAdapter(testClient(fetch)).findById(new ProductId(variantGid(14)));
+      expect(kit.id.value).toBe(variantGid(14));
+      expect(kit.variantTitle).toBe('4 personas');
+      expect(kit.variants).toHaveLength(3);
+    });
   });
 });

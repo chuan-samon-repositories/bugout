@@ -48,6 +48,28 @@ describe("productJsonLd", () => {
     expect(productJsonLd(buildProduct({ id: "first-aid-pro" }), "https://bugout.example").sku).toBe("first-aid-pro");
   });
 
+  it("describes a kit sold in several sizes as an AggregateOffer without a single sku", () => {
+    const kit = buildProduct({
+      id: "kit-72h",
+      variants: [
+        { id: "kit-72h-1p", title: "1 persona", price: 119, inStock: false },
+        { id: "kit-72h-2p", title: "2 personas", price: 199 },
+        { id: "kit-72h-4p", title: "4 personas", price: 359 },
+      ],
+    });
+    const data = productJsonLd(kit, "https://bugout.example");
+    expect(data.offers).toEqual({
+      "@type": "AggregateOffer",
+      lowPrice: "119.00",
+      highPrice: "359.00",
+      priceCurrency: "EUR",
+      offerCount: 3,
+      availability: "https://schema.org/InStock",
+      url: "https://bugout.example/products/kit-72h",
+    });
+    expect(data).not.toHaveProperty("sku");
+  });
+
   it("escapes < so the JSON cannot close the script tag", () => {
     const json = serializeJsonLd({ name: "</script><script>alert(1)</script>" });
     expect(json).not.toContain("<");

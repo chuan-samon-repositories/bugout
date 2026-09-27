@@ -50,7 +50,7 @@ export function OrderSummary({ cart, totals, policy, shippingLabel, className }:
                 <ProductImage product={item.product} sizes="64px" />
               </div>
               <div className="min-w-0 flex-1">
-                <p className="break-words text-sm font-medium text-ink">{item.product.name}</p>
+                <p className="break-words text-sm font-medium text-ink">{item.product.displayName}</p>
                 <p className="text-sm text-muted">{copy.quantity(item.quantity.value)}</p>
               </div>
               <p className="shrink-0 text-sm font-semibold text-ink tabular-nums">{formatMoney(item.subtotal())}</p>

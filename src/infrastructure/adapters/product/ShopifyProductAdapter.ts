@@ -13,6 +13,8 @@ import {
 import { STOREFRONT_CONTEXT, ShopifyClient } from '@/infrastructure/adapters/shopify/ShopifyClient';
 
 const PAGE_SIZE = 100;
+/** Enough for every kit size; Shopify allows up to 100 variants per product. */
+const VARIANTS_PER_PRODUCT = 20;
 const VARIANT_GID_PREFIX = 'gid://shopify/ProductVariant/';
 
 const PRODUCTS_QUERY = /* GraphQL */ `
@@ -21,7 +23,7 @@ const PRODUCTS_QUERY = /* GraphQL */ `
       pageInfo { hasNextPage endCursor }
       nodes {
         ...ProductFields
-        variants(first: 1) { nodes { ...VariantFields } }
+        variants(first: ${VARIANTS_PER_PRODUCT}) { nodes { ...VariantFields } }
       }
     }
   }
@@ -33,7 +35,7 @@ const PRODUCT_BY_HANDLE_QUERY = /* GraphQL */ `
   query ProductByHandle($handle: String!) ${STOREFRONT_CONTEXT} {
     product(handle: $handle) {
       ...ProductFields
-      variants(first: 1) { nodes { ...VariantFields } }
+      variants(first: ${VARIANTS_PER_PRODUCT}) { nodes { ...VariantFields } }
     }
   }
   ${PRODUCT_FIELDS_FRAGMENT}
@@ -45,7 +47,10 @@ const VARIANT_BY_ID_QUERY = /* GraphQL */ `
     node(id: $id) {
       ... on ProductVariant {
         ...VariantFields
-        product { ...ProductFields }
+        product {
+          ...ProductFields
+          variants(first: ${VARIANTS_PER_PRODUCT}) { nodes { ...VariantFields } }
+        }
       }
     }
   }
@@ -69,27 +74,33 @@ function reasonOf(error: unknown): string {
  * the reason) when Shopify data breaks a domain rule, e.g. a zero price or an invalid
  * handle. One bad product then hides only itself instead of the whole catalog.
  */
-function mapOrSkip(node: ShopifyProductNode, variant: ShopifyVariantNode | undefined): Product | null {
+function mapOrSkip(
+  node: ShopifyProductNode,
+  variant: ShopifyVariantNode | undefined,
+  variants?: readonly ShopifyVariantNode[],
+): Product | null {
   if (!variant) {
     console.warn(`[shopify] Skipping product "${node.handle}": it has no variants`);
     return null;
   }
   try {
-    return mapShopifyProduct(node, variant);
+    return mapShopifyProduct(node, variant, variants);
   } catch (error) {
     console.warn(`[shopify] Skipping product "${node.handle}": ${reasonOf(error)}`);
     return null;
   }
 }
 
-/** Maps a product with its first variant; see mapOrSkip. */
-function mapWithFirstVariant(node: ShopifyProductWithVariants): Product | null {
-  return mapOrSkip(node, node.variants.nodes[0]);
+/** Maps a product with all its variants, selecting the first one for sale (else the first); see mapOrSkip. */
+function mapWithDefaultVariant(node: ShopifyProductWithVariants): Product | null {
+  const variants = node.variants.nodes;
+  return mapOrSkip(node, variants.find((variant) => variant.availableForSale) ?? variants[0], variants);
 }
 
 /**
  * Catalog from the Shopify Storefront API, in the Spanish market context. Product ids
- * are variant GIDs (the cart merchandise id). Products that cannot be mapped are left
+ * are variant GIDs (the cart merchandise id); each product carries all its variants
+ * and findById() resolves a variant GID to its product with that variant selected. Products that cannot be mapped are left
  * out of findAll() and are NotFoundError for findById()/findBySlug().
  */
 export class ShopifyProductAdapter implements ProductRepository {
@@ -101,7 +112,7 @@ export class ShopifyProductAdapter implements ProductRepository {
     do {
       const page: ProductsPage = await this.client.request<ProductsPage>(PRODUCTS_QUERY, { first: PAGE_SIZE, after });
       for (const node of page.products.nodes) {
-        const product = mapWithFirstVariant(node);
+        const product = mapWithDefaultVariant(node);
         if (product) products.push(product);
       }
       const { hasNextPage, endCursor } = page.products.pageInfo;
@@ -115,9 +126,11 @@ export class ShopifyProductAdapter implements ProductRepository {
       throw new NotFoundError(`Product ${id.value} not found`);
     }
     const { node } = await this.client.request<{
-      node: (Partial<ShopifyVariantNode> & { product?: ShopifyProductNode }) | null;
+      node: (Partial<ShopifyVariantNode> & { product?: ShopifyProductWithVariants }) | null;
     }>(VARIANT_BY_ID_QUERY, { id: id.value });
-    const mapped = node?.product ? mapOrSkip(node.product, node as ShopifyVariantNode) : null;
+    const mapped = node?.product
+      ? mapOrSkip(node.product, node as ShopifyVariantNode, node.product.variants?.nodes)
+      : null;
     if (!mapped) throw new NotFoundError(`Product ${id.value} not found`);
     return mapped;
   }
@@ -127,7 +140,7 @@ export class ShopifyProductAdapter implements ProductRepository {
       PRODUCT_BY_HANDLE_QUERY,
       { handle: slug },
     );
-    const mapped = product ? mapWithFirstVariant(product) : null;
+    const mapped = product ? mapWithDefaultVariant(product) : null;
     if (!mapped) throw new NotFoundError(`Product with slug ${slug} not found`);
     return mapped;
   }

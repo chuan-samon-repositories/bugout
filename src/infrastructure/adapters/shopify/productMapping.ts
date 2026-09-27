@@ -1,9 +1,11 @@
 import {
   Product,
-  ProductContentItem,
-  ProductDetails,
-  ProductRating,
-  ProductSpecification,
+  type KitInfo,
+  type ProductContentItem,
+  type ProductDetails,
+  type ProductRating,
+  type ProductSpecification,
+  type ProductVariant,
 } from '@/domain/entities/product/Product';
 import { Money } from '@/domain/value-objects/Money';
 import { ProductId } from '@/domain/value-objects/ProductId';
@@ -29,13 +31,17 @@ export const PRODUCT_FIELDS_FRAGMENT = /* GraphQL */ `
     features: metafield(namespace: "custom", key: "features") { value }
     specifications: metafield(namespace: "custom", key: "specifications") { value }
     contents: metafield(namespace: "custom", key: "contents") { value }
+    kit: metafield(namespace: "custom", key: "kit") { value }
+    related: metafield(namespace: "custom", key: "related") { value }
   }
 `;
 
 export const VARIANT_FIELDS_FRAGMENT = /* GraphQL */ `
   fragment VariantFields on ProductVariant {
     id
+    title
     availableForSale
+    selectedOptions { name value }
     price { amount currencyCode }
     compareAtPrice { amount currencyCode }
   }
@@ -50,7 +56,9 @@ type ShopifyMetafield = { value: string } | null;
 
 export interface ShopifyVariantNode {
   id: string;
+  title: string;
   availableForSale: boolean;
+  selectedOptions: Array<{ name: string; value: string }>;
   price: ShopifyMoney;
   compareAtPrice: ShopifyMoney | null;
 }
@@ -68,9 +76,11 @@ export interface ShopifyProductNode {
   features: ShopifyMetafield;
   specifications: ShopifyMetafield;
   contents: ShopifyMetafield;
+  kit: ShopifyMetafield;
+  related: ShopifyMetafield;
 }
 
-/** Product node as returned with `variants(first: 1) { nodes { ...VariantFields } }`. */
+/** Product node as returned with `variants(first: 20) { nodes { ...VariantFields } }`. */
 export interface ShopifyProductWithVariants extends ShopifyProductNode {
   variants: { nodes: ShopifyVariantNode[] };
 }
@@ -124,41 +134,89 @@ const readSpecification = (item: unknown): ProductSpecification | null =>
     ? { label: item.label, value: item.value }
     : null;
 
+/** A `custom.contents` line; `handle` links it to the catalog product it is. */
 const readContent = (item: unknown): ProductContentItem | null =>
   isRecord(item) && typeof item.item === 'string' && typeof item.quantity === 'string'
-    ? { item: item.item, quantity: item.quantity }
+    ? {
+        item: item.item,
+        quantity: item.quantity,
+        ...(typeof item.handle === 'string' && item.handle.trim() ? { productSlug: item.handle.trim() } : {}),
+      }
     : null;
+
+/** Reads `custom.kit`: {"label":"72H","idealFor":"…","buildYourOwn":false}. */
+function parseKit(metafield: ShopifyMetafield): KitInfo | null {
+  const data = parseJson(metafield?.value);
+  if (!isRecord(data) || typeof data.label !== 'string' || !data.label.trim()) return null;
+  return {
+    label: data.label.trim(),
+    ...(typeof data.idealFor === 'string' && data.idealFor.trim() ? { idealFor: data.idealFor.trim() } : {}),
+    ...(data.buildYourOwn === true ? { buildYourOwn: true } : {}),
+  };
+}
 
 function parseDetails(node: ShopifyProductNode): ProductDetails | null {
   const features = parseList(node.features, readFeature);
   const specifications = parseList(node.specifications, readSpecification);
   const contents = parseList(node.contents, readContent);
-  if (!features && !specifications && !contents) return null;
-  return { features: features ?? [], specifications: specifications ?? [], contents: contents ?? [] };
+  const kit = parseKit(node.kit);
+  const related = parseList(node.related, readFeature);
+  if (!features && !specifications && !contents && !kit && !related) return null;
+  return {
+    features: features ?? [],
+    specifications: specifications ?? [],
+    contents: contents ?? [],
+    ...(kit ? { kit } : {}),
+    ...(related ? { related } : {}),
+  };
 }
 
-/** Maps a Storefront product and one of its variants to a Product whose id is the variant GID. */
-export function mapShopifyProduct(node: ShopifyProductNode, variant: ShopifyVariantNode): Product {
-  return Product.create({
+const isDefaultOption = ({ name, value }: { name: string; value: string }) =>
+  name === 'Title' && value === 'Default Title';
+
+function mapVariant(variant: ShopifyVariantNode): ProductVariant {
+  const options = variant.selectedOptions.filter((option) => !isDefaultOption(option));
+  return {
     id: new ProductId(variant.id),
-    slug: node.handle,
-    name: node.title,
-    description: node.description,
+    title: options.length === 0 ? '' : variant.title,
+    options: options.map(({ name, value }) => ({ name, value })),
     price: Money.fromMajor(variant.price.amount, variant.price.currencyCode),
     originalPrice: variant.compareAtPrice
       ? Money.fromMajor(variant.compareAtPrice.amount, variant.compareAtPrice.currencyCode)
       : null,
-    category: slugifyCategory(node.productType),
     inStock: variant.availableForSale,
-    badge: node.badge?.value.trim() || null,
-    featured: node.tags.some((tag) => tag.toLowerCase() === 'featured'),
-    rating: parseRating(node.rating, node.ratingCount),
-    images: node.images.nodes.map((image) => ({
-      url: image.url,
-      alt: image.altText?.trim() || node.title,
-      width: image.width ?? undefined,
-      height: image.height ?? undefined,
-    })),
-    details: parseDetails(node),
-  });
+  };
+}
+
+/**
+ * Maps a Storefront product to a Product whose id is the GID of `selected`.
+ * `variants` lists every variant for the variant picker; when omitted (cart
+ * lines) the product knows only the selected one.
+ */
+export function mapShopifyProduct(
+  node: ShopifyProductNode,
+  selected: ShopifyVariantNode,
+  variants: readonly ShopifyVariantNode[] = [selected],
+): Product {
+  const all = variants.some((variant) => variant.id === selected.id) ? variants : [selected, ...variants];
+  return Product.fromVariants(
+    {
+      slug: node.handle,
+      name: node.title,
+      description: node.description,
+      category: slugifyCategory(node.productType),
+        badge: node.badge?.value.trim() || null,
+      featured: node.tags.some((tag) => tag.toLowerCase() === 'featured'),
+      rating: parseRating(node.rating, node.ratingCount),
+      images: node.images.nodes.map((image) => ({
+        url: image.url,
+        alt: image.altText?.trim() || node.title,
+        width: image.width ?? undefined,
+        height: image.height ?? undefined,
+      })),
+      details: parseDetails(node),
+    },
+    all.map(mapVariant),
+    selected.id,
+  );
 }

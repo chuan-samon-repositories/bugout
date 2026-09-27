@@ -56,7 +56,7 @@ describe("CartDrawer", () => {
   it("shows a load error with a retry instead of an empty cart when the cart cannot be loaded", async () => {
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart").mockRejectedValueOnce(new Error("offline"));
-    storeCart([{ productId: "first-aid-pro", quantity: 2 }]);
+    storeCart([{ productId: "kit-medicina", quantity: 2 }]);
     const { user, dialog } = await openDrawer();
 
     const alert = await within(dialog).findByRole("alert");
@@ -77,49 +77,49 @@ describe("CartDrawer", () => {
   });
 
   it("renders lines with prices, stepper labels and the free-shipping progress", async () => {
-    storeCart([{ productId: "water-purification-kit", quantity: 1 }]);
+    storeCart([{ productId: "kit-24h-1p", quantity: 1 }]);
     const { dialog } = await openDrawer();
 
     const lines = within(dialog).getAllByRole("listitem");
     expect(lines).toHaveLength(1);
     const line = lines[0];
-    expect(within(line).getByRole("link", { name: "Kit de potabilización de agua" })).toHaveAttribute(
+    expect(within(line).getByRole("link", { name: "Kit 24h · 1 persona" })).toHaveAttribute(
       "href",
-      "/products/water-purification-kit",
+      "/products/kit-24h",
     );
-    expect(within(line).getByRole("button", { name: "Reducir cantidad de Kit de potabilización de agua" })).toBeDisabled();
-    expect(within(line).getByRole("button", { name: "Aumentar cantidad de Kit de potabilización de agua" })).toBeEnabled();
-    expect(within(line).getByRole("button", { name: "Eliminar Kit de potabilización de agua del carrito" })).toBeEnabled();
+    expect(within(line).getByRole("button", { name: "Reducir cantidad de Kit 24h · 1 persona" })).toBeDisabled();
+    expect(within(line).getByRole("button", { name: "Aumentar cantidad de Kit 24h · 1 persona" })).toBeEnabled();
+    expect(within(line).getByRole("button", { name: "Eliminar Kit 24h · 1 persona del carrito" })).toBeEnabled();
     expect(within(dialog).getByText(/Te faltan 36,00\s€ para el envío estándar gratis/)).toBeInTheDocument();
     expect(within(dialog).getByText("IVA incluido. El envío se calcula al finalizar la compra.")).toBeInTheDocument();
   });
 
   it("updates quantities and reports free shipping once reached", async () => {
-    storeCart([{ productId: "water-purification-kit", quantity: 1 }]);
+    storeCart([{ productId: "kit-24h-1p", quantity: 1 }]);
     const { user, dialog } = await openDrawer();
 
-    await user.click(within(dialog).getByRole("button", { name: "Aumentar cantidad de Kit de potabilización de agua" }));
+    await user.click(within(dialog).getByRole("button", { name: "Aumentar cantidad de Kit 24h · 1 persona" }));
 
     await waitFor(() => expect(within(dialog).getByText("Cantidad:").parentElement).toHaveTextContent("Cantidad: 2"));
     expect(within(dialog).getByText("Tienes envío estándar gratis")).toBeInTheDocument();
-    expect(within(dialog).getByRole("button", { name: "Reducir cantidad de Kit de potabilización de agua" })).toBeEnabled();
+    expect(within(dialog).getByRole("button", { name: "Reducir cantidad de Kit 24h · 1 persona" })).toBeEnabled();
   });
 
   it("removes a line", async () => {
     storeCart([
-      { productId: "water-purification-kit", quantity: 1 },
-      { productId: "first-aid-pro", quantity: 2 },
+      { productId: "kit-24h-1p", quantity: 1 },
+      { productId: "kit-medicina", quantity: 2 },
     ]);
     const { user, dialog } = await openDrawer();
 
-    await user.click(within(dialog).getByRole("button", { name: "Eliminar Kit de potabilización de agua del carrito" }));
+    await user.click(within(dialog).getByRole("button", { name: "Eliminar Kit 24h · 1 persona del carrito" }));
 
     await waitFor(() => expect(within(dialog).getAllByRole("listitem")).toHaveLength(1));
     expect(dialog).toContainElement(document.activeElement as HTMLElement);
   });
 
   it("empties the cart only after an inline confirmation", async () => {
-    storeCart([{ productId: "first-aid-pro", quantity: 2 }]);
+    storeCart([{ productId: "kit-medicina", quantity: 2 }]);
     const { user, dialog } = await openDrawer();
 
     await user.click(within(dialog).getByRole("button", { name: "Vaciar carrito" }));
@@ -134,7 +134,7 @@ describe("CartDrawer", () => {
   });
 
   it("starts the checkout and closes with Seguir comprando", async () => {
-    storeCart([{ productId: "first-aid-pro", quantity: 1 }]);
+    storeCart([{ productId: "kit-medicina", quantity: 1 }]);
     const { user, dialog } = await openDrawer();
 
     await user.click(within(dialog).getByRole("button", { name: "Finalizar compra" }));

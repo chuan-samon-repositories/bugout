@@ -21,6 +21,7 @@ describe("ProductViewTracker", () => {
         product_id: "kit-24h",
         product_slug: "kit-24h",
         product_name: "Producto de prueba",
+        variant_title: null,
         category: "survival-kits",
         price: 199,
         currency: "EUR",

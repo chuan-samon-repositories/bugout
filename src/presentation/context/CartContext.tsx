@@ -72,6 +72,7 @@ function productProperties(product: Product) {
     product_id: product.id.value,
     product_slug: product.slug,
     product_name: product.name,
+    variant_title: product.variantTitle,
     category: product.category,
     price: product.price.amount,
     currency: product.price.currency,
@@ -197,7 +198,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
           return true;
         } catch (error) {
           const reason = failureReason(error);
-          notify({ tone: "error", message: toUserMessage(error, { productName: product.name }) });
+          notify({ tone: "error", message: toUserMessage(error, { productName: product.displayName }) });
           analytics.track({
             name: "add_to_cart_failed",
             properties: { product_id: product.id.value, quantity, reason },
@@ -234,7 +235,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             analytics.track({ name: "product_removed_from_cart", properties });
           }
         } catch (error) {
-          reportFailure(error, { productName: line?.product.name, action: "set_quantity" });
+          reportFailure(error, { productName: line?.product.displayName, action: "set_quantity" });
           await recover();
         }
       }, true),
@@ -255,7 +256,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
             });
           }
         } catch (error) {
-          reportFailure(error, { productName: line?.product.name, action: "remove" });
+          reportFailure(error, { productName: line?.product.displayName, action: "remove" });
           await recover();
         }
       }, true),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { mapShopifyProduct, slugifyCategory } from './productMapping';
-import { productNode, variantGid, variantNode } from '@/infrastructure/testing/shopifyFixtures';
+import { peopleVariant, productNode, variantGid, variantNode } from '@/infrastructure/testing/shopifyFixtures';
 
 const metafield = (value: unknown) => ({ value: typeof value === 'string' ? value : JSON.stringify(value) });
 
@@ -101,3 +101,66 @@ describe('slugifyCategory', () => {
     expect(slugifyCategory('***')).toBe('general');
   });
 });
+
+describe('mapShopifyProduct: kits and variants', () => {
+  it('treats Shopify\'s "Default Title" variant as no variant choice', () => {
+    const product = mapShopifyProduct(productNode(), variantNode(1));
+    expect(product.hasVariants()).toBe(false);
+    expect(product.variantTitle).toBeNull();
+    expect(product.selectedVariant().options).toEqual([]);
+  });
+
+  it('keeps every variant with its options and selects the given one', () => {
+    const variants = [peopleVariant(1, 1, '39.0'), peopleVariant(2, 2, '69.0'), peopleVariant(4, 4, '129.0')];
+    const product = mapShopifyProduct(productNode({ handle: 'kit-24h' }), variants[1], variants);
+    expect(product.id.value).toBe(variantGid(2));
+    expect(product.variantTitle).toBe('2 personas');
+    expect(product.variants.map((variant) => variant.options)).toEqual([
+      [{ name: 'Personas', value: '1' }],
+      [{ name: 'Personas', value: '2' }],
+      [{ name: 'Personas', value: '4' }],
+    ]);
+    expect(product.priceRange().max.amount).toBe(129);
+  });
+
+  it('reads custom.kit, custom.related and content handles', () => {
+    const product = mapShopifyProduct(
+      productNode({
+        productType: 'Kits',
+        kit: metafield({ label: ' 72H ', idealFor: 'Evacuaciones', buildYourOwn: false }),
+        related: metafield(['lampara-camping', 'mochila-65l', 3]),
+        contents: metafield([
+          { item: 'Manta térmica', quantity: '2', handle: 'manta-termica' },
+          { item: 'Agua', quantity: '6', handle: '' },
+        ]),
+      }),
+      variantNode(1),
+    );
+    expect(product.category).toBe('kits');
+    expect(product.isKit()).toBe(true);
+    expect(product.details?.kit).toEqual({ label: '72H', idealFor: 'Evacuaciones' });
+    expect(product.details?.related).toEqual(['lampara-camping', 'mochila-65l']);
+    expect(product.details?.contents).toEqual([
+      { item: 'Manta térmica', quantity: '2', productSlug: 'manta-termica' },
+      { item: 'Agua', quantity: '6' },
+    ]);
+  });
+
+  it('ignores a kit metafield without a label', () => {
+    const product = mapShopifyProduct(productNode({ kit: metafield({ idealFor: 'x' }) }), variantNode(1));
+    expect(product.isKit()).toBe(false);
+  });
+
+  it('matches the local category slugs for the Spanish product types', () => {
+    expect(['Kits', 'Agua', 'Luz y energía', 'Primeros auxilios', 'Refugio y abrigo', 'Herramientas', 'Higiene'].map(slugifyCategory)).toEqual([
+      'kits',
+      'agua',
+      'luz-y-energia',
+      'primeros-auxilios',
+      'refugio-y-abrigo',
+      'herramientas',
+      'higiene',
+    ]);
+  });
+});
+

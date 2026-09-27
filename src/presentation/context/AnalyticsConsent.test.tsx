@@ -44,6 +44,7 @@ const viewed: AnalyticsEvent = {
     product_id: "a",
     product_slug: "a",
     product_name: "A",
+    variant_title: null,
     category: "c",
     price: 1,
     currency: "EUR",

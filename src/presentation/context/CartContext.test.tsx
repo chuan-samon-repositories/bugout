@@ -45,16 +45,16 @@ describe("CartProvider", () => {
   });
 
   it("restores the stored cart on mount", async () => {
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 3 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 3 }] }));
     const { result } = await renderCart();
     expect(result.current.itemCount).toBe(3);
-    expect(result.current.subtotal?.amount).toBe(267);
+    expect(result.current.subtotal?.amount).toBe(54);
     expect(result.current.isOpen).toBe(false);
   });
 
   it("adds an item, opens the drawer as the confirmation (no success toast) and tracks the event (but not cart_viewed)", async () => {
     const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
-    const backpack = await product("24h-survival-backpack");
+    const backpack = await product("mochila-65l");
     const { result } = await renderCart();
 
     let added = false;
@@ -71,10 +71,10 @@ describe("CartProvider", () => {
     expect(track).toHaveBeenCalledWith({
       name: "product_added_to_cart",
       properties: expect.objectContaining({
-        product_id: "24h-survival-backpack",
+        product_id: "mochila-65l",
         quantity: 2,
         source: "product_page",
-        cart_value: 398,
+        cart_value: 178,
         cart_item_count: 2,
         currency: "EUR",
       }),
@@ -84,14 +84,14 @@ describe("CartProvider", () => {
 
   it("tracks cart_viewed only when the visitor opens the drawer, once per opening", async () => {
     const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
 
     act(() => result.current.openCart());
     act(() => result.current.openCart());
     expect(result.current.isOpen).toBe(true);
     const viewed = () => track.mock.calls.filter(([event]) => event.name === "cart_viewed");
-    expect(viewed()).toEqual([[{ name: "cart_viewed", properties: { cart_value: 89, cart_item_count: 1, currency: "EUR" } }]]);
+    expect(viewed()).toEqual([[{ name: "cart_viewed", properties: { cart_value: 18, cart_item_count: 1, currency: "EUR" } }]]);
 
     act(() => result.current.closeCart());
     act(() => result.current.openCart());
@@ -113,7 +113,7 @@ describe("CartProvider", () => {
   });
 
   it("runs an exclusive task inside the mutation queue and refreshes the cart afterwards", async () => {
-    const backpack = await product("24h-survival-backpack");
+    const backpack = await product("mochila-65l");
     const { result } = await renderCart();
     const getCart = vi.spyOn(getContainer().getManageCartUseCase(), "getCart");
 
@@ -157,7 +157,7 @@ describe("CartProvider", () => {
     vi.spyOn(container.getManageCartUseCase(), "addToCart").mockRejectedValue(
       new BusinessRuleError("OUT_OF_STOCK", "out of stock"),
     );
-    const backpack = await product("24h-survival-backpack");
+    const backpack = await product("mochila-65l");
     const { result } = await renderCart();
 
     let added = true;
@@ -167,17 +167,17 @@ describe("CartProvider", () => {
 
     expect(added).toBe(false);
     expect(result.current.isOpen).toBe(false);
-    expect(screen.getByRole("alert")).toHaveTextContent("Mochila de supervivencia 24H está agotado.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Mochila de supervivencia 65L está agotado.");
     expect(track).toHaveBeenCalledWith({
       name: "add_to_cart_failed",
-      properties: { product_id: "24h-survival-backpack", quantity: 1, reason: "out_of_stock" },
+      properties: { product_id: "mochila-65l", quantity: 1, reason: "out_of_stock" },
     });
     expect(captureException).not.toHaveBeenCalled();
   });
 
   it("rejects invalid quantities without touching the cart", async () => {
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
-    const backpack = await product("24h-survival-backpack");
+    const backpack = await product("mochila-65l");
     const { result } = await renderCart();
 
     let added = true;
@@ -191,8 +191,8 @@ describe("CartProvider", () => {
   });
 
   it("serializes rapid mutations so none is lost", async () => {
-    const backpack = await product("24h-survival-backpack");
-    const food = await product("emergency-food-pack");
+    const backpack = await product("mochila-65l");
+    const food = await product("radio-solar");
     const { result } = await renderCart();
 
     let all: Promise<unknown> = Promise.resolve();
@@ -212,8 +212,8 @@ describe("CartProvider", () => {
     expect(result.current.pending).toBe(false);
     expect(result.current.itemCount).toBe(4);
     expect(result.current.cart?.getItems().map((item) => [item.product.id.value, item.quantity.value])).toEqual([
-      ["24h-survival-backpack", 3],
-      ["emergency-food-pack", 1],
+      ["mochila-65l", 3],
+      ["radio-solar", 1],
     ]);
   });
 
@@ -224,25 +224,25 @@ describe("CartProvider", () => {
       JSON.stringify({
         version: 2,
         items: [
-          { productId: "first-aid-pro", quantity: 1 },
-          { productId: "emergency-food-pack", quantity: 2 },
+          { productId: "kit-medicina", quantity: 1 },
+          { productId: "radio-solar", quantity: 2 },
         ],
       }),
     );
     const { result } = await renderCart();
 
-    await act(() => result.current.setItemQuantity("first-aid-pro", 4));
+    await act(() => result.current.setItemQuantity("kit-medicina", 4));
     expect(result.current.itemCount).toBe(6);
     expect(track).toHaveBeenCalledWith({
       name: "product_added_to_cart",
-      properties: expect.objectContaining({ product_id: "first-aid-pro", quantity: 3, source: "cart_drawer" }),
+      properties: expect.objectContaining({ product_id: "kit-medicina", quantity: 3, source: "cart_drawer" }),
     });
 
-    await act(() => result.current.removeItem("emergency-food-pack"));
+    await act(() => result.current.removeItem("radio-solar"));
     expect(result.current.itemCount).toBe(4);
     expect(track).toHaveBeenCalledWith({
       name: "product_removed_from_cart",
-      properties: expect.objectContaining({ product_id: "emergency-food-pack", quantity: 2, cart_item_count: 4 }),
+      properties: expect.objectContaining({ product_id: "radio-solar", quantity: 2, cart_item_count: 4 }),
     });
 
     await act(() => result.current.clearCart());
@@ -254,17 +254,17 @@ describe("CartProvider", () => {
     vi.spyOn(getContainer().getManageCartUseCase(), "setQuantity").mockRejectedValue(
       new BusinessRuleError("MAX_QUANTITY_EXCEEDED", "too many"),
     );
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
 
-    await act(() => result.current.setItemQuantity("first-aid-pro", 100));
+    await act(() => result.current.setItemQuantity("kit-medicina", 100));
     expect(screen.getByRole("alert")).toHaveTextContent("Puedes añadir como máximo 99 unidades de cada producto.");
     expect(result.current.itemCount).toBe(1);
   });
 
   it("tracks checkout_started and navigates to the local checkout", async () => {
     const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
     act(() => result.current.openCart());
 
@@ -272,7 +272,7 @@ describe("CartProvider", () => {
 
     expect(track).toHaveBeenCalledWith({
       name: "checkout_started",
-      properties: { cart_value: 89, cart_item_count: 1, currency: "EUR", checkout_type: "local" },
+      properties: { cart_value: 18, cart_item_count: 1, currency: "EUR", checkout_type: "local" },
     });
     expect(router.push).toHaveBeenCalledWith("/checkout");
     expect(result.current.isOpen).toBe(false);
@@ -285,7 +285,7 @@ describe("CartProvider", () => {
       url: "https://tienda.myshopify.com/checkouts/abc",
       type: "hosted",
     });
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
 
     await act(() => result.current.checkout());
@@ -302,7 +302,7 @@ describe("CartProvider", () => {
       url: "https://tienda.myshopify.com/checkouts/abc",
       type: "hosted",
     });
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
 
     let started = false;
@@ -318,7 +318,7 @@ describe("CartProvider", () => {
   it("shows an error toast when checkout cannot start", async () => {
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockRejectedValue(new Error("down"));
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
 
     await act(() => result.current.checkout());
@@ -330,7 +330,7 @@ describe("CartProvider", () => {
   it("tells the visitor the cart is empty when checkout finds no items, without reporting an exception", async () => {
     const captureException = vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockRejectedValue(new ValidationError("Cart is empty"));
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 1 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
     const { result } = await renderCart();
     localStorage.removeItem("bugout.cart");
 
@@ -382,7 +382,7 @@ describe("CartProvider", () => {
     const { result } = await renderCart();
     expect(result.current.itemCount).toBe(0);
 
-    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "first-aid-pro", quantity: 2 }] }));
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 2 }] }));
     act(() => {
       window.dispatchEvent(new StorageEvent("storage", { key: "bugout.cart" }));
     });

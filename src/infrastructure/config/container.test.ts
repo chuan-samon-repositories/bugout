@@ -61,9 +61,9 @@ describe('AppContainer', () => {
   it('serves the bundled catalog and the in-app checkout with the local provider', async () => {
     const container = createContainer(local);
     const products = await container.getGetProductsUseCase().execute();
-    expect(products).toHaveLength(6);
+    expect(products).toHaveLength(20);
     expect(products[0].price.currency).toBe('EUR');
-    await expect(container.getGetProductBySlugUseCase().execute('first-aid-pro')).resolves.toMatchObject({ slug: 'first-aid-pro' });
+    await expect(container.getGetProductBySlugUseCase().execute('kit-medicina')).resolves.toMatchObject({ slug: 'kit-medicina' });
     // No browser storage in node: the cart is empty, so checkout is refused.
     await expect(container.getCreateCheckoutUseCase().execute()).rejects.toThrow('Cart is empty');
   });
@@ -71,7 +71,7 @@ describe('AppContainer', () => {
   it('starts the in-app checkout for a non-empty local cart', async () => {
     stubLocalStorage();
     const container = createContainer(local);
-    await container.getManageCartUseCase().addToCart(new ProductId('first-aid-pro'), new Quantity(1));
+    await container.getManageCartUseCase().addToCart(new ProductId('kit-medicina'), new Quantity(1));
     await expect(container.getCreateCheckoutUseCase().execute()).resolves.toEqual({ url: '/checkout', type: 'local' });
   });
 
@@ -98,9 +98,9 @@ describe('AppContainer', () => {
 
   it('adds products to the local cart through the catalog', async () => {
     const data = stubLocalStorage();
-    const cart = await createContainer(local).getManageCartUseCase().addToCart(new ProductId('first-aid-pro'), new Quantity(2));
-    expect(cart.totalAmount().minor).toBe(17800);
-    expect(JSON.parse(data.get('bugout.cart') ?? '{}')).toEqual({ version: 2, items: [{ productId: 'first-aid-pro', quantity: 2 }] });
+    const cart = await createContainer(local).getManageCartUseCase().addToCart(new ProductId('kit-medicina'), new Quantity(2));
+    expect(cart.totalAmount().minor).toBe(3600);
+    expect(JSON.parse(data.get('bugout.cart') ?? '{}')).toEqual({ version: 2, items: [{ productId: 'kit-medicina', quantity: 2 }] });
   });
 
   it('talks to the Shopify Storefront API with the Shopify provider', async () => {

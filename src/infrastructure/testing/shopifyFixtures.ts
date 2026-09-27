@@ -29,7 +29,9 @@ export function testClient(fetch: FetchLike): ShopifyClient {
 export function variantNode(n: number, overrides: Partial<ShopifyVariantNode> = {}): ShopifyVariantNode {
   return {
     id: variantGid(n),
+    title: 'Default Title',
     availableForSale: true,
+    selectedOptions: [{ name: 'Title', value: 'Default Title' }],
     price: { amount: '199.0', currencyCode: 'EUR' },
     compareAtPrice: null,
     ...overrides,
@@ -50,8 +52,21 @@ export function productNode(overrides: Partial<ShopifyProductNode> = {}): Shopif
     features: null,
     specifications: null,
     contents: null,
+    kit: null,
+    related: null,
     ...overrides,
   };
+}
+
+/** A variant for a "Personas" option, e.g. `peopleVariant(2, 2, '199.0')` → "2 personas". */
+export function peopleVariant(n: number, people: number, amount: string, overrides: Partial<ShopifyVariantNode> = {}) {
+  const title = people === 1 ? '1 persona' : `${people} personas`;
+  return variantNode(n, {
+    title,
+    selectedOptions: [{ name: 'Personas', value: String(people) }],
+    price: { amount, currencyCode: 'EUR' },
+    ...overrides,
+  });
 }
 
 export function productWithVariants(
@@ -66,6 +81,8 @@ export interface LineSpec {
   variant: number;
   quantity: number;
   available?: boolean;
+  /** Merchandise variant; defaults to a single "Default Title" variant. */
+  merchandise?: ShopifyVariantNode;
 }
 
 export function cartNode(id: string, lines: LineSpec[] = []): ShopifyCartNode {
@@ -77,7 +94,8 @@ export function cartNode(id: string, lines: LineSpec[] = []): ShopifyCartNode {
         id: line.lineId,
         quantity: line.quantity,
         merchandise: {
-          ...variantNode(line.variant, { availableForSale: line.available ?? true }),
+          ...(line.merchandise ?? variantNode(line.variant)),
+          availableForSale: line.available ?? true,
           product: productNode({ handle: `producto-${line.variant}`, title: `Producto ${line.variant}` }),
         },
       })),

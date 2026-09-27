@@ -6,6 +6,9 @@ export type {
   ProductDetails,
   ProductSpecification,
   ProductContentItem,
+  ProductVariant,
+  ProductVariantOption,
+  KitInfo,
 } from './product/Product';
 export { Cart, MAX_QUANTITY_PER_ITEM } from './cart/Cart';
 export { CartItem } from './cart/CartItem';

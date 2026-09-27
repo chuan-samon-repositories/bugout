@@ -31,7 +31,7 @@ function normalize(details: CheckoutDetails): CheckoutDetails {
 function toOrderLines(cart: Cart): OrderLine[] {
   return cart.getItems().map((item) => ({
     productId: item.product.id.value,
-    name: item.product.name,
+    name: item.product.displayName,
     quantity: item.quantity.value,
     unitPriceMinor: item.product.price.minor,
     subtotalMinor: item.subtotal().minor,

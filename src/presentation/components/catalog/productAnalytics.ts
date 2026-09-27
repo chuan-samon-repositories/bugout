@@ -8,6 +8,7 @@ export function productViewedProperties(product: Product): ProductViewedProperti
     product_id: product.id.value,
     product_slug: product.slug,
     product_name: product.name,
+    variant_title: product.variantTitle,
     category: product.category,
     price: product.price.amount,
     currency: product.price.currency,

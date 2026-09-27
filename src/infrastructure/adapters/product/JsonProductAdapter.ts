@@ -1,3 +1,4 @@
+import { findByVariantId } from '@/application/catalog/kits';
 import { ProductRepository } from '@/application/ports/ProductRepository';
 import { Product } from '@/domain/entities/product/Product';
 import { NotFoundError } from '@/domain/errors';
@@ -23,8 +24,9 @@ export class JsonProductAdapter implements ProductRepository {
     return [...this.load()];
   }
 
+  /** Finds a product by the id of any of its variants, resolved to that variant. */
   async findById(id: ProductId): Promise<Product> {
-    const product = this.load().find((candidate) => candidate.id.equals(id));
+    const product = findByVariantId(this.load(), id.value);
     if (!product) throw new NotFoundError(`Product ${id.value} not found`);
     return product;
   }

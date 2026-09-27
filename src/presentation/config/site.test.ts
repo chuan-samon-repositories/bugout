@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { LOCAL_SITE_URL, resolveSiteUrl } from "./site";
+import { isIndexableDeployment, LOCAL_SITE_URL, resolveSiteUrl } from "./site";
 
 describe("resolveSiteUrl", () => {
   it("prefers NEXT_PUBLIC_SITE_URL and drops trailing slashes", () => {
@@ -25,6 +25,19 @@ describe("resolveSiteUrl", () => {
 
   it("uses localhost when nothing is configured", () => {
     expect(resolveSiteUrl({})).toEqual({ url: LOCAL_SITE_URL, configured: false });
+  });
+});
+
+describe("isIndexableDeployment", () => {
+  it("is indexable in production and off Vercel", () => {
+    expect(isIndexableDeployment("production")).toBe(true);
+    expect(isIndexableDeployment(undefined)).toBe(true);
+    expect(isIndexableDeployment("")).toBe(true);
+  });
+
+  it("is not indexable on preview and development deployments", () => {
+    expect(isIndexableDeployment("preview")).toBe(false);
+    expect(isIndexableDeployment("development")).toBe(false);
   });
 });
 

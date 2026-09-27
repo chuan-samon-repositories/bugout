@@ -6,7 +6,7 @@ The prototype's Catalan/English copy, language switcher, "TODO" placeholders and
 
 ## Visual language
 
-- **Typeface:** Montserrat (400–900), loaded with `next/font/google` in `app/layout.tsx`. The variable sits on `<html>` because `--font-sans` is declared on `:root`. Headings are weight 800 with `-0.02em` tracking (`@layer base` in `globals.css`).
+- **Typeface:** Montserrat (400–900), self-hosted from `src/app/fonts/` (one variable Latin `woff2`, weights 100–900, OFL licence in `OFL.txt`) with `next/font/local` in `app/layout.tsx`, so builds never download it from Google. The variable sits on `<html>` because `--font-sans` is declared on `:root`. Headings are weight 800 with `-0.02em` tracking (`@layer base` in `globals.css`).
 - **Surfaces:** a sand page (`bg-sand`) with white cards (`bg-white shadow-card`, `rounded-2xl`; kit cards are `rounded-kit`). Dark sections are navy: `navy` (tables, trust bar), `navy-deep` ("Qué hay dentro", consent banner) and `navy-darker` (hero, header, footer). Teasers use `bg-sand-dim`.
 - **Buttons:** pills. The main call to action is `primary` (orange with navy text, lifted shadow `shadow-cta`). `secondary` is a navy outline. On dark backgrounds use `inverse` or `outline-inverse`.
 - **Eyebrows:** small uppercase kickers above headings (`Eyebrow`, `SectionHeading`): `text-accent` on light backgrounds, `text-orange-on-navy` on dark ones.

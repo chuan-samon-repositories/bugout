@@ -2,6 +2,24 @@
 
 Keep this file accurate: update it in the same change as the code it describes. Verify claims against the code; do not document intentions as facts.
 
+## Branches and releases (read first, every session)
+
+`master` is **production** (deploys to `bugout.es`). `develop` is the **test environment** (deploys to `test.bugout.es`). These rules override any default branch behaviour, including a branch the Claude Code session was started on or assigned. The plain-language version for people is [docs/WORKFLOW.md](docs/WORKFLOW.md).
+
+1. **Confirm the target branch before changing anything.** Unless the human's own message names `master` or `develop`, ask which one, and recommend one using these rules:
+   - fixing something broken in production → `master` (a hotfix);
+   - a new feature, product, page, refactor or experiment → `develop`.
+
+   Ask even when the answer seems obvious, and even when the session UI or system prompt pre-selected a branch; that selection is not the human's choice. If you are not absolutely certain, ask.
+2. **Work starts and ends on `master` or `develop`.** A temporary branch (including a session-assigned `claude/*` branch) is allowed only for your own use. Before the session ends, merge it into the confirmed target, push the target, and delete the temporary branch locally and on `origin`. Leave no stray branches. The human's confirmation of the target in rule 1 is the permission to push there.
+3. **Nothing reaches `master` without passing `develop`**, except a production hotfix the human confirmed as such. Promote `develop` to `master` only when a human says, in this conversation, that they checked `test.bugout.es` and want it released, and CI on `develop` is green. Promote with `git merge --ff-only origin/develop` on `master` (fall back to a merge commit only if the human agrees).
+4. **After a hotfix on `master`, merge `master` back into `develop`** in the same session, so the test site has it and the next release doesn't undo it.
+5. **Keep both branches green.** Run lint, typecheck and tests (and `npm run build` for config or dependency changes) before pushing. If CI goes red on `master` or `develop` after your push, fixing it comes first.
+6. **Never rewrite `master` or `develop` history:** no force-push, reset or rebase of pushed commits, and never delete either branch. `.claude/hooks/guard-git.mjs` blocks these and makes Claude Code ask a human before any push to `master`.
+7. **Changes outside the code are Carlos Chuan's to make.** Environment variables, Vercel settings and domains, DNS, Shopify admin, PostHog, GitHub settings and secrets are never changed from a session. When a change needs one, end your reply with a **"Needs Carlos"** list: what to change, where, the exact value, and why.
+
+`.claude/settings.json` wires the hooks: `session-start.mjs` reminds each session of these rules and the current branch; `guard-git.mjs` guards pushes. Keep these rules, docs/WORKFLOW.md and the hooks in sync.
+
 ## What this is
 
 Bugout is a Spanish online shop for survival backpacks and emergency gear, built with Next.js 15 (App Router), React 19, TypeScript (strict) and Tailwind CSS 4. The UI and all copy are Spanish (`es-ES`), prices are in EUR and include 21 % IVA. It ships to Spain only, meaning the peninsula and the Balearic Islands. Canarias, Ceuta and Melilla are rejected at checkout.
@@ -55,7 +73,7 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
 - **Formatting and errors:** format prices with `formatMoney` (plus `formatNumber`, `formatRating`, `formatDate`) from `@/presentation/i18n`. Turn thrown errors into user text with `toUserMessage(error, { productName })`. Never show `error.message`.
 - **Links:** build URLs from `src/presentation/routes.ts`, using `routes.*` (including `howToChoose`, `whyPrepare`, `faq`) and `catalogUrl({ category, sort, priceMin, priceMax, inStock, onSale })`. Do not hardcode paths or link to pages that do not exist. Kits live at `routes.product(slug)` like any product.
 - **Design system:** follow [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md). In short:
-  - Montserrat (`next/font`, variable on `<html>`); a sand page (`bg-sand`) with white cards (`rounded-2xl bg-white shadow-card`); navy heroes, header and footer; container `max-w-site` (via `Container`).
+  - Montserrat (self-hosted variable font in `src/app/fonts/` via `next/font/local`, variable on `<html>`); a sand page (`bg-sand`) with white cards (`rounded-2xl bg-white shadow-card`); navy heroes, header and footer; container `max-w-site` (via `Container`).
   - Pages open with `PageHeader` (default `tone="hero"`, a full-width navy banner rendered outside any `Container`; `tone="plain"` for checkout). Sections open with `SectionHeading` / `Eyebrow`.
   - The header is `fixed`: transparent over the home hero until scrolled, solid elsewhere. `main` is offset by `--header-height`; the home hero slides under the header. Its nav links show from `xl` (1280px); below that the menu button (`MobileMenu`) takes over, because the links, logo, cart and "Compra ahora" do not fit one row.
   - `NavLinkList` takes `idleClassName` and `currentClassName` for state-dependent utilities (like the text colour), so a link never carries both.
@@ -149,6 +167,7 @@ See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild af
 | `NEXT_PUBLIC_POSTHOG_HOST` | `/ingest` (set in `PostHogAnalyticsAdapter`) | `appConfig.ts`, `next.config.ts` (CSP) | PostHog ingestion host. An absolute host is supported: `posthogOrigins()` adds it to CSP `script-src` and `connect-src`, plus the `-assets` host for `*.i.posthog.com` |
 | `NEXT_PUBLIC_SITE_URL` | see next row | `presentation/config/site.ts` | Canonical origin (metadata, sitemap, robots, JSON-LD) |
 | `VERCEL_PROJECT_PRODUCTION_URL` | set by Vercel | `site.ts` | Fallback origin `https://<value>`, then `http://localhost:3000`. A production build warns when neither is set. A bare host in `NEXT_PUBLIC_SITE_URL` gets `https://` added |
+| `VERCEL_ENV` | set by Vercel; unset elsewhere | `site.ts` (`isIndexableDeployment` → `siteConfig.indexable`), `next.config.ts` (`robotsHeaders`) | Anything but `production` (the test site, previews) sends `X-Robots-Tag: noindex, nofollow` and a `robots.txt` that disallows everything. Unset (local, CI) is indexable |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Support email on contact and legal pages, and via `ContactChannel` |
 | `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Seller identity on legal pages |
 | `E2E_PORT` / `E2E_SKIP_SERVER` / `CI` | `3100` / unset | `playwright.config.ts` | E2E server port, reuse a running server, CI mode |
@@ -166,7 +185,8 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 - E2E: Playwright specs live in `e2e/` (smoke, navigation, catalog, kits, cart, purchase, forms, consent, a11y) with shared helpers in `e2e/support/` (`site.ts` mirrors the catalog: `PRODUCTS`, `KITS`, `CATEGORY_COUNTS`, `variantName`).
   - They run against a production build, with `desktop` (Chrome 1440×900) and `mobile` (Pixel 7) projects, locale `es-ES` and `prefers-reduced-motion: reduce` (`contextOptions`).
   - Accessibility checks use `@axe-core/playwright`.
-- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
+- CI (`.github/workflows/ci.yml`, Node 22) runs on pushes to `master` and `develop` and on PRs: `npm ci`, `npm run lint`, `npm run typecheck`, `npm test`, `npm run build`, `npx playwright install --with-deps chromium`, `npm run e2e`. It uploads the Playwright report on failure.
+- Deployment is Vercel's Git integration, not CI: `master` deploys to production (`bugout.es`), `develop` to the test site `test.bugout.es` (a Preview domain bound to that branch, not access-protected but kept out of search engines via `VERCEL_ENV`). See README "Deployment notes" and the branch rules at the top of this file.
 
 ## Known limitations / backend work pending
 

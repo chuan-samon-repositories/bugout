@@ -87,10 +87,14 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
   - Set `E2E_SKIP_SERVER=1` to target an already running server.
   - It runs desktop and mobile (Pixel 7) projects with reduced motion. Specs cover smoke, navigation, catalog, kits, cart, purchase, forms, consent and accessibility (axe).
   - Install browsers once with `npx playwright install --with-deps chromium`, the same command CI uses.
-- CI (`.github/workflows/ci.yml`) runs on pushes to `master` and on pull requests: lint, typecheck, unit tests, build and E2E.
+- CI (`.github/workflows/ci.yml`) runs on pushes to `master` and `develop` and on pull requests: lint, typecheck, unit tests, build and E2E.
 
 ## Deployment notes
 
+- **Branch rules:** `master` is production and `develop` is the test environment; every change goes through `develop` first. Read [docs/WORKFLOW.md](docs/WORKFLOW.md) before working on the code. Claude Code follows the same rules (CLAUDE.md, "Branches and releases"), reinforced by the hooks in `.claude/`.
+- Vercel deploys through its Git integration on every push; CI does not deploy. `master` is the Production branch (`bugout.es`). `develop` builds as a Preview deployment, and the `test.bugout.es` domain is assigned to that branch.
+  - The test site is public to anyone with the URL but hidden from search engines: on every deployment whose `VERCEL_ENV` is not `production`, `next.config.ts` sends `X-Robots-Tag: noindex, nofollow` and `robots.txt` disallows everything (`siteConfig.indexable`). Vercel does this for preview URLs itself, but not for a custom domain bound to a preview branch. This doesn't stop crawlers that ignore robots rules; for real access control, use Vercel Deployment Protection.
+  - Preview env vars scoped to the `develop` branch: `NEXT_PUBLIC_SITE_URL=https://test.bugout.es`, a Shopify development store (or `local`) instead of the live store, and no PostHog key (or a separate PostHog project).
 - Set `NEXT_PUBLIC_SITE_URL` to the production origin (a bare host gets `https://` added). It is used for canonical URLs, Open Graph metadata, `sitemap.xml`, `robots.txt` and product structured data. Without it, the app uses `https://$VERCEL_PROJECT_PRODUCTION_URL` (set automatically on Vercel), then `http://localhost:3000`. A production build logs a warning when it falls back to localhost.
 - **Required before launch (LSSI):** `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID` and `NEXT_PUBLIC_LEGAL_ADDRESS`. Unset fields are silently hidden on the legal and contact pages, so the build won't fail if they are missing. While the contact form is hidden, the email is the only way customers can reach the shop; without it the contact page offers no channel at all.
 - `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.

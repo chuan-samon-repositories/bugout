@@ -40,7 +40,7 @@ type Env = Record<string, string | undefined>;
  *   PostHog's scripts load same-origin through /ingest/static and /ingest/array, or from its own hosts when
  *   NEXT_PUBLIC_POSTHOG_HOST is an absolute URL.
  * - Images: next/image serves optimised images from /_next/image; Shopify's CDN is allowed for unoptimised ones.
- * - Fonts: next/font self-hosts Montserrat.
+ * - Fonts: Montserrat is served from the repo through next/font/local (src/app/fonts).
  * - Connections: PostHog goes through the same-origin /ingest proxy unless pointed at its own host; the Shopify
  *   Storefront API is called from the browser when that provider is set up.
  */
@@ -63,6 +63,16 @@ export function contentSecurityPolicy(env: Env = process.env): string {
     "form-action 'self'",
     "object-src 'none'",
   ].join("; ");
+}
+
+/**
+ * `X-Robots-Tag: noindex, nofollow` on Vercel preview and development deployments, so search engines never index
+ * the test site (test.bugout.es, a custom domain bound to the develop branch, which Vercel leaves indexable).
+ * Same rule as `isIndexableDeployment` in src/presentation/config/site.ts, which also drives robots.txt.
+ */
+export function robotsHeaders(env: Env = process.env): { key: string; value: string }[] {
+  const vercelEnv = env.VERCEL_ENV?.trim();
+  return vercelEnv && vercelEnv !== "production" ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : [];
 }
 
 const securityHeaders = [
@@ -94,7 +104,7 @@ const nextConfig: NextConfig = {
     ];
   },
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [{ source: "/:path*", headers: [...securityHeaders, ...robotsHeaders()] }];
   },
 };
 

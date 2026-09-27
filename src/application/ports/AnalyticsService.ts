@@ -1,3 +1,4 @@
+import type { CheckoutAttribution } from '@/application/analytics/attribution';
 import { AnalyticsEvent } from '@/application/analytics/events';
 
 /**
@@ -8,8 +9,10 @@ import { AnalyticsEvent } from '@/application/analytics/events';
 export type ConsentOrigin = 'visitor' | 'restored';
 
 /**
- * Product analytics. Implementations must drop events until the visitor has
- * granted analytics consent, and must never throw into the calling code.
+ * Product analytics. Implementations must send nothing until the visitor has
+ * granted analytics consent, and must never throw into the calling code. Events
+ * tracked while the visitor has not decided yet may be held in memory and sent
+ * if they accept; they are discarded if they reject.
  */
 export interface AnalyticsService {
   track(event: AnalyticsEvent): void;
@@ -19,4 +22,9 @@ export interface AnalyticsService {
    * restored one, so a restored grant is not reported as a new opt-in.
    */
   setConsent(granted: boolean, origin: ConsentOrigin): void;
+  /**
+   * The visitor and session ids plus the landing page's campaign parameters, to attach to a hosted checkout so
+   * its order can be linked back to this visit. Empty (`EMPTY_ATTRIBUTION`) without consent.
+   */
+  checkoutAttribution(): CheckoutAttribution;
 }

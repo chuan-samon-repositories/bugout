@@ -7,20 +7,12 @@ export const SHOPIFY_CART_ID_KEY = 'bugout.shopify-cart-id';
  */
 export const SHOPIFY_CART_REVISION_KEY = 'bugout.shopify-cart-rev';
 
-interface KnownCheckout {
-  cartId: string;
-  checkoutUrl: string;
-}
-
 /**
  * Remembers the visitor's Shopify cart id in localStorage. Deliberately has no
  * in-memory fallback for the id: on the server the container is shared between
- * visitors. The checkout URL of the last loaded or mutated cart is kept in memory
- * (browser only) and is returned only while that cart is still the stored one.
+ * visitors.
  */
 export class ShopifyCartIdStore {
-  private knownCheckout: KnownCheckout | null = null;
-
   constructor(
     private readonly storage?: KeyValueStorage | null,
     private readonly key: string = SHOPIFY_CART_ID_KEY,
@@ -40,24 +32,11 @@ export class ShopifyCartIdStore {
   }
 
   clear(): void {
-    this.knownCheckout = null;
     try {
       this.resolve()?.removeItem(this.key);
     } catch {
       // Storage unavailable: nothing to forget.
     }
-  }
-
-  /** Remembers the checkout URL Shopify returned for `cartId`. Ignored without storage (server). */
-  rememberCheckoutUrl(cartId: string, checkoutUrl: string): void {
-    if (!this.hasStorage()) return;
-    this.knownCheckout = { cartId, checkoutUrl };
-  }
-
-  /** The remembered checkout URL, only when it belongs to the currently stored cart id. */
-  checkoutUrl(): string | null {
-    const cartId = this.get();
-    return cartId && this.knownCheckout?.cartId === cartId ? this.knownCheckout.checkoutUrl : null;
   }
 
   /**

@@ -54,7 +54,10 @@ src/app/            Next.js routes only: load data via the container, render pre
 src/presentation/   components/<feature>/ (home, kits, catalog, cart, checkout, layout, ...), components/ui/ (design system), context/, hooks/, i18n/, routes.ts, config/ (site, brand, messaging, mascot)
 src/application/    use-cases/, ports/ (interfaces), dtos/, catalog/ (filters, kits.ts) + checkout/ (pure helpers), analytics/events.ts, errors.ts
 src/domain/         entities (Product, Cart, CartItem, OrderPricing), value-objects (Money, ProductId, Quantity), errors
-src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simulated services), config/ (AppContainer, env, pricing), data/
+src/infrastructure/ adapters/ (json, localStorage, shopify incl. webhooks/, analytics, local simulated services), config/ (AppContainer, env, pricing; server.ts for route handlers), data/
+src/app/api/        route handlers (Shopify order webhooks)
+shopify/            code pasted into Shopify admin (custom-pixel.js)
+scripts/posthog/    PostHog project settings and dashboards (setup.mjs)
 ```
 
 - `domain` imports nothing outside itself. `application` imports only `domain`. Imports use `@/` everywhere, not relative `../` paths across folders.
@@ -127,14 +130,20 @@ src/infrastructure/ adapters/ (json, localStorage, shopify, posthog, local simul
   - Any other operation that must not interleave with cart mutations goes through `runExclusive(task)`. For example, the local checkout places its order this way.
   - Cross-tab sync listens only to `getContainer().getSyncedStorageKeys()`: `cart` = `bugout.cart`, `bugout.shopify-cart-id` and `bugout.shopify-cart-rev`; `consent` = `bugout.consent`. The key constants are exported from their adapters. Never hardcode storage keys.
   - The last order confirmation goes through `getContainer().getOrderConfirmationStore()` (sessionStorage `bugout.lastOrder`, strictly validated on load).
-- **Analytics:** track only events defined in the typed catalogue `src/application/analytics/events.ts`, through the `AnalyticsService` from `useAnalytics()`. Do not import `posthog-js` anywhere else. Add a new event to the catalogue first.
-  - `AnalyticsService` has only `track`, `captureException` and `setConsent(granted, origin)`; there is no `identify`.
+- **Analytics:** track only events defined in the typed catalogue `src/application/analytics/events.ts`, through the `AnalyticsService` from `useAnalytics()`. Do not import `posthog-js` anywhere else. Add a new event to the catalogue first. The whole setup (pixel, webhooks, dashboards, Google Ads) is in [docs/ANALYTICS.md](docs/ANALYTICS.md); keep it in sync.
+  - The PostHog project has a 0 € billing limit (free tier only), so add an event only when it answers a question the dashboards need, prefer autocapture for plain clicks, and keep heatmaps, web vitals, recordings and form autocapture off.
+  - `AnalyticsService` has only `track`, `captureException`, `setConsent(granted, origin)` and `checkoutAttribution()`; there is no `identify`.
+  - Events tracked before the visitor's first consent decision are held in memory (max 50) and sent with their original time only if they accept.
+  - Every browser and webhook event carries `app_env`, `commerce_provider` and `app_release` (`getContainer().analyticsSuperProperties()`; `NEXT_PUBLIC_APP_ENV`/`NEXT_PUBLIC_APP_RELEASE` are set in `next.config.ts` from `VERCEL_ENV`/`VERCEL_GIT_COMMIT_SHA`).
+  - At the Shopify hand-off, `CartContext.checkout` passes `{ analyticsConsent, attribution: analytics.checkoutAttribution() }` to `CreateCheckoutUseCase`. `ShopifyCheckoutAdapter` writes the attribution as hidden cart attributes (`_ph_distinct_id`, `_ph_session_id`, `_utm_*`, `_gclid`, `_gbraid`, `_wbraid`; keys in `adapters/shopify/checkoutAttributes.ts`, mirrored in `shopify/custom-pixel.js`) and requests the checkout URL with `@inContext(visitorConsent: …)` once the visitor decided. Without consent the attribution is empty and earlier attributes are cleared.
+  - Shopify orders are tracked server-side by `src/app/api/shopify/webhooks/route.ts` (`orders/paid` → `order_completed`, `refunds/create` → `order_refunded`, `orders/cancelled` → `order_cancelled`; `ServerAnalyticsEvent`), wired in `@/infrastructure/config/server` (server-only; never import it from client code). The hosted checkout's steps (`checkout_step_completed`, `checkout_alert_displayed`) come from `shopify/custom-pixel.js`, pasted into Shopify by Carlos.
+  - Dashboards and PostHog project settings live in `scripts/posthog/setup.mjs` (idempotent; `--check` validates the queries). When you add or rename an event, update the affected insights there.
   - `origin` is a `ConsentOrigin`: `'visitor'` for a fresh Accept or Reject (a visitor Accept sends one `$opt_in`), or `'restored'` for a stored or other-tab decision (opts in silently).
   - Never send personal data (names, emails, phones, addresses, free text) in events.
   - Mark containers that show customer data with the `ph-no-capture` class.
-  - Monetary properties are in major units with `currency`. Product events carry `product_id` (the variant id) and `variant_title`, and so do `add_to_cart_failed` and each `order_completed.products[]` entry.
+  - Monetary properties are in major units with `currency`. Product events carry `product_id` (the variant id) and `variant_title`, and so do `add_to_cart_failed` and each `order_completed.products[]` entry (which also has `product_name`).
   - `product_variant_selected` is sent by `PurchasePanel` when the visitor picks another variant, never for the initial selection.
-- **Consent:** analytics are gated on consent. `PostHogAnalyticsAdapter` drops every call and loads nothing until `setConsent(true, origin)`: after the visitor accepts the banner, or when a stored grant is restored. Withdrawal resets and opts out, then deletes PostHog storage and cookies (host and parent domains, `cookieDomainsFor`), keeping only `__ph_opt_in_out_<key>="0"`.
+- **Consent:** analytics are gated on consent. `PostHogAnalyticsAdapter` sends nothing and loads nothing until `setConsent(true, origin)`: after the visitor accepts the banner, or when a stored grant is restored. Withdrawal resets and opts out, then deletes PostHog storage and cookies (host and parent domains, `cookieDomainsFor`), keeping only `__ph_opt_in_out_<key>="0"`.
   - `AnalyticsProvider` restores a stored decision in a layout effect, before children track on mount, and syncs consent across tabs.
   - `useConsent()` offers `accept`, `reject`, `reopen(returnFocusTo?)`, `dismiss()` and `reopenRequest`. A reopened banner focuses its first button, and Escape closes it without changing the decision.
   - The banner reserves its height with a spacer so it never covers page content.
@@ -168,6 +177,8 @@ See `.env.example`. `NEXT_PUBLIC_*` values are inlined at build time; rebuild af
 | `NEXT_PUBLIC_SITE_URL` | see next row | `presentation/config/site.ts` | Canonical origin (metadata, sitemap, robots, JSON-LD) |
 | `VERCEL_PROJECT_PRODUCTION_URL` | set by Vercel | `site.ts` | Fallback origin `https://<value>`, then `http://localhost:3000`. A production build warns when neither is set. A bare host in `NEXT_PUBLIC_SITE_URL` gets `https://` added |
 | `VERCEL_ENV` | set by Vercel; unset elsewhere | `site.ts` (`isIndexableDeployment` → `siteConfig.indexable`), `next.config.ts` (`robotsHeaders`) | Anything but `production` (the test site, previews) sends `X-Robots-Tag: noindex, nofollow` and a `robots.txt` that disallows everything. Unset (local, CI) is indexable |
+| `NEXT_PUBLIC_APP_ENV`, `NEXT_PUBLIC_APP_RELEASE` | set in `next.config.ts` from `VERCEL_ENV` and `VERCEL_GIT_COMMIT_SHA`; `local` / none elsewhere | `appConfig.ts` | `app_env` and `app_release` on every analytics event. Don't set them by hand |
+| `SHOPIFY_WEBHOOK_SECRET` | none (the webhook route answers 503) | `infrastructure/config/server.ts` | Server-only, never `NEXT_PUBLIC_`. Signing key of the Shopify order webhooks (Settings → Notifications → Webhooks) |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Support email on contact and legal pages, and via `ContactChannel` |
 | `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | hidden when unset | `site.ts` | **Required before launch (LSSI).** Seller identity on legal pages |
 | `E2E_PORT` / `E2E_SKIP_SERVER` / `CI` | `3100` / unset | `playwright.config.ts` | E2E server port, reuse a running server, CI mode |
@@ -178,7 +189,7 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 
 - Unit tests sit next to the code as `*.test.ts(x)` (Vitest, globals on, `@/` alias).
 - The default environment is `node`. React component, context and hook tests opt into jsdom with `// @vitest-environment jsdom` on the **first line**, and use Testing Library (`vitest.setup.ts` loads jest-dom and cleans up).
-- `PostHogAnalyticsAdapter.sdk.test.ts` runs the real `posthog-js` SDK to check consent, opt-out and storage cleanup, and `PostHogAnalyticsAdapter.cookies.test.ts` covers cookie removal on parent domains. Keep both passing when you touch analytics.
+- `PostHogAnalyticsAdapter.sdk.test.ts` runs the real `posthog-js` SDK to check consent, opt-out and storage cleanup, and `PostHogAnalyticsAdapter.cookies.test.ts` covers cookie removal on parent domains. Keep both passing when you touch analytics. `customPixel.test.ts` runs `shopify/custom-pixel.js` in a sandbox and checks its attribute keys match the site's.
 - Test helpers: `domain/testing/` (`buildProduct`, `testPricingPolicy`), `application/testing/` (fakes, checkout details), `infrastructure/testing/` (`MemoryStorage`, Shopify fixtures). `fast-check` is available for property tests.
 - Add or update tests with every behaviour change.
 - `src/app/contrast.test.ts` checks the theme's text/background pairs against WCAG AA.
@@ -193,7 +204,8 @@ Reference each env var literally as `process.env.NEXT_PUBLIC_X`; Next.js inlines
 - Newsletter (`LocalNewsletterAdapter`) and contact (`LocalContactAdapter`) only simulate delivery after a short delay and send nothing. `isMessagingSimulated()` returns `true`, so `isMessagingEnabled()` is false and the newsletter, the contact form and the checkout marketing opt-in are hidden. No backend is connected yet. Connecting one means wiring real adapters in `AppContainer` and making `isMessagingSimulated()` return `false`; the UI then shows them again.
 - With messaging hidden and no `NEXT_PUBLIC_CONTACT_EMAIL`, the site offers no way to reach the shop: `ContactChannel` links to `/contact`, which shows only the quick help and FAQ. Set the email before launch.
 - The `local` checkout is a demo (`LocalOrderGateway`): no payment, no real order, nothing leaves the browser. The confirmation is kept in sessionStorage (`bugout.lastOrder`, via `OrderConfirmationStore`).
-- `order_completed` is tracked client-side only, in `LocalCheckout`. Server-side tracking (Shopify order webhooks → PostHog) is pending, so Shopify purchases are not tracked yet.
+- Shopify purchases are tracked only once Carlos has registered the order webhooks, set `SHOPIFY_WEBHOOK_SECRET` and installed the custom pixel (docs/ANALYTICS.md). Refund events carry no visitor link (Shopify's refund payload has no cart attributes). Browser funnels and attribution cover only visitors who accept analytics; webhook revenue covers every order.
+- Google Ads is prepared, not active: click ids and UTM tags reach `order_completed`, but sending conversions to Google needs an advertising consent category in the banner first (docs/ANALYTICS.md).
 - `NEXT_PUBLIC_CONTACT_EMAIL` and the legal identity vars (`NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS`) are required before launch (LSSI). Unset fields are simply hidden, so nothing fails loudly if they are missing. Until the contact backend exists, the email is the only real channel.
 - Product photos: every loose product in the local catalog has its own photo (`public/images/products/<slug>.jpg`). The kits have none yet: their pages show a decorative navy box with the kit label plus their contents' photos. Kit cards (`KitCard`) cycle navy, orange and deep-navy gradient headers; product cards (`ProductCard`) show the kit label on a navy gradient. Shopify will supply the real images; `cdn.shopify.com` is allowed in `next.config.ts`.
 - The demo catalog's prices, weights, dimensions and kit contents are the partner prototype's placeholders, not confirmed business data. Replace them (in Shopify or `products.json`) before selling.

@@ -13,32 +13,11 @@ describe('ShopifyCartIdStore', () => {
     expect(store.get()).toBeNull();
   });
 
-  it('returns the remembered checkout URL only while its cart is the stored one', () => {
-    const storage = new MemoryStorage();
-    const store = new ShopifyCartIdStore(storage);
-    store.rememberCheckoutUrl('cart-1', 'https://shop.test/c/1');
-    expect(store.checkoutUrl()).toBeNull();
-
-    store.set('cart-1');
-    expect(store.checkoutUrl()).toBe('https://shop.test/c/1');
-
-    // Another tab switched to a new cart.
-    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-2');
-    expect(store.checkoutUrl()).toBeNull();
-
-    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
-    store.clear();
-    store.set('cart-1');
-    expect(store.checkoutUrl()).toBeNull();
-  });
-
   it('remembers nothing without storage (server rendering, shared between visitors)', () => {
     const store = new ShopifyCartIdStore(null);
-    store.rememberCheckoutUrl('cart-1', 'https://shop.test/c/1');
     store.set('cart-1');
     store.markChanged();
     expect(store.get()).toBeNull();
-    expect(store.checkoutUrl()).toBeNull();
   });
 
   it('writes a new revision on every change, even within the same millisecond', () => {

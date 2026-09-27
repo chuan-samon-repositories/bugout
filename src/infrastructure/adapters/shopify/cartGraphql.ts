@@ -69,12 +69,6 @@ export const CART_QUERY = /* GraphQL */ `
   ${CART_FIELDS_FRAGMENT}
 `;
 
-export const CART_CHECKOUT_URL_QUERY = /* GraphQL */ `
-  query CartCheckoutUrl($id: ID!) ${STOREFRONT_CONTEXT} {
-    cart(id: $id) { checkoutUrl }
-  }
-`;
-
 export const CART_CREATE_MUTATION = /* GraphQL */ `
   mutation CartCreate($lines: [CartLineInput!]) ${STOREFRONT_CONTEXT} {
     cartCreate(input: { lines: $lines }) { ${MUTATION_RESULT} }
@@ -106,4 +100,41 @@ export const CART_LINES_REMOVE_MUTATION = /* GraphQL */ `
 /** `CartLineInput`s for every item in the aggregate (merchandise id = variant GID). */
 export function toLineInputs(cart: Cart): Array<{ merchandiseId: string; quantity: number }> {
   return cart.getItems().map((item) => ({ merchandiseId: item.product.id.value, quantity: item.quantity.value }));
+}
+
+/**
+ * `@inContext` for the checkout hand-off: the market plus, once the visitor has decided, their consent. Shopify
+ * encodes the consent into the returned `checkoutUrl` (its `_cs` parameter) and applies it in checkout, so the
+ * checkout and its pixels follow the choice made on the site. Only analytics is asked on the site, so the other
+ * purposes are declined. Undecided visitors get no `visitorConsent` and Shopify's own banner decides.
+ */
+export function checkoutContext(analyticsConsent: boolean | null): string {
+  if (analyticsConsent === null) return STOREFRONT_CONTEXT;
+  return (
+    `@inContext(country: ES, language: ES, visitorConsent: ` +
+    `{analytics: ${analyticsConsent}, marketing: false, preferences: false, saleOfData: false})`
+  );
+}
+
+export interface CheckoutCartPayload {
+  cart: { id: string; checkoutUrl: string } | null;
+  userErrors: ShopifyUserError[];
+}
+
+/** Replaces the cart's attributes and returns its checkout URL (with the consent encoded, see checkoutContext). */
+export function cartAttributesUpdateMutation(analyticsConsent: boolean | null): string {
+  return /* GraphQL */ `
+  mutation CartAttributesUpdate($cartId: ID!, $attributes: [AttributeInput!]!) ${checkoutContext(analyticsConsent)} {
+    cartAttributesUpdate(cartId: $cartId, attributes: $attributes) { cart { id checkoutUrl } userErrors { field message code } }
+  }
+`;
+}
+
+/** Creates a cart for checkout with its lines and attributes. */
+export function checkoutCartCreateMutation(analyticsConsent: boolean | null): string {
+  return /* GraphQL */ `
+  mutation CheckoutCartCreate($lines: [CartLineInput!], $attributes: [AttributeInput!]) ${checkoutContext(analyticsConsent)} {
+    cartCreate(input: { lines: $lines, attributes: $attributes }) { cart { id checkoutUrl } userErrors { field message code } }
+  }
+`;
 }

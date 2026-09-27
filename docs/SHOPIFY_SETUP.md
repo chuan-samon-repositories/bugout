@@ -60,7 +60,8 @@ The app quotes shipping from `src/infrastructure/config/pricingPolicy.ts`, while
   - Ask for email as the contact method.
   - Keep **"Show a checkbox for email marketing at checkout"** on, so buyers can give newsletter consent natively in Shopify. Customers who tick it appear as subscribed in Shopify, and you can email them later with Shopify Messaging.
   - Use the **checkout branding** editor to match the site: navy `#243C58`, button orange `#FF780C` with navy text `#172938` (white text on that orange fails WCAG AA), background `#EEE8CE`, the Montserrat font if offered, and the Bugout logo (`public/images/brand/`).
-- **Settings → Customer privacy:** enable the cookie banner / privacy settings for the EU region. The site asks for consent itself (the PostHog banner). Passing that decision to the checkout (`visitorConsent`) is a pending code change; see step 14.
+- **Settings → Customer privacy:** enable the cookie banner / privacy settings for the EU region. The site asks for consent itself (the PostHog banner) and passes the decision to the checkout (`@inContext(visitorConsent: …)` at the hand-off), so visitors who already chose are not asked again.
+- **Settings → Customer events** and **Settings → Notifications → Webhooks:** the analytics pixel and the order webhooks; see [ANALYTICS.md](ANALYTICS.md#setup-outside-the-code-carlos).
 - **Settings → Policies:** add the refund, privacy, terms and shipping policies. Shopify links them in the checkout footer. Reuse the texts of `/shipping-returns`, `/privacy` and `/terms` so the site and checkout say the same.
 
 ## 8. Product metafields (Settings → Custom data → Products → Add definition)
@@ -156,6 +157,7 @@ In the Vercel project, set the same variables for **Production** and **Preview**
 | `NEXT_PUBLIC_CONTACT_EMAIL` | the real support address (required by the LSSI) |
 | `NEXT_PUBLIC_LEGAL_NAME`, `NEXT_PUBLIC_LEGAL_TAX_ID`, `NEXT_PUBLIC_LEGAL_ADDRESS` | the business identity (required by the LSSI) |
 | `NEXT_PUBLIC_POSTHOG_KEY` | your PostHog project key, EU region (optional) |
+| `SHOPIFY_WEBHOOK_SECRET` | Production only, server-only (never `NEXT_PUBLIC_`): the webhook signing key from Settings → Notifications → Webhooks |
 
 For the test site (`test.bugout.es`, the `develop` branch), scope the Preview variables to `develop` and set `NEXT_PUBLIC_SITE_URL=https://test.bugout.es`, with a development store's domain and token rather than the live store's.
 
@@ -173,15 +175,14 @@ For the test site (`test.bugout.es`, the `develop` branch), scope the Preview va
 - [ ] Compare-at prices comply with the 30-day lowest-price rule.
 - [ ] Policies filled in Shopify and consistent with the site's legal pages (ideally reviewed by a lawyer).
 - [ ] Vercel env vars set, including the site URL, contact email and legal identity.
-- [ ] One real order placed and refunded end to end.
+- [ ] Order webhooks, `SHOPIFY_WEBHOOK_SECRET` and the custom pixel set up ([ANALYTICS.md](ANALYTICS.md#setup-outside-the-code-carlos)).
+- [ ] One real order placed and refunded end to end; it shows up on the PostHog **Bugout · Sales** dashboard.
 
 ## 14. Pending code work for the Shopify phase
 
-These don't block the setup above, but are the next development steps:
+This doesn't block the setup above, but is the next development step:
 
-1. **Consent to checkout:** pass the site's cookie decision to Shopify with `@inContext(visitorConsent: {analytics, marketing, preferences, saleOfData})` on cart creation (Storefront API 2025-10+; the app uses 2026-07). Shopify then carries it into the `checkoutUrl`.
-2. **Server-side token:** use the Headless channel's private token (`Shopify-Storefront-Private-Token` header, server-only env var) for Server Component catalog requests, and add `Shopify-Storefront-Buyer-IP` when a request comes from a real visitor.
-3. **Purchase analytics:** add an `orders/paid` webhook handler (HMAC-verified, idempotent) that sends `order_completed` to PostHog server-side. Optionally add a Shopify custom pixel on `checkout_completed`.
+- **Server-side token:** use the Headless channel's private token (`Shopify-Storefront-Private-Token` header, server-only env var) for Server Component catalog requests, and add `Shopify-Storefront-Buyer-IP` when a request comes from a real visitor.
 
 ## Hidden for now: features Shopify doesn't cover
 

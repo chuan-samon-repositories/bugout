@@ -142,6 +142,16 @@ describe("CartProvider", () => {
         name: "product_added_to_cart",
         properties: expect.objectContaining({ product_id: "mochila-65l", quantity: 2, cart_item_count: 2 }),
       });
+      expect(track).toHaveBeenCalledWith({
+        name: "cart_adjusted",
+        properties: {
+          product_id: "mochila-65l",
+          product_name: backpack.displayName,
+          reason: "quantity_reduced",
+          quantity_requested: 5,
+          quantity_kept: 2,
+        },
+      });
     });
 
     it("does not open the drawer and tracks a failure when the store had none left", async () => {
@@ -170,7 +180,8 @@ describe("CartProvider", () => {
       expect(track).not.toHaveBeenCalledWith(expect.objectContaining({ name: "product_added_to_cart" }));
     });
 
-    it("tells the visitor about lines dropped when the cart is restored", async () => {
+    it("tells the visitor about lines dropped when the cart is restored, and tracks it", async () => {
+      const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
       vi.spyOn(getContainer().getManageCartUseCase(), "getCart").mockResolvedValueOnce({
         cart: new Cart("EUR"),
         notices: [{ kind: "removed", productId: "kit-24h-2p", productName: "Kit 24h · 2 personas" }],
@@ -178,6 +189,16 @@ describe("CartProvider", () => {
       const { result } = await renderCart();
       expect(result.current.cart?.isEmpty()).toBe(true);
       expect(screen.getByText("Hemos quitado Kit 24h · 2 personas de tu carrito porque ya no está disponible.")).toBeInTheDocument();
+      expect(track).toHaveBeenCalledWith({
+        name: "cart_adjusted",
+        properties: {
+          product_id: "kit-24h-2p",
+          product_name: "Kit 24h · 2 personas",
+          reason: "removed",
+          quantity_requested: null,
+          quantity_kept: 0,
+        },
+      });
     });
 
     it("tracks the units the store really kept when a quantity change is lowered", async () => {
@@ -415,6 +436,19 @@ describe("CartProvider", () => {
     expect(result.current.isOpen).toBe(false);
   });
 
+  it("hands the visitor's consent and the analytics attribution to the checkout", async () => {
+    localStorage.setItem("bugout.consent", JSON.stringify({ analytics: false, decidedAt: "2026-01-01T00:00:00.000Z", version: 1 }));
+    const attribution = { distinctId: "visitor-1", campaign: { utm_source: "google" } };
+    vi.spyOn(getContainer().getAnalyticsService(), "checkoutAttribution").mockReturnValue(attribution);
+    const execute = vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute");
+    localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
+    const { result } = await renderCart();
+
+    await act(() => result.current.checkout());
+
+    expect(execute).toHaveBeenCalledWith({ analyticsConsent: false, attribution });
+  });
+
   it("uses a full page navigation for hosted checkouts", async () => {
     const assign = vi.fn();
     vi.spyOn(window, "location", "get").mockReturnValue({ ...window.location, assign });
@@ -452,7 +486,8 @@ describe("CartProvider", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
-  it("shows an error toast when checkout cannot start", async () => {
+  it("shows an error toast and tracks checkout_failed when checkout cannot start", async () => {
+    const track = vi.spyOn(getContainer().getAnalyticsService(), "track");
     vi.spyOn(getContainer().getAnalyticsService(), "captureException");
     vi.spyOn(getContainer().getCreateCheckoutUseCase(), "execute").mockRejectedValue(new Error("down"));
     localStorage.setItem("bugout.cart", JSON.stringify({ version: 2, items: [{ productId: "kit-medicina", quantity: 1 }] }));
@@ -462,6 +497,10 @@ describe("CartProvider", () => {
 
     expect(screen.getByRole("alert")).toHaveTextContent("No hemos podido iniciar el pago");
     expect(router.push).not.toHaveBeenCalled();
+    expect(track).toHaveBeenCalledWith({
+      name: "checkout_failed",
+      properties: { cart_value: 18, cart_item_count: 1, currency: "EUR" },
+    });
   });
 
   it("tells the visitor the cart is empty when checkout finds no items, without reporting an exception", async () => {

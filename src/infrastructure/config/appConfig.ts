@@ -9,6 +9,13 @@ export interface PostHogConfig {
 interface BaseConfig {
   /** Null disables analytics (no-op adapter). */
   posthog: PostHogConfig | null;
+  /**
+   * Deployment environment: Vercel's `production` or `preview`, or `local` outside Vercel. Sent with every
+   * analytics event as `app_env`, so test-site and local traffic can be filtered out.
+   */
+  environment?: string;
+  /** Short commit SHA of the deployment, when known (`app_release` on analytics events). */
+  release?: string;
   /** Delay of the simulated local backends (orders, newsletter, contact); adapter defaults when omitted. */
   simulatedDelayMs?: number;
 }
@@ -25,6 +32,8 @@ export interface RawEnv {
   shopifyApiVersion?: string;
   posthogKey?: string;
   posthogHost?: string;
+  appEnv?: string;
+  appRelease?: string;
 }
 
 export class ConfigurationError extends Error {
@@ -63,7 +72,9 @@ export function parseConfig(env: RawEnv): AppConfig {
   const posthogKey = clean(env.posthogKey);
   const posthog: PostHogConfig | null = posthogKey ? { apiKey: posthogKey, apiHost: clean(env.posthogHost) } : null;
 
-  if (provider === 'local') return { provider, posthog };
+  const deployment = { environment: clean(env.appEnv)?.toLowerCase() ?? 'local', release: clean(env.appRelease) };
+
+  if (provider === 'local') return { provider, posthog, ...deployment };
 
   const storeDomain = clean(env.shopifyStoreDomain);
   const storefrontAccessToken = clean(env.shopifyStorefrontToken);
@@ -88,6 +99,7 @@ export function parseConfig(env: RawEnv): AppConfig {
   return {
     provider,
     posthog,
+    ...deployment,
     shopify: { storeDomain, storefrontAccessToken, apiVersion: clean(env.shopifyApiVersion) },
   };
 }
@@ -104,5 +116,8 @@ export function readConfigFromEnv(): AppConfig {
     shopifyApiVersion: process.env.NEXT_PUBLIC_SHOPIFY_API_VERSION,
     posthogKey: process.env.NEXT_PUBLIC_POSTHOG_KEY,
     posthogHost: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+    // Set in next.config.ts from Vercel's VERCEL_ENV and VERCEL_GIT_COMMIT_SHA at build time.
+    appEnv: process.env.NEXT_PUBLIC_APP_ENV,
+    appRelease: process.env.NEXT_PUBLIC_APP_RELEASE,
   });
 }

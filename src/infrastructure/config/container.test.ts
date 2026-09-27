@@ -129,22 +129,34 @@ describe('AppContainer', () => {
     expect(container.getOrderConfirmationStore().load()).toBeNull();
   });
 
-  it('starts the Shopify checkout with the checkout URL of the cart it just loaded', async () => {
+  it('starts the Shopify checkout with the checkout URL of the stored cart', async () => {
     const data = stubLocalStorage();
     data.set('bugout.shopify-cart-id', 'cart-1');
     const remote = cartNode('cart-1', [{ lineId: 'l1', variant: 1, quantity: 1 }]);
-    const fetch = vi.fn().mockResolvedValue(jsonResponse({ data: { cart: remote } }));
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: { cart: remote } }))
+      .mockResolvedValueOnce(
+        jsonResponse({ data: { cartAttributesUpdate: { cart: { id: 'cart-1', checkoutUrl: remote.checkoutUrl }, userErrors: [] } } }),
+      );
     vi.stubGlobal('fetch', fetch);
     await expect(createContainer(shopify).getCreateCheckoutUseCase().execute()).resolves.toEqual({
       url: remote.checkoutUrl,
       type: 'hosted',
     });
-    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it('uses PostHog only when a key is configured', () => {
     expect(createContainer(local).getAnalyticsService()).toBeInstanceOf(NoopAnalyticsAdapter);
     expect(createContainer({ ...local, posthog: { apiKey: 'phc' } }).getAnalyticsService()).toBeInstanceOf(PostHogAnalyticsAdapter);
+  });
+
+  it('tags analytics with the environment, the provider and the release', () => {
+    expect(createContainer(local).analyticsSuperProperties()).toEqual({ app_env: 'local', commerce_provider: 'local' });
+    expect(
+      createContainer({ ...shopify, environment: 'production', release: 'abc1234' }).analyticsSuperProperties(),
+    ).toEqual({ app_env: 'production', commerce_provider: 'shopify', app_release: 'abc1234' });
   });
 });
 

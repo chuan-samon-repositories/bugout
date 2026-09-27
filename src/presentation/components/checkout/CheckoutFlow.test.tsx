@@ -185,7 +185,7 @@ describe("CheckoutFlow", () => {
     expect(screen.getByRole("heading", { level: 2, name: "Envío" })).toHaveFocus();
     expect(mocks.analytics.track).toHaveBeenCalledWith({
       name: "checkout_step_completed",
-      properties: { step: 1, step_name: "contact", cart_value: 60, cart_item_count: 1, currency: "EUR" },
+      properties: { step: 1, step_name: "contact", cart_value: 60, cart_item_count: 1, currency: "EUR", checkout_type: "local" },
     });
     const steps = screen.getByRole("list", { name: "Pasos para finalizar la compra" });
     expect(within(steps).getByRole("button", { name: /Contacto/ })).toBeInTheDocument();
@@ -284,7 +284,8 @@ describe("CheckoutFlow", () => {
         currency: "EUR",
         item_count: 1,
         shipping_method: "express",
-        products: [{ product_id: "mochila-72h", variant_title: null, quantity: 1, price: 80 }],
+        checkout_type: "local",
+        products: [{ product_id: "mochila-72h", product_name: expect.any(String), variant_title: null, quantity: 1, price: 80 }],
       },
     });
     expect(confirmations().load()?.orderNumber).toBe("BUG-7K2Q9XA1");
@@ -341,7 +342,7 @@ describe("CheckoutFlow", () => {
     expect(mocks.analytics.track).toHaveBeenCalledWith({
       name: "order_completed",
       properties: expect.objectContaining({
-        products: [{ product_id: "kit-72h-2p", variant_title: "2 personas", quantity: 1, price: 199 }],
+        products: [{ product_id: "kit-72h-2p", product_name: "Kit 72h", variant_title: "2 personas", quantity: 1, price: 199 }],
       }),
     });
   });

@@ -89,6 +89,12 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Deployment environment and release for analytics (`app_env`, `app_release`); Vercel sets VERCEL_ENV and
+  // VERCEL_GIT_COMMIT_SHA at build time. Read in src/infrastructure/config/appConfig.ts.
+  env: {
+    NEXT_PUBLIC_APP_ENV: process.env.VERCEL_ENV ?? "",
+    NEXT_PUBLIC_APP_RELEASE: (process.env.VERCEL_GIT_COMMIT_SHA ?? "").slice(0, 7),
+  },
   images: {
     // Product photos come from Shopify's CDN when the Shopify provider is active.
     remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com", pathname: "/**" }],

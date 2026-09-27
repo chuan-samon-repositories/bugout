@@ -1,4 +1,10 @@
 import type { PostHog } from 'posthog-js';
+import {
+  CampaignParameters,
+  CheckoutAttribution,
+  EMPTY_ATTRIBUTION,
+  campaignParametersFrom,
+} from '@/application/analytics/attribution';
 import { AnalyticsEvent } from '@/application/analytics/events';
 import { AnalyticsService, ConsentOrigin } from '@/application/ports/AnalyticsService';
 
@@ -6,12 +12,29 @@ export interface PostHogAnalyticsOptions {
   apiKey: string;
   /** Ingestion host; the app proxies PostHog through `/ingest` (see next.config.ts). */
   apiHost?: string;
+  /** Registered on every event once the SDK loads (e.g. `app_env`, `commerce_provider`). */
+  superProperties?: Record<string, string>;
 }
 
 type Traits = Record<string, string | number | boolean>;
-type Action = (posthog: PostHog) => void;
+/** `timestamp` is set when the action was held before consent and runs later. */
+type Action = (posthog: PostHog, timestamp?: Date) => void;
 
 const MAX_QUEUED_ACTIONS = 100;
+/** Events held in memory while the visitor has not decided on consent yet. */
+const MAX_UNDECIDED_ACTIONS = 50;
+
+/**
+ * Events sent immediately with `sendBeacon`, because the page navigates away right after them (checkout_started
+ * precedes the jump to Shopify's hosted checkout).
+ */
+const BEACON_EVENTS: ReadonlySet<AnalyticsEvent['name']> = new Set(['checkout_started']);
+
+/**
+ * Autocapture only clicks on links, buttons and disclosure summaries (FAQ). Changes and submits of form fields
+ * add volume without insight, and the typed events already cover the important actions.
+ */
+const AUTOCAPTURE_SELECTORS = ['a', 'button', 'summary', '[role="button"]'];
 
 /** Prefix of the SDK's cookies and storage keys (`ph_<token>_posthog`, `ph_<token>_window_id`, …). */
 const SDK_KEY_PREFIX = 'ph_';
@@ -73,6 +96,12 @@ function expirePostHogCookies(isPostHogKey: (name: string) => boolean): void {
  */
 export class PostHogAnalyticsAdapter implements AnalyticsService {
   private consented = false;
+  /** False until the visitor's first decision (fresh or restored) reaches setConsent. */
+  private decided = false;
+  /** Actions tracked before any decision, replayed with their original time if the visitor accepts. */
+  private undecided: Array<{ action: Action; timestamp: Date }> = [];
+  /** Campaign parameters of the URL this page was loaded with (the landing page of this visit). */
+  private readonly landingCampaign: CampaignParameters;
   private posthog: PostHog | null = null;
   private loading: Promise<void> | null = null;
   private queue: Action[] = [];
@@ -82,21 +111,43 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
   constructor(
     private readonly options: PostHogAnalyticsOptions,
     private readonly loadPostHog: () => Promise<PostHog> = importPostHog,
-  ) {}
+  ) {
+    this.landingCampaign = typeof window === 'undefined' ? {} : campaignParametersFrom(window.location?.search ?? '');
+  }
 
   track(event: AnalyticsEvent): void {
-    this.run((posthog) => posthog.capture(event.name, event.properties));
+    const beacon = BEACON_EVENTS.has(event.name);
+    this.run((posthog, timestamp) => {
+      if (!timestamp && !beacon) posthog.capture(event.name, event.properties);
+      else posthog.capture(event.name, event.properties, beacon ? { send_instantly: true, transport: 'sendBeacon' } : { timestamp });
+    });
   }
 
   captureException(error: unknown, context?: Traits): void {
     this.run((posthog) => posthog.captureException(error, context));
   }
 
+  checkoutAttribution(): CheckoutAttribution {
+    if (!this.consented) return EMPTY_ATTRIBUTION;
+    const attribution: CheckoutAttribution = { campaign: { ...this.landingCampaign } };
+    if (this.posthog) {
+      this.safely(this.posthog, (posthog) => {
+        attribution.distinctId = posthog.get_distinct_id() || undefined;
+        attribution.sessionId = posthog.get_session_id() || undefined;
+      });
+    }
+    return attribution;
+  }
+
   setConsent(granted: boolean, origin: ConsentOrigin): void {
     if (typeof window === 'undefined') return;
     this.consented = granted;
+    this.decided = true;
+    const held = this.undecided;
+    this.undecided = [];
     if (granted) {
       if (origin === 'visitor') this.announceOptIn = true;
+      for (const { action, timestamp } of held) this.run((posthog) => action(posthog, timestamp));
       if (this.posthog) this.optIn(this.posthog);
       else this.load();
       return;
@@ -120,7 +171,14 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
   }
 
   private run(action: Action): void {
-    if (typeof window === 'undefined' || !this.consented) return;
+    if (typeof window === 'undefined') return;
+    if (!this.consented) {
+      // Held in memory only (never stored or sent) until the visitor decides.
+      if (!this.decided && this.undecided.length < MAX_UNDECIDED_ACTIONS) {
+        this.undecided.push({ action, timestamp: new Date() });
+      }
+      return;
+    }
     if (this.posthog) {
       this.safely(this.posthog, action);
       return;
@@ -149,7 +207,16 @@ export class PostHogAnalyticsAdapter implements AnalyticsService {
           // No feature flags, surveys or remote config are used; this also stops the
           // SDK from calling /flags after reset() when consent is withdrawn.
           advanced_disable_flags: true,
+          disable_surveys: true,
+          // Event volume is capped by a PostHog billing limit: no heatmaps, dead clicks or
+          // performance/web-vitals events, and autocapture limited to clicks on controls.
+          autocapture: { dom_event_allowlist: ['click'], css_selector_allowlist: AUTOCAPTURE_SELECTORS },
+          enable_heatmaps: false,
+          capture_heatmaps: false,
+          capture_dead_clicks: false,
+          capture_performance: false,
         });
+        if (this.options.superProperties) this.safely(posthog, (sdk) => sdk.register(this.options.superProperties!));
         this.optIn(posthog);
         this.posthog = posthog;
         const queued = this.queue;

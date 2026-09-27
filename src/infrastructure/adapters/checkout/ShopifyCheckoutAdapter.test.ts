@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { ShopifyCheckoutAdapter } from './ShopifyCheckoutAdapter';
+import { CheckoutContext, DEFAULT_CHECKOUT_CONTEXT } from '@/application/dtos/Checkout';
 import { LocalCheckoutAdapter } from '@/infrastructure/adapters/checkout/LocalCheckoutAdapter';
 import { ShopifyCartIdStore, SHOPIFY_CART_ID_KEY } from '@/infrastructure/adapters/shopify/ShopifyCartIdStore';
 import { mapShopifyProduct } from '@/infrastructure/adapters/shopify/productMapping';
 import { MemoryStorage } from '@/infrastructure/testing/MemoryStorage';
 import {
-  cartNode,
   mutationResult,
   productNode,
   queuedFetch,
@@ -23,6 +23,13 @@ function cartWithOneItem(): Cart {
   return cart;
 }
 
+const checkoutCart = (id: string) => ({ id, checkoutUrl: `https://shop.test/checkouts/${id}?_cs=abc` });
+
+const consented: CheckoutContext = {
+  analyticsConsent: true,
+  attribution: { distinctId: 'visitor-1', sessionId: 'session-1', campaign: { utm_source: 'google', gclid: 'Cj0K' } },
+};
+
 describe('ShopifyCheckoutAdapter', () => {
   let storage: MemoryStorage;
 
@@ -30,64 +37,76 @@ describe('ShopifyCheckoutAdapter', () => {
     storage = new MemoryStorage();
   });
 
-  const adapterWith = (fetch: ReturnType<typeof queuedFetch>, cartIds = new ShopifyCartIdStore(storage)) =>
-    new ShopifyCheckoutAdapter(testClient(fetch), cartIds);
+  const adapterWith = (fetch: ReturnType<typeof queuedFetch>) =>
+    new ShopifyCheckoutAdapter(testClient(fetch), new ShopifyCartIdStore(storage));
 
-  it('uses the checkout URL remembered for the stored cart without querying Shopify', async () => {
+  it('writes the attribution onto the stored cart and returns its checkout URL in the consent context', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
-    const cartIds = new ShopifyCartIdStore(storage);
-    cartIds.rememberCheckoutUrl('cart-1', 'https://shop.test/checkouts/remembered');
-    const fetch = queuedFetch();
-    await expect(adapterWith(fetch, cartIds).getCheckoutUrl(cartWithOneItem())).resolves.toBe(
-      'https://shop.test/checkouts/remembered',
+    const fetch = queuedFetch(mutationResult('cartAttributesUpdate', checkoutCart('cart-1') as never));
+    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), consented)).resolves.toBe(
+      'https://shop.test/checkouts/cart-1?_cs=abc',
     );
-    expect(fetch).not.toHaveBeenCalled();
+    const request = sentRequest(fetch, 0);
+    expect(request.variables).toEqual({
+      cartId: 'cart-1',
+      attributes: [
+        { key: '_ph_distinct_id', value: 'visitor-1' },
+        { key: '_ph_session_id', value: 'session-1' },
+        { key: '_utm_source', value: 'google' },
+        { key: '_gclid', value: 'Cj0K' },
+      ],
+    });
+    expect(request.query).toContain(
+      '@inContext(country: ES, language: ES, visitorConsent: {analytics: true, marketing: false, preferences: false, saleOfData: false})',
+    );
+    expect(request.init.cache).toBe('no-store');
   });
 
-  it('queries Shopify when the remembered URL belongs to another cart, then remembers the answer', async () => {
-    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-2');
-    const cartIds = new ShopifyCartIdStore(storage);
-    cartIds.rememberCheckoutUrl('cart-1', 'https://shop.test/checkouts/cart-1');
-    const fetch = queuedFetch({ data: { cart: { checkoutUrl: 'https://shop.test/checkouts/cart-2' } } });
-    const adapter = adapterWith(fetch, cartIds);
-    await expect(adapter.getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-2');
-    expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-2' });
-
-    await expect(adapter.getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-2');
-    expect(fetch).toHaveBeenCalledOnce();
-  });
-
-  it('returns the checkout URL of the stored cart', async () => {
+  it('clears earlier attributes and passes a rejection when the visitor declined analytics', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
-    const fetch = queuedFetch({ data: { cart: { checkoutUrl: 'https://shop.test/checkouts/cart-1' } } });
-    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem())).resolves.toBe('https://shop.test/checkouts/cart-1');
-    expect(sentRequest(fetch, 0).variables).toEqual({ id: 'cart-1' });
+    const fetch = queuedFetch(mutationResult('cartAttributesUpdate', checkoutCart('cart-1') as never));
+    await adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), { ...DEFAULT_CHECKOUT_CONTEXT, analyticsConsent: false });
+    expect(sentRequest(fetch, 0).variables).toEqual({ cartId: 'cart-1', attributes: [] });
+    expect(sentRequest(fetch, 0).query).toContain('visitorConsent: {analytics: false,');
+  });
+
+  it('leaves consent to Shopify while the visitor is undecided', async () => {
+    storage.setItem(SHOPIFY_CART_ID_KEY, 'cart-1');
+    const fetch = queuedFetch(mutationResult('cartAttributesUpdate', checkoutCart('cart-1') as never));
+    await adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), DEFAULT_CHECKOUT_CONTEXT);
     expect(sentRequest(fetch, 0).query).toContain('@inContext(country: ES, language: ES)');
-    expect(sentRequest(fetch, 0).init.cache).toBe('no-store');
+    expect(sentRequest(fetch, 0).query).not.toContain('visitorConsent');
   });
 
-  it('creates the cart from the aggregate when there is no id', async () => {
-    const created = cartNode('cart-new', [{ lineId: 'l1', variant: 1, quantity: 2 }]);
-    const fetch = queuedFetch(mutationResult('cartCreate', created));
-    const url = await adapterWith(fetch).getCheckoutUrl(cartWithOneItem());
-    expect(url).toBe(created.checkoutUrl);
-    expect(sentRequest(fetch, 0).variables).toEqual({ lines: [{ merchandiseId: variantGid(1), quantity: 2 }] });
+  it('creates the cart with its lines and attributes when there is no id', async () => {
+    const fetch = queuedFetch(mutationResult('cartCreate', checkoutCart('cart-new') as never));
+    const url = await adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), consented);
+    expect(url).toBe('https://shop.test/checkouts/cart-new?_cs=abc');
+    expect(sentRequest(fetch, 0).variables).toEqual({
+      lines: [{ merchandiseId: variantGid(1), quantity: 2 }],
+      attributes: expect.arrayContaining([{ key: '_ph_distinct_id', value: 'visitor-1' }]),
+    });
+    expect(sentRequest(fetch, 0).query).toContain('cartCreate(input: { lines: $lines, attributes: $attributes })');
     expect(storage.getItem(SHOPIFY_CART_ID_KEY)).toBe('cart-new');
-    expect(sentRequest(fetch, 0).query).toContain('mutation CartCreate($lines: [CartLineInput!]) @inContext(country: ES, language: ES)');
-    expect(sentRequest(fetch, 0).init.cache).toBe('no-store');
   });
 
-  it('recreates the cart when the stored one has expired', async () => {
+  it('recreates the cart when the stored one has expired or was checked out', async () => {
     storage.setItem(SHOPIFY_CART_ID_KEY, 'expired');
-    const created = cartNode('cart-new');
-    const fetch = queuedFetch({ data: { cart: null } }, mutationResult('cartCreate', created));
-    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem())).resolves.toBe(created.checkoutUrl);
+    const fetch = queuedFetch(
+      mutationResult('cartAttributesUpdate', null, [{ message: 'The specified cart does not exist.' }]),
+      mutationResult('cartCreate', checkoutCart('cart-new') as never),
+    );
+    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), consented)).resolves.toBe(
+      'https://shop.test/checkouts/cart-new?_cs=abc',
+    );
     expect(storage.getItem(SHOPIFY_CART_ID_KEY)).toBe('cart-new');
   });
 
   it('throws on user errors', async () => {
     const fetch = queuedFetch(mutationResult('cartCreate', null, [{ message: 'Invalid merchandise' }]));
-    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem())).rejects.toThrow('cartCreate failed: Invalid merchandise');
+    await expect(adapterWith(fetch).getCheckoutUrl(cartWithOneItem(), consented)).rejects.toThrow(
+      'cartCreate failed: Invalid merchandise',
+    );
   });
 });
 

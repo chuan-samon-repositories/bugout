@@ -104,6 +104,28 @@ function noticeMessage(notice: CartNotice): string {
     : messages.cart.lineRemoved(notice.productName);
 }
 
+function cartAdjustedEvent(notice: CartNotice): Extract<AnalyticsEvent, { name: "cart_adjusted" }> {
+  return {
+    name: "cart_adjusted",
+    properties:
+      notice.kind === "quantityReduced"
+        ? {
+            product_id: notice.productId,
+            product_name: notice.productName,
+            reason: "quantity_reduced",
+            quantity_requested: notice.requested,
+            quantity_kept: notice.quantity,
+          }
+        : {
+            product_id: notice.productId,
+            product_name: notice.productName,
+            reason: "removed",
+            quantity_requested: null,
+            quantity_kept: 0,
+          },
+  };
+}
+
 /** Units of `quantity` the store really added, given its notices (it may have had less stock). */
 function unitsAdded(productId: string, quantity: number, notices: readonly CartNotice[]): number {
   const notice = notices.find((candidate) => candidate.productId === productId);
@@ -116,11 +138,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const analytics = useAnalytics();
   const { notify } = useNotifications();
-  const [{ manageCart, createCheckout, cartStorageKeys }] = useState(() => {
+  const [{ manageCart, createCheckout, consentRepository, cartStorageKeys }] = useState(() => {
     const container = getContainer();
     return {
       manageCart: container.getManageCartUseCase(),
       createCheckout: container.getCreateCheckoutUseCase(),
+      /** Read when checkout starts, so the hosted checkout gets the visitor's current decision. */
+      consentRepository: container.getConsentRepository(),
       /** Storage keys that hold the cart; other tabs changing them (or clearing storage) trigger a reload. */
       cartStorageKeys: container.getSyncedStorageKeys().cart,
     };
@@ -144,9 +168,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const apply = useCallback(
     ({ cart: next, notices }: CartUpdate) => {
       setCart(next);
-      for (const notice of notices) notify({ tone: "info", message: noticeMessage(notice) });
+      for (const notice of notices) {
+        notify({ tone: "info", message: noticeMessage(notice) });
+        analytics.track(cartAdjustedEvent(notice));
+      }
     },
-    [setCart, notify],
+    [setCart, notify, analytics],
   );
 
   /** Runs tasks one after another so rapid clicks can never interleave repository reads and writes. */
@@ -319,7 +346,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const current = cartRef.current;
         if (!current || current.isEmpty()) return false;
         try {
-          const session = await createCheckout.execute();
+          const session = await createCheckout.execute({
+            analyticsConsent: consentRepository.get()?.analytics ?? null,
+            attribution: analytics.checkoutAttribution(),
+          });
           analytics.track({
             name: "checkout_started",
             properties: { ...cartProperties(current), checkout_type: session.type },
@@ -340,11 +370,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
             return false;
           }
           notify({ tone: "error", message: messages.errors.checkoutUnavailable });
+          analytics.track({ name: "checkout_failed", properties: cartProperties(current) });
           analytics.captureException(error, { area: "cart", action: "checkout" });
           return false;
         }
       }, true),
-    [enqueue, createCheckout, analytics, closeCart, router, notify, recover],
+    [enqueue, createCheckout, consentRepository, analytics, closeCart, router, notify, recover],
   );
 
   const runExclusive = useCallback(

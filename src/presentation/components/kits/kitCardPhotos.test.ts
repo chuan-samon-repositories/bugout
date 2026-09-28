@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { TURNTABLE_MODELS, turntableForKit } from "./models";
+import { kitCardPhoto } from "./kitCardPhotos";
 
 /** Width and height of a WebP file, from its RIFF header (lossy, lossless or extended). */
 function webpSize(file: string): [number, number] {
@@ -18,24 +18,16 @@ function webpSize(file: string): [number, number] {
   return [data.readUInt16LE(26) & 0x3fff, data.readUInt16LE(28) & 0x3fff];
 }
 
-const isPowerOfTwo = (n: number) => n > 0 && (n & (n - 1)) === 0;
-
-describe("turntableForKit", () => {
+describe("kitCardPhoto", () => {
   it("gives the Kit 24h and the Kit 72h their backpacks and every other kit nothing", () => {
-    expect(turntableForKit("kit-24h")).toBe("mochila-24h");
-    expect(turntableForKit("kit-72h")).toBe("mochila-30l");
-    expect(turntableForKit("kit-custom")).toBeNull();
-    expect(turntableForKit("constructor")).toBeNull();
-  });
-});
-
-describe.each(Object.entries(TURNTABLE_MODELS))("model %s", (_, model) => {
-  it("ships a power-of-two texture, which WebGL 1 needs to mipmap and wrap it", () => {
-    const [width, height] = webpSize(model.texture);
-    expect(isPowerOfTwo(width) && isPowerOfTwo(height)).toBe(true);
+    expect(kitCardPhoto("kit-24h")?.src).toBe("/images/kit-cards/kit-24h.webp");
+    expect(kitCardPhoto("kit-72h")?.src).toBe("/images/kit-cards/kit-72h.webp");
+    expect(kitCardPhoto("kit-custom")).toBeNull();
+    expect(kitCardPhoto("constructor")).toBeNull();
   });
 
-  it("declares its poster's real size", () => {
-    expect(webpSize(model.poster.src)).toEqual([model.poster.width, model.poster.height]);
+  it.each(["kit-24h", "kit-72h"])("declares the real size of the %s photo", (slug) => {
+    const photo = kitCardPhoto(slug)!;
+    expect(webpSize(photo.src)).toEqual([photo.width, photo.height]);
   });
 });

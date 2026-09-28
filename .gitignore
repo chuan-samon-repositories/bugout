@@ -46,7 +46,3 @@ next-env.d.ts
 # playwright
 /playwright-report/
 /test-results/
-
-# python (scripts/turntable)
-__pycache__/
-*.pyc

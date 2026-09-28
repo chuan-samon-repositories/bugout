@@ -1,10 +1,10 @@
+import Image from "next/image";
 import Link from "next/link";
 import { variantOptionLabel } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { buttonClasses, cn } from "@/presentation/components/ui";
 import { startingPriceLabel } from "@/presentation/components/catalog/startingPrice";
-import { KitTurntable } from "@/presentation/components/kits/turntable/KitTurntable";
-import { turntableForKit } from "@/presentation/components/kits/turntable/models";
+import { kitCardPhoto } from "@/presentation/components/kits/kitCardPhotos";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
@@ -32,13 +32,13 @@ export interface KitCardProps {
 
 /**
  * The partner design's kit card: header with the kit label, facts, price and "Ver el kit". The header is a
- * gradient, or the kit's backpack turning in 3D on white when the kit has a turntable model.
+ * gradient, or a photo of the kit's backpack swaying gently on white when there is one.
  */
 export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
   const people = peopleSummary(kit);
   const weight = kit.details?.specifications.find((spec) => /^peso$/i.test(spec.label));
-  const turntable = turntableForKit(kit.slug);
+  const photo = kitCardPhoto(kit.slug);
 
   return (
     <article
@@ -50,21 +50,28 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
       <div
         className={cn(
           "relative flex h-40 items-start justify-end p-4",
-          !turntable && "bg-linear-135",
-          !turntable &&
+          !photo && "bg-linear-135",
+          !photo &&
             "after:absolute after:inset-0 after:bg-[repeating-linear-gradient(115deg,rgb(255_255_255/0.05)_0_2px,transparent_2px_40px)]",
-          !turntable && MEDIA_TONES[index % MEDIA_TONES.length],
+          !photo && MEDIA_TONES[index % MEDIA_TONES.length],
         )}
-        data-media={turntable ? "turntable" : "gradient"}
+        data-media={photo ? "photo" : "gradient"}
       >
-        {turntable && (
+        {photo && (
           <>
             <span
               aria-hidden="true"
-              className="absolute bottom-2.5 left-1/2 h-3 w-24 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm"
+              className="absolute bottom-2.5 left-1/2 h-3 w-24 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm motion-safe:animate-kit-float-shadow"
             />
-            <div className="absolute inset-x-0 top-2 bottom-3">
-              <KitTurntable model={turntable} />
+            <div className="absolute inset-x-0 top-3 bottom-3 perspective-midrange">
+              <Image
+                src={photo.src}
+                alt=""
+                width={photo.width}
+                height={photo.height}
+                unoptimized
+                className="size-full object-contain motion-safe:animate-kit-sway"
+              />
             </div>
           </>
         )}

@@ -161,29 +161,25 @@ test.describe('home kit cards', () => {
   test('the Kit 24h and Kit 72h cards show their backpacks instead of a coloured header', async ({ page }) => {
     await openPage(page, '/');
     for (const kit of [KITS.kit24h, KITS.kit72h]) {
-      const turntable = kitCard(page, kit.name).locator('[data-turntable]');
-      await turntable.scrollIntoViewIfNeeded();
-      // Reduced motion (the project default) keeps the still picture of the backpack.
-      await expect(turntable).toHaveAttribute('data-turntable', 'poster');
-      const poster = turntable.locator('img');
-      await expect(poster).toBeVisible();
-      await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+      const photo = kitCard(page, kit.name).locator('[data-media="photo"] img');
+      await photo.scrollIntoViewIfNeeded();
+      await expect(photo).toBeVisible();
+      await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+      // Reduced motion (the project default) keeps the photo still.
+      await expect(photo).toHaveCSS('animation-name', 'none');
     }
-    await expect(kitCard(page, KITS.kitCustom.name).locator('[data-turntable]')).toHaveCount(0);
+    await expect(kitCard(page, KITS.kitCustom.name).locator('[data-media="photo"]')).toHaveCount(0);
   });
 
   test.describe('with motion allowed', () => {
     test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-    test('the backpacks turn in 3D where WebGL works and stay still where it does not', async ({ page, problems }) => {
+    test('the backpacks sway and float', async ({ page }) => {
       await openPage(page, '/');
-      const webgl = await page.evaluate(() => document.createElement('canvas').getContext('webgl') !== null);
       for (const kit of [KITS.kit24h, KITS.kit72h]) {
-        const turntable = kitCard(page, kit.name).locator('[data-turntable]');
-        await turntable.scrollIntoViewIfNeeded();
-        await expect(turntable).toHaveAttribute('data-turntable', webgl ? 'turning' : 'poster');
+        const photo = kitCard(page, kit.name).locator('[data-media="photo"] img');
+        await expect(photo).toHaveCSS('animation-name', 'kit-sway, kit-float');
       }
-      expect(problems.pageErrors).toEqual([]);
     });
   });
 });

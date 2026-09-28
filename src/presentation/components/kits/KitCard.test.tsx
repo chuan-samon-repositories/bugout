@@ -40,7 +40,7 @@ describe("KitCard", () => {
     expect(screen.getByRole("link", { name: "Ver el kit: Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
   });
 
-  it("shows the Kit 72h's backpack turning instead of the gradient header", () => {
+  it("shows the Kit 72h's backpack instead of the gradient header, swaying only when motion is allowed", () => {
     const kit72h = buildProduct({
       id: "kit-72h",
       name: "Kit 72h",
@@ -50,24 +50,21 @@ describe("KitCard", () => {
     });
     const { container } = render(<KitCard kit={kit72h} index={1} />);
     const media = container.querySelector("[data-media]");
-    expect(media).toHaveAttribute("data-media", "turntable");
+    expect(media).toHaveAttribute("data-media", "photo");
     expect(media?.className).not.toMatch(/bg-linear|from-/);
-    expect(media?.querySelector("[data-turntable] img")).toHaveAttribute(
-      "src",
-      "/images/turntables/mochila-30l/poster.webp",
-    );
+    const photo = media?.querySelector("img");
+    expect(photo).toHaveAttribute("src", "/images/kit-cards/kit-72h.webp");
+    expect(photo).toHaveAttribute("alt", "");
+    expect(photo?.className).toContain("motion-safe:animate-kit-sway");
     expect(screen.getByText("72H")).toBeInTheDocument();
   });
 
   it("shows the Kit 24h's own backpack", () => {
     const { container } = render(<KitCard kit={sized(["1 persona"])} index={0} />);
-    expect(container.querySelector("[data-turntable] img")).toHaveAttribute(
-      "src",
-      "/images/turntables/mochila-24h/poster.webp",
-    );
+    expect(container.querySelector("[data-media] img")).toHaveAttribute("src", "/images/kit-cards/kit-24h.webp");
   });
 
-  it("keeps the gradient header for kits without a turntable model", () => {
+  it("keeps the gradient header for kits without a photo", () => {
     const custom = buildProduct({
       id: "kit-custom",
       name: "Kit Custom",
@@ -80,7 +77,7 @@ describe("KitCard", () => {
     const media = container.querySelector("[data-media]");
     expect(media).toHaveAttribute("data-media", "gradient");
     expect(media?.className).toContain("from-navy-deep");
-    expect(container.querySelector("[data-turntable]")).toBeNull();
+    expect(media?.querySelector("img")).toBeNull();
   });
 
   it("prices a build-your-own base as a starting point", () => {

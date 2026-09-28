@@ -158,27 +158,31 @@ test.describe('home kit cards', () => {
       .getByRole('article')
       .filter({ has: page.getByRole('heading', { name, exact: true }) });
 
-  test('the Kit 72h card shows its backpack instead of a coloured header', async ({ page }) => {
+  test('the Kit 24h and Kit 72h cards show their backpacks instead of a coloured header', async ({ page }) => {
     await openPage(page, '/');
-    const turntable = kitCard(page, KITS.kit72h.name).locator('[data-turntable]');
-    await turntable.scrollIntoViewIfNeeded();
-    // Reduced motion (the project default) keeps the still photo of the backpack.
-    await expect(turntable).toHaveAttribute('data-turntable', 'poster');
-    const poster = turntable.locator('img');
-    await expect(poster).toBeVisible();
-    await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
-    await expect(kitCard(page, KITS.kit24h.name).locator('[data-turntable]')).toHaveCount(0);
+    for (const kit of [KITS.kit24h, KITS.kit72h]) {
+      const turntable = kitCard(page, kit.name).locator('[data-turntable]');
+      await turntable.scrollIntoViewIfNeeded();
+      // Reduced motion (the project default) keeps the still picture of the backpack.
+      await expect(turntable).toHaveAttribute('data-turntable', 'poster');
+      const poster = turntable.locator('img');
+      await expect(poster).toBeVisible();
+      await expect.poll(() => poster.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
+    }
+    await expect(kitCard(page, KITS.kitCustom.name).locator('[data-turntable]')).toHaveCount(0);
   });
 
   test.describe('with motion allowed', () => {
     test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-    test('the backpack turns in 3D where WebGL works and stays a photo where it does not', async ({ page, problems }) => {
+    test('the backpacks turn in 3D where WebGL works and stay still where it does not', async ({ page, problems }) => {
       await openPage(page, '/');
-      const turntable = kitCard(page, KITS.kit72h.name).locator('[data-turntable]');
-      await turntable.scrollIntoViewIfNeeded();
       const webgl = await page.evaluate(() => document.createElement('canvas').getContext('webgl') !== null);
-      await expect(turntable).toHaveAttribute('data-turntable', webgl ? 'turning' : 'poster');
+      for (const kit of [KITS.kit24h, KITS.kit72h]) {
+        const turntable = kitCard(page, kit.name).locator('[data-turntable]');
+        await turntable.scrollIntoViewIfNeeded();
+        await expect(turntable).toHaveAttribute('data-turntable', webgl ? 'turning' : 'poster');
+      }
       expect(problems.pageErrors).toEqual([]);
     });
   });

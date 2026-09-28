@@ -21,9 +21,9 @@ function webpSize(file: string): [number, number] {
 const isPowerOfTwo = (n: number) => n > 0 && (n & (n - 1)) === 0;
 
 describe("turntableForKit", () => {
-  it("gives the Kit 72h its 30 L backpack and every other kit nothing", () => {
+  it("gives the Kit 24h and the Kit 72h their backpacks and every other kit nothing", () => {
+    expect(turntableForKit("kit-24h")).toBe("mochila-24h");
     expect(turntableForKit("kit-72h")).toBe("mochila-30l");
-    expect(turntableForKit("kit-24h")).toBeNull();
     expect(turntableForKit("kit-custom")).toBeNull();
     expect(turntableForKit("constructor")).toBeNull();
   });

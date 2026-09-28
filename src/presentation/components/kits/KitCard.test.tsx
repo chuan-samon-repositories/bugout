@@ -59,11 +59,27 @@ describe("KitCard", () => {
     expect(screen.getByText("72H")).toBeInTheDocument();
   });
 
-  it("keeps the gradient header for kits without a turntable model", () => {
+  it("shows the Kit 24h's own backpack", () => {
     const { container } = render(<KitCard kit={sized(["1 persona"])} index={0} />);
+    expect(container.querySelector("[data-turntable] img")).toHaveAttribute(
+      "src",
+      "/images/turntables/mochila-24h/poster.webp",
+    );
+  });
+
+  it("keeps the gradient header for kits without a turntable model", () => {
+    const custom = buildProduct({
+      id: "kit-custom",
+      name: "Kit Custom",
+      category: "kits",
+      price: 59,
+      rating: null,
+      details: details({ label: "CUSTOM", buildYourOwn: true }),
+    });
+    const { container } = render(<KitCard kit={custom} index={2} />);
     const media = container.querySelector("[data-media]");
     expect(media).toHaveAttribute("data-media", "gradient");
-    expect(media?.className).toContain("from-navy");
+    expect(media?.className).toContain("from-navy-deep");
     expect(container.querySelector("[data-turntable]")).toBeNull();
   });
 

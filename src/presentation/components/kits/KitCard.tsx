@@ -32,7 +32,8 @@ export interface KitCardProps {
 
 /**
  * The partner design's kit card: header with the kit label, facts, price and "Ver el kit". The header is a
- * gradient, or a photo of the kit's backpack swaying gently on white when there is one.
+ * gradient, or, when the kit has one, a photo of its backpack on white that sticks out above the card
+ * (3rem, `-top-12`) and sways gently.
  */
 export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
@@ -43,7 +44,9 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   return (
     <article
       className={cn(
-        "flex h-full flex-col overflow-hidden rounded-kit bg-white shadow-card",
+        "flex h-full flex-col rounded-kit bg-white shadow-card",
+        // the gradient header needs the rounded corners; a photo is let out of the card
+        !photo && "overflow-hidden",
         "transition-[transform,box-shadow] duration-350 ease-brand motion-safe:hover:-translate-y-2 hover:shadow-lift",
       )}
     >
@@ -63,7 +66,7 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
               aria-hidden="true"
               className="absolute bottom-2.5 left-1/2 h-3 w-24 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm motion-safe:animate-kit-float-shadow"
             />
-            <div className="absolute inset-x-0 top-3 bottom-3 perspective-midrange">
+            <div className="absolute inset-x-0 -top-12 bottom-3 perspective-midrange">
               <Image
                 src={photo.src}
                 alt=""
@@ -100,8 +103,10 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
 }
 
 export function KitCardGrid({ kits, headingLevel }: { kits: readonly Product[]; headingLevel?: 2 | 3 }) {
+  // Photos stick out 3rem above their card: room above the grid, and between rows when the cards stack.
+  const popOut = kits.some((kit) => kitCardPhoto(kit.slug) !== null);
   return (
-    <ul className="grid gap-7 md:grid-cols-2 lg:grid-cols-3">
+    <ul className={cn("grid md:grid-cols-2 lg:grid-cols-3", popOut ? "gap-x-7 gap-y-20 pt-12" : "gap-7")}>
       {kits.map((kit, index) => (
         <li key={kit.slug} className="min-w-0">
           <KitCard kit={kit} index={index} headingLevel={headingLevel} />

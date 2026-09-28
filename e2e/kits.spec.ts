@@ -167,6 +167,9 @@ test.describe('home kit cards', () => {
       await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
       // Reduced motion (the project default) keeps the photo still.
       await expect(photo).toHaveCSS('animation-name', 'none');
+      // The backpack sticks out above its card.
+      const [photoBox, cardBox] = await Promise.all([photo.boundingBox(), kitCard(page, kit.name).boundingBox()]);
+      expect(photoBox!.y).toBeLessThan(cardBox!.y - 24);
     }
     await expect(kitCard(page, KITS.kitCustom.name).locator('[data-media="photo"]')).toHaveCount(0);
   });

@@ -2,7 +2,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
-import { KitCard, peopleSummary } from "./KitCard";
+import { KitCard, KitCardGrid, peopleSummary } from "./KitCard";
 
 const details = (kit: { label: string; buildYourOwn?: boolean }) => ({
   features: [],
@@ -57,6 +57,8 @@ describe("KitCard", () => {
     expect(photo).toHaveAttribute("alt", "");
     expect(photo?.className).toContain("motion-safe:animate-kit-sway");
     expect(screen.getByText("72H")).toBeInTheDocument();
+    // the card does not clip the photo, which sticks out above it
+    expect(container.querySelector("article")?.className).not.toContain("overflow-hidden");
   });
 
   it("shows the Kit 24h's own backpack", () => {
@@ -78,6 +80,7 @@ describe("KitCard", () => {
     expect(media).toHaveAttribute("data-media", "gradient");
     expect(media?.className).toContain("from-navy-deep");
     expect(media?.querySelector("img")).toBeNull();
+    expect(container.querySelector("article")?.className).toContain("overflow-hidden");
   });
 
   it("prices a build-your-own base as a starting point", () => {
@@ -92,5 +95,27 @@ describe("KitCard", () => {
     render(<KitCard kit={custom} index={2} />);
     expect(screen.getByText("Desde 59,00 €")).toBeInTheDocument();
     expect(screen.queryByText(/^Personas/)).toBeNull();
+  });
+});
+
+describe("KitCardGrid", () => {
+  const custom = buildProduct({
+    id: "kit-custom",
+    name: "Kit Custom",
+    category: "kits",
+    rating: null,
+    details: details({ label: "CUSTOM", buildYourOwn: true }),
+  });
+
+  it("makes room above and between the cards when a photo sticks out", () => {
+    const { container } = render(<KitCardGrid kits={[sized(["1 persona"]), custom]} />);
+    expect(container.querySelector("ul")?.className).toContain("gap-y-20");
+    expect(container.querySelector("ul")?.className).toContain("pt-12");
+  });
+
+  it("keeps the plain spacing when no card has a photo", () => {
+    const { container } = render(<KitCardGrid kits={[custom]} />);
+    expect(container.querySelector("ul")?.className).toContain("gap-7");
+    expect(container.querySelector("ul")?.className).not.toContain("pt-12");
   });
 });

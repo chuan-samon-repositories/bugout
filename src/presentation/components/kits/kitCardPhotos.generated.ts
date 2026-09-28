@@ -4,8 +4,8 @@ import type { KitCardImage } from "./photoRelief";
 export const KIT_CARD_IMAGES = {
   "kit-24h": {
     "src": "/images/kit-cards/kit-24h.webp",
-    "width": 484,
-    "height": 709,
+    "width": 683,
+    "height": 1000,
     "relief": {
       "columns": 65,
       "rows": 95,

@@ -17,10 +17,15 @@ rounded rectangle), sized from the photo silhouettes:
   slice's front, with the width and viewing angle assumed.
 
 Straps and buckles outside the body take the depth of the body next to them, a little behind it.
+
+Photos smaller than the cards draw them on high-density screens are enlarged with EDSR super-resolution (OpenCV's
+dnn_superres), which keeps edges such as cords and stitching crisper than an ordinary resize. The models (38 MB
+each) are downloaded on first use to scripts/kit-cards/.cache/, which git ignores.
 """
 import base64
 import json
 import math
+import urllib.request
 from pathlib import Path
 
 import numpy as np
@@ -30,6 +35,8 @@ from scipy.ndimage import gaussian_filter1d, map_coordinates, median_filter
 
 ROOT = Path(__file__).resolve().parents[2]
 PHOTOS = ROOT / "scripts/kit-cards/photos"
+CACHE = ROOT / "scripts/kit-cards/.cache"
+EDSR_URL = "https://raw.githubusercontent.com/Saafke/EDSR_Tensorflow/master/models/EDSR_x{scale}.pb"
 
 KITS = {
     "kit-24h": {
@@ -55,7 +62,10 @@ KITS = {
             "shadow_threshold": 62,
         },
         "exponent": 5.0,
-        "height": None,  # output photo height, px (None: the cut-out's own, about 710)
+        # Phones draw it up to about 1000 device pixels tall, past the cut-out's own 709: enlarge it with
+        # super-resolution, then settle on 1000.
+        "super_resolution": 2,
+        "height": 1000,
     },
     "kit-72h": {
         "kind": "three-views",
@@ -73,8 +83,9 @@ KITS = {
         },
         "exponent": 2.5,
         # The source is small (the bag is 304 px tall) and cards draw it up to about 430 px tall, so retina
-        # screens would upscale it: do it here instead, with a better filter than the browser's.
-        "height": 912,
+        # screens would blur it: enlarge it here with super-resolution instead.
+        "super_resolution": 3,
+        "height": None,
     },
 }
 
@@ -280,6 +291,27 @@ def full_depth(depth, scale):
     return ndimage.gaussian_filter(out, EDGE_SOFTENING * scale).astype(np.float32)
 
 
+def super_resolve(image, scale):
+    """Enlarge an RGBA photo `scale` times: EDSR on the colour, a Lanczos resize on the cut-out's alpha."""
+    import cv2  # opencv-contrib-python-headless, only needed here
+
+    model = CACHE / f"EDSR_x{scale}.pb"
+    if not model.exists():
+        CACHE.mkdir(parents=True, exist_ok=True)
+        urllib.request.urlretrieve(EDSR_URL.format(scale=scale), model)
+    rgba = np.asarray(image)
+    # spread the nearest solid colour into the transparent area, so the model sees no false edge there
+    solid = rgba[..., 3] > 200
+    rows, cols = ndimage.distance_transform_edt(~solid, return_distances=False, return_indices=True)
+    colour = np.ascontiguousarray(rgba[rows, cols, :3][..., ::-1])  # BGR for OpenCV
+    upscaler = cv2.dnn_superres.DnnSuperResImpl_create()
+    upscaler.readModel(str(model))
+    upscaler.setModel("edsr", scale)
+    colour = upscaler.upsample(colour)[..., ::-1]
+    alpha = Image.fromarray(rgba[..., 3]).resize((colour.shape[1], colour.shape[0]), Image.LANCZOS)
+    return Image.fromarray(np.dstack([colour, np.asarray(alpha)]), "RGBA")
+
+
 # ---------------------------------------------------------------- build
 
 
@@ -305,12 +337,15 @@ def build(slug):
     x1, y1 = min(xs.max() + 3, photo.shape[1]), min(ys.max() + 3, photo.shape[0])
     crop = photo[y0:y1, x0:x1]
     image = Image.fromarray((np.clip(crop, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
+    if kit.get("super_resolution"):
+        image = super_resolve(image, kit["super_resolution"])
+    else:
+        # a light unsharp mask on the colour only (sharpening the alpha would halo the cut-out edge)
+        *colour, alpha = image.split()
+        colour = Image.merge("RGB", colour).filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
+        image = Image.merge("RGBA", (*colour.split(), alpha))
     if kit["height"]:
         image = image.resize((round(image.width * kit["height"] / image.height), kit["height"]), Image.LANCZOS)
-    # a light unsharp mask on the colour only (sharpening the alpha would halo the cut-out edge)
-    *colour, alpha = image.split()
-    colour = Image.merge("RGB", colour).filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))
-    image = Image.merge("RGBA", (*colour.split(), alpha))
     out = ROOT / "public/images/kit-cards" / f"{slug}.webp"
     out.parent.mkdir(parents=True, exist_ok=True)
     image.save(out, quality=90, alpha_quality=95, method=6)

@@ -33,7 +33,7 @@ export interface KitCardProps {
 /**
  * The partner design's kit card: header with the kit label, facts, price and "Ver el kit". The header is a
  * gradient, or, when the kit has one, a photo of its backpack on white that sticks out above the card and
- * swings ±12° (`KitPhotoSwing`).
+ * swings ±7° (`KitPhotoSwing`).
  */
 export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";

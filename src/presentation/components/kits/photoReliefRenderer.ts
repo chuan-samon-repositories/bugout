@@ -23,19 +23,22 @@ void main() {
   vUv = aUv;
 }`;
 
-// Two passes: solid pixels first (writing depth), then the soft cut-out edges blended over them.
+// Two passes: solid pixels first (writing depth), then the soft cut-out edges blended over them. The -0.5 mipmap
+// bias keeps the photo as sharp as the still <img>: plain trilinear filtering blends in the half-size level early.
 const FRAGMENT_SHADER = `
 precision mediump float;
 uniform sampler2D uPhoto;
 uniform float uEdges;
 varying vec2 vUv;
 void main() {
-  vec4 colour = texture2D(uPhoto, vUv);
+  vec4 colour = texture2D(uPhoto, vUv, -0.5);
   if (uEdges < 0.5 ? colour.a < 0.98 : (colour.a >= 0.98 || colour.a < 0.01)) discard;
   gl_FragColor = colour;
 }`;
 
-function compile(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null {
+type GL = WebGLRenderingContext | WebGL2RenderingContext;
+
+function compile(gl: GL, type: number, source: string): WebGLShader | null {
   const shader = gl.createShader(type);
   if (!shader) return null;
   gl.shaderSource(shader, source);
@@ -45,7 +48,7 @@ function compile(gl: WebGLRenderingContext, type: number, source: string): WebGL
   return null;
 }
 
-function link(gl: WebGLRenderingContext): WebGLProgram | null {
+function link(gl: GL): WebGLProgram | null {
   const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
   const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
   const program = vertex && fragment ? gl.createProgram() : null;
@@ -61,7 +64,7 @@ function link(gl: WebGLRenderingContext): WebGLProgram | null {
   return null;
 }
 
-function buffer(gl: WebGLRenderingContext, target: number, data: BufferSource): WebGLBuffer | null {
+function buffer(gl: GL, target: number, data: BufferSource): WebGLBuffer | null {
   const created = gl.createBuffer();
   if (!created) return null;
   gl.bindBuffer(target, created);
@@ -69,13 +72,20 @@ function buffer(gl: WebGLRenderingContext, target: number, data: BufferSource): 
   return created;
 }
 
-/** The photo redrawn at a power-of-two size, so WebGL 1 can mipmap it and it stays smooth when drawn small. */
+/**
+ * The photo WebGL 1 can mipmap: redrawn at a power-of-two size (WebGL 2 mipmaps the photo as it is, which keeps it
+ * sharper, as nothing is resampled before the GPU draws it).
+ */
 function powerOfTwo(photo: HTMLImageElement): TexImageSource {
   const size = (n: number) => 2 ** Math.ceil(Math.log2(Math.max(n, 1)));
   const canvas = document.createElement("canvas");
   canvas.width = size(photo.naturalWidth);
   canvas.height = size(photo.naturalHeight);
-  canvas.getContext("2d")?.drawImage(photo, 0, 0, canvas.width, canvas.height);
+  const context = canvas.getContext("2d");
+  if (context) {
+    context.imageSmoothingQuality = "high";
+    context.drawImage(photo, 0, 0, canvas.width, canvas.height);
+  }
   return canvas;
 }
 
@@ -88,14 +98,16 @@ export function createPhotoReliefRenderer(
   image: KitCardImage,
   photo: HTMLImageElement,
 ): PhotoReliefRenderer | null {
-  const gl = canvas.getContext("webgl", {
+  const attributes: WebGLContextAttributes = {
     alpha: true,
     antialias: true,
     depth: true,
     premultipliedAlpha: true,
     powerPreference: "low-power",
-  });
+  };
+  const gl: GL | null = canvas.getContext("webgl2", attributes) ?? canvas.getContext("webgl", attributes);
   if (!gl) return null;
+  const webgl2 = typeof WebGL2RenderingContext !== "undefined" && gl instanceof WebGL2RenderingContext;
 
   const program = link(gl);
   if (!program) return null;
@@ -120,7 +132,7 @@ export function createPhotoReliefRenderer(
   gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, texture);
   gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, true); // blend and mipmap the cut-out edges cleanly
-  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, powerOfTwo(photo));
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, webgl2 ? photo : powerOfTwo(photo));
   gl.generateMipmap(gl.TEXTURE_2D);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);

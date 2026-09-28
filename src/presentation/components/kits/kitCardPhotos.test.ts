@@ -36,8 +36,10 @@ describe("kitCardPhoto", () => {
     const big = kitCardPhoto("kit-72h")!;
     expect(big.widthRatio).toBeGreaterThan(small.widthRatio);
     expect(big.maxHeight).toBeGreaterThan(small.maxHeight);
-    // the body is 82 % of the 24h photo's height (its straps rise above it) and 93 % of the 72h photo's
-    expect((big.widthRatio * 0.934) / (small.widthRatio * 0.8197)).toBeCloseTo(1.3, 2);
+    // the body is 96 % of the 24h photo's height (shown without its shoulder straps) and 93 % of the 72h photo's
+    expect((big.widthRatio * 0.934) / (small.widthRatio * 0.962)).toBeCloseTo(1.3, 2);
+    // and both reach their cap on the same card width, so the ratio holds on every card
+    expect(big.maxHeight / big.widthRatio).toBeCloseTo(small.maxHeight / small.widthRatio, -1);
   });
 
   it("never draws a photo wider than its card", () => {

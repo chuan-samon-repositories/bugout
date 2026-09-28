@@ -16,7 +16,9 @@ rounded rectangle), sized from the photo silhouettes:
 - "one-view" (the Kit 24h's): a single 3/4 product shot on white, cut out here. Its silhouette gives each
   slice's front, with the width and viewing angle assumed.
 
-Straps and buckles outside the body take the depth of the body next to them, a little behind it.
+Straps and buckles outside the body take the depth of the body next to them, a little behind it. A kit can
+leave its shoulder straps out instead (`body_outline`): only the part of its cut-out inside that outline of the
+bag body is kept.
 
 Photos smaller than the cards draw them on high-density screens are enlarged with EDSR super-resolution (OpenCV's
 dnn_superres), which keeps edges such as cords and stitching crisper than an ordinary resize. The models (38 MB
@@ -29,7 +31,7 @@ import urllib.request
 from pathlib import Path
 
 import numpy as np
-from PIL import Image, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter
 from scipy import ndimage
 from scipy.ndimage import gaussian_filter1d, map_coordinates, median_filter
 
@@ -61,8 +63,22 @@ KITS = {
             "shadow_from_row": 718,
             "shadow_threshold": 62,
         },
+        # The bag body without its shoulder straps (x, y in photo pixels, clockwise from its top-left corner).
+        # Where a strap crosses the body's edge, the outline follows the edge the strap hides. Remove it to show
+        # the straps again (then resize the photo in kitCardPhotos.ts: the straps make it taller).
+        "body_outline": [
+            # top: the top panel, just under the straps' loops and buckles
+            (248, 197), (255, 190.5), (263, 183.5), (271, 177), (280, 170.5), (290, 164.5), (299, 160.5),
+            (316, 158.5), (335, 156.5), (375, 154.5), (393, 153.5), (427, 155), (437, 155.5),
+            # right and bottom: past the photo's edges (no straps there), then under the back-left corner
+            (441, 120), (820, 120), (820, 820), (300, 820), (262, 719.5), (231, 717.5),
+            # left: the back-left edge the straps hang beside, skirting a buckle that touches it (rows 540-587)
+            (228, 700), (228, 587), (231.5, 582), (231.5, 545), (228, 540), (228, 345), (229, 332),
+            (230.5, 320), (233.5, 310), (235.5, 298), (236.5, 285), (237, 270), (238, 255), (239, 240),
+            (240, 230), (242, 212),
+        ],
         "exponent": 5.0,
-        # Phones draw it up to about 1000 device pixels tall, past the cut-out's own 709: enlarge it with
+        # Phones draw it up to about 1000 device pixels tall, past the cut-out's own 604: enlarge it with
         # super-resolution, then settle on 1000.
         "super_resolution": 2,
         "height": 1000,
@@ -125,6 +141,16 @@ def cut_out(path, shadow_from_row, shadow_threshold):
     safe = np.maximum(alpha, 0.05)[..., None]
     rgb = np.clip((rgb - (1 - alpha[..., None]) * 255) / safe, 0, 255)
     return np.dstack([rgb / 255, alpha]).astype(np.float32)
+
+
+def outline_coverage(outline, shape, supersample=8):
+    """How much of each pixel (0 to 1) lies inside the polygon `outline` (x, y in pixels), softened like the
+    cut-out's own edges, so an edge cut through a strap looks like the rest of the outline."""
+    height, width = shape
+    mask = Image.new("L", (width * supersample, height * supersample), 0)
+    ImageDraw.Draw(mask).polygon([(x * supersample, y * supersample) for x, y in outline], fill=255)
+    coverage = np.asarray(mask.resize((width, height), Image.BOX)).astype(np.float32) / 255
+    return ndimage.gaussian_filter(coverage, 0.6)
 
 
 def main_run(mask_row):
@@ -327,6 +353,8 @@ def build(slug):
     else:
         cal = kit["calibration"]
         photo = cut_out(source / kit["photo"], cal["shadow_from_row"], cal["shadow_threshold"])
+        if kit.get("body_outline"):
+            photo[..., 3] *= outline_coverage(kit["body_outline"], photo.shape[:2])
         profile = one_view_profile(photo, cal, n)
         view = cal
     depth = full_depth(body_depth(photo.shape[:2], profile, n, view), view["bottom"] - view["top"])

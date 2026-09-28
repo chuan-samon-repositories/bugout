@@ -69,7 +69,7 @@ describe("KitCard", () => {
   it("shows the Kit 24h's own backpack", () => {
     const { container } = render(<KitCard kit={sized(["1 persona"])} index={0} />);
     expect(container.querySelector("[data-media] img")).toHaveAttribute("src", "/images/kit-cards/kit-24h.webp");
-    expect(container.querySelector("article")?.style.getPropertyValue("--kit-photo-max")).toBe("464px");
+    expect(container.querySelector("article")?.style.getPropertyValue("--kit-photo-max")).toBe("397px");
   });
 
   it("keeps the gradient header for kits without a photo", () => {
@@ -118,7 +118,7 @@ describe("KitCardGrid", () => {
     const grid = container.querySelector("ul");
     expect(grid?.parentElement?.className).toBe("@container");
     // the row's room is the tallest photo's, here the Kit 24h's
-    expect(grid?.style.getPropertyValue("--kit-photo-max")).toBe("464px");
+    expect(grid?.style.getPropertyValue("--kit-photo-max")).toBe("397px");
     expect(grid?.className).toMatch(/\bmd:pt-\[/);
     expect(grid?.className).toMatch(/\blg:pt-\[/);
     const [photoCard, plainCard] = Array.from(grid!.querySelectorAll(":scope > li"));

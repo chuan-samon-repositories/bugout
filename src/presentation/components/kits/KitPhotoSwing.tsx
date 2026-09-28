@@ -7,8 +7,8 @@ import type { KitCardImage } from "./photoRelief";
 import { createPhotoReliefRenderer, type PhotoReliefRenderer } from "./photoReliefRenderer";
 
 /** How far the photo turns each way, and how long a full swing (there and back) takes. */
-export const SWING_DEGREES = 17.5;
-export const SWING_SECONDS = 8;
+export const SWING_DEGREES = 12;
+export const SWING_SECONDS = 12;
 const MAX_PIXEL_RATIO = 2;
 
 /** Turn (radians) `seconds` into the swing: starts as photographed, then SWING_DEGREES each way. */
@@ -21,7 +21,7 @@ export interface KitPhotoSwingProps {
 }
 
 /**
- * A kit's backpack photo swinging ±17.5° round its vertical axis, with the depth of its relief. Decorative: the card
+ * A kit's backpack photo swinging ±12° round its vertical axis, with the depth of its relief. Decorative: the card
  * around it names the kit. The still photo shows first; once the card nears the viewport WebGL draws the same
  * photo, fades in and swings it, pausing off screen and in background tabs. Server HTML, reduced motion, no WebGL
  * and a photo that fails to load keep the still photo. It fills its parent, which sets its size and position.

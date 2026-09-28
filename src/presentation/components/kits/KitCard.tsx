@@ -1,10 +1,10 @@
-import Image from "next/image";
 import Link from "next/link";
 import { variantOptionLabel } from "@/application/catalog";
 import type { Product } from "@/domain/entities/product/Product";
 import { buttonClasses, cn } from "@/presentation/components/ui";
 import { startingPriceLabel } from "@/presentation/components/catalog/startingPrice";
-import { kitCardPhoto } from "@/presentation/components/kits/kitCardPhotos";
+import { KitPhotoSwing } from "@/presentation/components/kits/KitPhotoSwing";
+import { kitCardPhoto, kitPhotoRise } from "@/presentation/components/kits/kitCardPhotos";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
@@ -32,8 +32,8 @@ export interface KitCardProps {
 
 /**
  * The partner design's kit card: header with the kit label, facts, price and "Ver el kit". The header is a
- * gradient, or, when the kit has one, a photo of its backpack on white that sticks out above the card
- * (3rem, `-top-12`) and sways gently.
+ * gradient, or, when the kit has one, a photo of its backpack on white that sticks out above the card and
+ * swings ±35° (`KitPhotoSwing`).
  */
 export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
@@ -64,17 +64,11 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
           <>
             <span
               aria-hidden="true"
-              className="absolute bottom-2.5 left-1/2 h-3 w-24 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm motion-safe:animate-kit-float-shadow"
+              className="absolute bottom-2.5 left-1/2 h-3 w-32 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm"
             />
-            <div className="absolute inset-x-0 -top-12 bottom-3 perspective-midrange">
-              <Image
-                src={photo.src}
-                alt=""
-                width={photo.width}
-                height={photo.height}
-                unoptimized
-                className="size-full object-contain motion-safe:animate-kit-sway"
-              />
+            {/* bottom-3 matches KIT_PHOTO_BASE (148 px down the 160 px header) */}
+            <div className="absolute inset-x-0 bottom-3" style={{ height: photo.height }}>
+              <KitPhotoSwing image={photo.image} />
             </div>
           </>
         )}
@@ -103,10 +97,13 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
 }
 
 export function KitCardGrid({ kits, headingLevel }: { kits: readonly Product[]; headingLevel?: 2 | 3 }) {
-  // Photos stick out 3rem above their card: room above the grid, and between rows when the cards stack.
-  const popOut = kits.some((kit) => kitCardPhoto(kit.slug) !== null);
+  // Photos stick out above their card: room for them above the grid, and between rows when the cards stack.
+  const rise = kitPhotoRise(kits.map((kit) => kit.slug));
   return (
-    <ul className={cn("grid md:grid-cols-2 lg:grid-cols-3", popOut ? "gap-x-7 gap-y-20 pt-12" : "gap-7")}>
+    <ul
+      className="grid gap-x-7 gap-y-7 md:grid-cols-2 lg:grid-cols-3"
+      style={rise > 0 ? { paddingTop: rise, rowGap: rise + 28 } : undefined}
+    >
       {kits.map((kit, index) => (
         <li key={kit.slug} className="min-w-0">
           <KitCard kit={kit} index={index} headingLevel={headingLevel} />

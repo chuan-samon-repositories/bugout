@@ -40,7 +40,7 @@ describe("KitCard", () => {
     expect(screen.getByRole("link", { name: "Ver el kit: Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
   });
 
-  it("shows the Kit 72h's backpack instead of the gradient header, swaying only when motion is allowed", () => {
+  it("shows the Kit 72h's backpack instead of the gradient header, sticking out above the card", () => {
     const kit72h = buildProduct({
       id: "kit-72h",
       name: "Kit 72h",
@@ -52,18 +52,19 @@ describe("KitCard", () => {
     const media = container.querySelector("[data-media]");
     expect(media).toHaveAttribute("data-media", "photo");
     expect(media?.className).not.toMatch(/bg-linear|from-/);
-    const photo = media?.querySelector("img");
+    const photo = media?.querySelector("[data-swing] img");
     expect(photo).toHaveAttribute("src", "/images/kit-cards/kit-72h.webp");
     expect(photo).toHaveAttribute("alt", "");
-    expect(photo?.className).toContain("motion-safe:animate-kit-sway");
     expect(screen.getByText("72H")).toBeInTheDocument();
-    // the card does not clip the photo, which sticks out above it
+    // the photo is taller than the header and the card does not clip it, so it sticks out above
+    expect(media?.querySelector<HTMLElement>("[data-swing]")?.parentElement?.style.height).toBe("266px");
     expect(container.querySelector("article")?.className).not.toContain("overflow-hidden");
   });
 
   it("shows the Kit 24h's own backpack", () => {
     const { container } = render(<KitCard kit={sized(["1 persona"])} index={0} />);
     expect(container.querySelector("[data-media] img")).toHaveAttribute("src", "/images/kit-cards/kit-24h.webp");
+    expect(container.querySelector<HTMLElement>("[data-swing]")?.parentElement?.style.height).toBe("232px");
   });
 
   it("keeps the gradient header for kits without a photo", () => {
@@ -107,15 +108,17 @@ describe("KitCardGrid", () => {
     details: details({ label: "CUSTOM", buildYourOwn: true }),
   });
 
-  it("makes room above and between the cards when a photo sticks out", () => {
+  it("makes room above and between the cards for the tallest photo sticking out", () => {
     const { container } = render(<KitCardGrid kits={[sized(["1 persona"]), custom]} />);
-    expect(container.querySelector("ul")?.className).toContain("gap-y-20");
-    expect(container.querySelector("ul")?.className).toContain("pt-12");
+    const grid = container.querySelector("ul");
+    // the Kit 24h photo is 232 px tall and its bottom sits 148 px down the card: it rises 84 px
+    expect(grid?.style.paddingTop).toBe("84px");
+    expect(grid?.style.rowGap).toBe("112px");
   });
 
   it("keeps the plain spacing when no card has a photo", () => {
     const { container } = render(<KitCardGrid kits={[custom]} />);
-    expect(container.querySelector("ul")?.className).toContain("gap-7");
-    expect(container.querySelector("ul")?.className).not.toContain("pt-12");
+    expect(container.querySelector("ul")?.getAttribute("style")).toBeNull();
+    expect(container.querySelector("ul")?.className).toContain("gap-y-7");
   });
 });

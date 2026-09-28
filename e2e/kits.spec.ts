@@ -160,29 +160,37 @@ test.describe('home kit cards', () => {
 
   test('the Kit 24h and Kit 72h cards show their backpacks instead of a coloured header', async ({ page }) => {
     await openPage(page, '/');
+    const heights: number[] = [];
     for (const kit of [KITS.kit24h, KITS.kit72h]) {
-      const photo = kitCard(page, kit.name).locator('[data-media="photo"] img');
+      const swing = kitCard(page, kit.name).locator('[data-swing]');
+      const photo = swing.locator('img');
       await photo.scrollIntoViewIfNeeded();
       await expect(photo).toBeVisible();
       await expect.poll(() => photo.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth)).toBeGreaterThan(0);
-      // Reduced motion (the project default) keeps the photo still.
-      await expect(photo).toHaveCSS('animation-name', 'none');
+      // Reduced motion (the project default) keeps the still photo.
+      await expect(swing).toHaveAttribute('data-swing', 'still');
       // The backpack sticks out above its card.
       const [photoBox, cardBox] = await Promise.all([photo.boundingBox(), kitCard(page, kit.name).boundingBox()]);
       expect(photoBox!.y).toBeLessThan(cardBox!.y - 24);
+      heights.push(photoBox!.height);
     }
+    // The Kit 72h's 65 L backpack is drawn bigger than the Kit 24h's 30 L one.
+    expect(heights[1]).toBeGreaterThan(heights[0]);
     await expect(kitCard(page, KITS.kitCustom.name).locator('[data-media="photo"]')).toHaveCount(0);
   });
 
   test.describe('with motion allowed', () => {
     test.use({ contextOptions: { reducedMotion: 'no-preference' } });
 
-    test('the backpacks sway and float', async ({ page }) => {
+    test('the backpacks swing in 3D where WebGL works and stay still where it does not', async ({ page, problems }) => {
       await openPage(page, '/');
+      const webgl = await page.evaluate(() => document.createElement('canvas').getContext('webgl') !== null);
       for (const kit of [KITS.kit24h, KITS.kit72h]) {
-        const photo = kitCard(page, kit.name).locator('[data-media="photo"] img');
-        await expect(photo).toHaveCSS('animation-name', 'kit-sway, kit-float');
+        const swing = kitCard(page, kit.name).locator('[data-swing]');
+        await swing.scrollIntoViewIfNeeded();
+        await expect(swing).toHaveAttribute('data-swing', webgl ? 'swinging' : 'still');
       }
+      expect(problems.pageErrors).toEqual([]);
     });
   });
 });

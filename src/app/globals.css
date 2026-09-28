@@ -117,49 +117,6 @@ body {
   animation: scroll-dot 1.8s ease-in-out infinite;
 }
 
-/* Kit card photos (KitCard): a slow sway round the vertical axis and a gentle float; the floor shadow follows. */
-@keyframes kit-sway {
-  0%,
-  100% {
-    rotate: y -11deg;
-  }
-  50% {
-    rotate: y 11deg;
-  }
-}
-
-@keyframes kit-float {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-  50% {
-    translate: 0 -3px;
-  }
-}
-
-@keyframes kit-float-shadow {
-  0%,
-  100% {
-    scale: 1;
-    opacity: 1;
-  }
-  50% {
-    scale: 0.88;
-    opacity: 0.75;
-  }
-}
-
-@utility animate-kit-sway {
-  animation:
-    kit-sway 7s ease-in-out infinite,
-    kit-float 3.5s ease-in-out infinite;
-}
-
-@utility animate-kit-float-shadow {
-  animation: kit-float-shadow 3.5s ease-in-out infinite;
-}
-
 /*
  * Frog mascot: the 8 real pixel-art frames of frog-breathe-strip.png. Each 144px frame is
  * followed by a 4px transparent gutter (148px cell) so scaling never samples a column of

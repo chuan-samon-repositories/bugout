@@ -4,7 +4,7 @@ import type { Product } from "@/domain/entities/product/Product";
 import { buttonClasses, cn } from "@/presentation/components/ui";
 import { startingPriceLabel } from "@/presentation/components/catalog/startingPrice";
 import { KitPhotoSwing } from "@/presentation/components/kits/KitPhotoSwing";
-import { kitCardPhoto, kitPhotoRise } from "@/presentation/components/kits/kitCardPhotos";
+import { kitCardPhoto, kitPhotoVars, tallestKitPhoto } from "@/presentation/components/kits/kitCardPhotos";
 import { messages } from "@/presentation/i18n";
 import { routes } from "@/presentation/routes";
 
@@ -33,7 +33,7 @@ export interface KitCardProps {
 /**
  * The partner design's kit card: header with the kit label, facts, price and "Ver el kit". The header is a
  * gradient, or, when the kit has one, a photo of its backpack on white that sticks out above the card and
- * swings ±35° (`KitPhotoSwing`).
+ * swings ±17.5° (`KitPhotoSwing`).
  */
 export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   const Heading = headingLevel === 2 ? "h2" : "h3";
@@ -45,10 +45,11 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
     <article
       className={cn(
         "flex h-full flex-col rounded-kit bg-white shadow-card",
-        // the gradient header needs the rounded corners; a photo is let out of the card
-        !photo && "overflow-hidden",
+        // the gradient header needs the rounded corners; a photo is let out of the card, and sized by its width
+        photo ? "@container" : "overflow-hidden",
         "transition-[transform,box-shadow] duration-350 ease-brand motion-safe:hover:-translate-y-2 hover:shadow-lift",
       )}
+      style={photo ? kitPhotoVars(photo) : undefined}
     >
       <div
         className={cn(
@@ -64,10 +65,11 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
           <>
             <span
               aria-hidden="true"
-              className="absolute bottom-2.5 left-1/2 h-3 w-32 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm"
+              className="absolute bottom-2.5 left-1/2 h-3.5 w-2/5 -translate-x-1/2 rounded-[50%] bg-navy-deep/20 blur-sm"
             />
-            {/* bottom-3 matches KIT_PHOTO_BASE (148 px down the 160 px header) */}
-            <div className="absolute inset-x-0 bottom-3" style={{ height: photo.height }}>
+            {/* bottom-3 matches KIT_PHOTO_BASE (148 px down the 160 px header). The box reaches into the gaps
+                beside the card so the swing has room; the photo itself stays within the card's width. */}
+            <div className="pointer-events-none absolute -inset-x-3.5 bottom-3 h-[min(var(--kit-photo-max),calc(var(--kit-photo-ratio)*100cqw))]">
               <KitPhotoSwing image={photo.image} />
             </div>
           </>
@@ -96,19 +98,38 @@ export function KitCard({ kit, index, headingLevel = 3 }: KitCardProps) {
   );
 }
 
+/**
+ * Room for photos that stick out above their card: how far the photo rises past the card top, from the card's
+ * width. Stacked (one column), each photo card leaves its own room above it; in rows, the grid leaves the tallest
+ * photo's room above the first row. The column widths subtract the 1.75rem gaps (gap-7). `cqw` is the grid's width.
+ */
+const ROOM_ABOVE_STACKED_CARD =
+  "mt-[max(0px,calc(min(var(--kit-photo-max),calc(var(--kit-photo-ratio)*100cqw))_-_var(--kit-photo-base)))] md:mt-0";
+const ROOM_ABOVE_ROW =
+  "md:pt-[max(0px,calc(min(var(--kit-photo-max),calc(var(--kit-photo-ratio)*(100cqw_-_1.75rem)/2))_-_var(--kit-photo-base)))] " +
+  "lg:pt-[max(0px,calc(min(var(--kit-photo-max),calc(var(--kit-photo-ratio)*(100cqw_-_3.5rem)/3))_-_var(--kit-photo-base)))]";
+
 export function KitCardGrid({ kits, headingLevel }: { kits: readonly Product[]; headingLevel?: 2 | 3 }) {
-  // Photos stick out above their card: room for them above the grid, and between rows when the cards stack.
-  const rise = kitPhotoRise(kits.map((kit) => kit.slug));
+  const tallest = tallestKitPhoto(kits.map((kit) => kit.slug));
   return (
-    <ul
-      className="grid gap-x-7 gap-y-7 md:grid-cols-2 lg:grid-cols-3"
-      style={rise > 0 ? { paddingTop: rise, rowGap: rise + 28 } : undefined}
-    >
-      {kits.map((kit, index) => (
-        <li key={kit.slug} className="min-w-0">
-          <KitCard kit={kit} index={index} headingLevel={headingLevel} />
-        </li>
-      ))}
-    </ul>
+    <div className="@container">
+      <ul
+        className={cn("grid gap-7 md:grid-cols-2 lg:grid-cols-3", tallest && ROOM_ABOVE_ROW)}
+        style={tallest ? kitPhotoVars(tallest) : undefined}
+      >
+        {kits.map((kit, index) => {
+          const photo = kitCardPhoto(kit.slug);
+          return (
+            <li
+              key={kit.slug}
+              className={cn("min-w-0", photo && ROOM_ABOVE_STACKED_CARD)}
+              style={photo ? kitPhotoVars(photo) : undefined}
+            >
+              <KitCard kit={kit} index={index} headingLevel={headingLevel} />
+            </li>
+          );
+        })}
+      </ul>
+    </div>
   );
 }

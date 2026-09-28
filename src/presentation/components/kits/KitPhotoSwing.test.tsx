@@ -47,7 +47,7 @@ function runFrame(time: number) {
 const state = (container: HTMLElement) => container.querySelector("[data-swing]")?.getAttribute("data-swing");
 
 describe("swingAngle", () => {
-  it("starts as photographed and swings 35° each way", () => {
+  it("starts as photographed and swings SWING_DEGREES each way", () => {
     const max = (SWING_DEGREES * Math.PI) / 180;
     expect(swingAngle(0)).toBe(0);
     expect(swingAngle(SWING_SECONDS / 4)).toBeCloseTo(max, 9);

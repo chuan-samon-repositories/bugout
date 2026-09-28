@@ -5,7 +5,7 @@
 
 For each kit, this cuts out the photo of its backpack and writes it to public/images/kit-cards/<slug>.webp,
 then works out how far each part of the photo is from the camera, so KitPhotoSwing can turn the real photo
-±35° with some volume instead of as a flat card. The depths go to
+a few degrees with some volume instead of as a flat card. The depths go to
 src/presentation/components/kits/kitCardPhotos.generated.ts. At 0° the card shows the photo itself.
 
 The depth comes from an approximate shape of the bag body: every horizontal slice is a superellipse (a
@@ -55,7 +55,7 @@ KITS = {
             "shadow_threshold": 62,
         },
         "exponent": 5.0,
-        "height": 480,  # output photo height, px (the source is larger)
+        "height": None,  # output photo height, px (None: the cut-out's own, about 710)
     },
     "kit-72h": {
         "kind": "three-views",
@@ -72,9 +72,9 @@ KITS = {
             "bottom_radius": 0.06,
         },
         "exponent": 2.5,
-        # The source is small (the bag is 304 px tall) and the card draws it 266 px tall, so retina screens
-        # would upscale it: do it here instead, with a better filter than the browser's.
-        "height": 608,
+        # The source is small (the bag is 304 px tall) and cards draw it up to about 430 px tall, so retina
+        # screens would upscale it: do it here instead, with a better filter than the browser's.
+        "height": 912,
     },
 }
 
@@ -305,7 +305,8 @@ def build(slug):
     x1, y1 = min(xs.max() + 3, photo.shape[1]), min(ys.max() + 3, photo.shape[0])
     crop = photo[y0:y1, x0:x1]
     image = Image.fromarray((np.clip(crop, 0, 1) * 255 + 0.5).astype(np.uint8), "RGBA")
-    image = image.resize((round(image.width * kit["height"] / image.height), kit["height"]), Image.LANCZOS)
+    if kit["height"]:
+        image = image.resize((round(image.width * kit["height"] / image.height), kit["height"]), Image.LANCZOS)
     # a light unsharp mask on the colour only (sharpening the alpha would halo the cut-out edge)
     *colour, alpha = image.split()
     colour = Image.merge("RGB", colour).filter(ImageFilter.UnsharpMask(radius=1.2, percent=60, threshold=2))

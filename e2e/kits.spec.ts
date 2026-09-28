@@ -177,6 +177,16 @@ test.describe('home kit cards', () => {
     // The Kit 72h's 65 L backpack is drawn bigger than the Kit 24h's 30 L one.
     expect(heights[1]).toBeGreaterThan(heights[0]);
     await expect(kitCard(page, KITS.kitCustom.name).locator('[data-media="photo"]')).toHaveCount(0);
+
+    // The photos stick out into room left for them: below the section's description and, when the cards
+    // stack, below the card above.
+    const description = await page.getByText('Consulta el contenido completo de cada uno antes de elegir.').boundingBox();
+    const photo24 = await kitCard(page, KITS.kit24h.name).locator('[data-swing] img').boundingBox();
+    const photo72 = await kitCard(page, KITS.kit72h.name).locator('[data-swing] img').boundingBox();
+    const card24 = await kitCard(page, KITS.kit24h.name).boundingBox();
+    expect(Math.min(photo24!.y, photo72!.y)).toBeGreaterThanOrEqual(description!.y + description!.height);
+    const stacked = Math.abs(photo72!.x - photo24!.x) < 40;
+    if (stacked) expect(photo72!.y).toBeGreaterThanOrEqual(card24!.y + card24!.height);
   });
 
   test.describe('with motion allowed', () => {

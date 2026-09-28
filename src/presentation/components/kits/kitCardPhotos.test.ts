@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { KIT_PHOTO_BASE, kitCardPhoto, kitPhotoRise } from "./kitCardPhotos";
+import { KIT_PHOTO_BASE, kitCardPhoto, kitPhotoVars, tallestKitPhoto } from "./kitCardPhotos";
 
 /** Width and height of a WebP file, from its RIFF header (lossy, lossless or extended). */
 function webpSize(file: string): [number, number] {
@@ -31,16 +31,38 @@ describe("kitCardPhoto", () => {
     expect(webpSize(image.src)).toEqual([image.width, image.height]);
   });
 
-  it("draws the Kit 72h's 65 L backpack taller than the Kit 24h's 30 L one", () => {
-    expect(kitCardPhoto("kit-72h")!.height).toBeGreaterThan(kitCardPhoto("kit-24h")!.height);
+  it("draws the Kit 72h's 65 L backpack about 1.3 times as tall as the Kit 24h's 30 L one, body for body", () => {
+    const small = kitCardPhoto("kit-24h")!;
+    const big = kitCardPhoto("kit-72h")!;
+    expect(big.widthRatio).toBeGreaterThan(small.widthRatio);
+    expect(big.maxHeight).toBeGreaterThan(small.maxHeight);
+    // the body is 82 % of the 24h photo's height (its straps rise above it) and 93 % of the 72h photo's
+    expect((big.widthRatio * 0.934) / (small.widthRatio * 0.8197)).toBeCloseTo(1.3, 2);
+  });
+
+  it("never draws a photo wider than its card", () => {
+    for (const slug of ["kit-24h", "kit-72h"]) {
+      const { image, widthRatio } = kitCardPhoto(slug)!;
+      expect((image.width / image.height) * widthRatio).toBeLessThanOrEqual(0.95);
+    }
   });
 });
 
-describe("kitPhotoRise", () => {
-  it("is how far the tallest photo sticks out above its card", () => {
-    expect(kitPhotoRise(["kit-24h", "kit-72h", "kit-custom"])).toBe(kitCardPhoto("kit-72h")!.height - KIT_PHOTO_BASE);
-    expect(kitPhotoRise(["kit-24h"])).toBe(kitCardPhoto("kit-24h")!.height - KIT_PHOTO_BASE);
-    expect(kitPhotoRise(["kit-custom"])).toBe(0);
-    expect(kitPhotoRise([])).toBe(0);
+describe("tallestKitPhoto", () => {
+  it("picks the photo that sticks out furthest", () => {
+    expect(tallestKitPhoto(["kit-24h", "kit-72h", "kit-custom"])).toBe(kitCardPhoto("kit-72h"));
+    expect(tallestKitPhoto(["kit-custom", "kit-24h"])).toBe(kitCardPhoto("kit-24h"));
+    expect(tallestKitPhoto(["kit-custom"])).toBeNull();
+    expect(tallestKitPhoto([])).toBeNull();
+  });
+});
+
+describe("kitPhotoVars", () => {
+  it("hands the size and the base of a photo to CSS", () => {
+    expect(kitPhotoVars(kitCardPhoto("kit-72h")!)).toEqual({
+      "--kit-photo-max": "532px",
+      "--kit-photo-ratio": 1.137,
+      "--kit-photo-base": `${KIT_PHOTO_BASE}px`,
+    });
   });
 });

@@ -125,6 +125,18 @@ export function ClockIcon(props: IconProps) {
   return <BaseIcon {...props}><path d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" /></BaseIcon>;
 }
 
+export function PauseIcon(props: IconProps) {
+  return <BaseIcon {...props}><path d="M15.75 5.25v13.5m-7.5-13.5v13.5" /></BaseIcon>;
+}
+
+export function PlayIcon(props: IconProps) {
+  return (
+    <BaseIcon {...props}>
+      <path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+    </BaseIcon>
+  );
+}
+
 export function InfoIcon(props: IconProps) {
   return (
     <BaseIcon {...props}>

@@ -125,6 +125,8 @@ export const catalog = {
     related: 'También te puede interesar',
     gallery: 'Imágenes del producto',
     showImage: (index: number) => `Ver imagen ${index}`,
+    pauseGallery: 'Pausar el cambio automático de imágenes',
+    playGallery: 'Reanudar el cambio automático de imágenes',
     brand: 'Bugout',
   },
 

@@ -17,14 +17,14 @@ export const KIT_PHOTO_BASE = 148;
 /**
  * Kits whose card shows the backpack they come in, keyed by kit slug (the Shopify handle, see
  * docs/SHOPIFY_SETUP.md). Cards are narrower than these photos want to be, so the card width sets their size:
- * the Kit 72h's photo is drawn as wide as 95 % of its card (1.137 × its width tall), and the Kit 24h's so that its
- * 30 L backpack's body is 1/1.3 of the 65 L one's (the cube root of 30/65; the 24h photo shows the bag without its
- * shoulder straps). `maxHeight` caps both from the same card width on (468 px), where the Kit 72h's is twice the
- * size first asked for.
+ * the Kit 24h's photo is drawn 0.849 × its card's width tall (it shows the bag without its shoulder straps), and
+ * the Kit 72h's 15 % smaller than the 95 %-of-the-card width it first had (0.966 × the card width tall), so its
+ * 65 L backpack's body is about 1.1 times the 30 L one's: bigger, without dwarfing it. `maxHeight` caps both from
+ * the same card width on (468 px).
  */
 const KIT_CARD_PHOTOS: ReadonlyMap<string, KitCardPhoto> = new Map([
   ["kit-24h", { image: KIT_CARD_IMAGES["kit-24h"], maxHeight: 397, widthRatio: 0.849 }],
-  ["kit-72h", { image: KIT_CARD_IMAGES["kit-72h"], maxHeight: 532, widthRatio: 1.137 }],
+  ["kit-72h", { image: KIT_CARD_IMAGES["kit-72h"], maxHeight: 452, widthRatio: 0.966 }],
 ]);
 
 export function kitCardPhoto(slug: string): KitCardPhoto | null {

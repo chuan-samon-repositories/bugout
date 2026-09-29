@@ -60,7 +60,7 @@ describe("KitCard", () => {
     const article = container.querySelector("article");
     expect(article?.className).not.toContain("overflow-hidden");
     expect(article?.className).toContain("@container");
-    expect(article?.style.getPropertyValue("--kit-photo-max")).toBe("532px");
+    expect(article?.style.getPropertyValue("--kit-photo-max")).toBe("452px");
     expect(media?.querySelector("[data-swing]")?.parentElement?.className).toContain(
       "h-[min(var(--kit-photo-max),calc(var(--kit-photo-ratio)*100cqw))]",
     );

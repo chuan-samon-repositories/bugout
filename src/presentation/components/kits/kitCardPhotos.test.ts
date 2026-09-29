@@ -31,13 +31,13 @@ describe("kitCardPhoto", () => {
     expect(webpSize(image.src)).toEqual([image.width, image.height]);
   });
 
-  it("draws the Kit 72h's 65 L backpack about 1.3 times as tall as the Kit 24h's 30 L one, body for body", () => {
+  it("draws the Kit 72h's 65 L backpack about 1.1 times as tall as the Kit 24h's 30 L one, body for body", () => {
     const small = kitCardPhoto("kit-24h")!;
     const big = kitCardPhoto("kit-72h")!;
     expect(big.widthRatio).toBeGreaterThan(small.widthRatio);
     expect(big.maxHeight).toBeGreaterThan(small.maxHeight);
     // the body is 96 % of the 24h photo's height (shown without its shoulder straps) and 93 % of the 72h photo's
-    expect((big.widthRatio * 0.934) / (small.widthRatio * 0.962)).toBeCloseTo(1.3, 2);
+    expect((big.widthRatio * 0.934) / (small.widthRatio * 0.962)).toBeCloseTo(1.1, 1);
     // and both reach their cap on the same card width, so the ratio holds on every card
     expect(big.maxHeight / big.widthRatio).toBeCloseTo(small.maxHeight / small.widthRatio, -1);
   });
@@ -62,8 +62,8 @@ describe("tallestKitPhoto", () => {
 describe("kitPhotoVars", () => {
   it("hands the size and the base of a photo to CSS", () => {
     expect(kitPhotoVars(kitCardPhoto("kit-72h")!)).toEqual({
-      "--kit-photo-max": "532px",
-      "--kit-photo-ratio": 1.137,
+      "--kit-photo-max": "452px",
+      "--kit-photo-ratio": 0.966,
       "--kit-photo-base": `${KIT_PHOTO_BASE}px`,
     });
   });

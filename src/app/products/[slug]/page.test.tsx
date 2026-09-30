@@ -95,6 +95,10 @@ describe("/products/[slug]", () => {
     expect(within(contents).getByRole("link", { name: "Radio solar" })).toHaveAttribute("href", "/products/radio-solar");
     expect(within(contents).getByText("Ración alimentaria (3 días)")).toBeInTheDocument();
     expect(within(contents).getByText(/Cantidades del kit para 1 persona/)).toBeInTheDocument();
+    // The kit carries the complete action-card deck: its size comes from the deck, the link goes to the cards.
+    expect(within(contents).getByText("Baraja de tarjetas de acción (1 por kit)")).toBeInTheDocument();
+    expect(within(contents).getByRole("heading", { level: 3, name: "Incluye 50 tarjetas de acción" })).toBeInTheDocument();
+    expect(within(contents).getByRole("link", { name: /Ver las tarjetas/ })).toHaveAttribute("href", "/why-prepare#tarjetas");
     const crossSell = screen.getByRole("region", { name: "Añade productos" });
     expect(within(crossSell).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
       "Lámpara de camping",
@@ -104,6 +108,16 @@ describe("/products/[slug]", () => {
     // No kit photo yet: a decorative box with the kit label, no "coming soon" promise.
     expect(document.querySelector("[data-kit-placeholder]")).toHaveAttribute("aria-hidden", "true");
     expect(screen.queryByText(/próximamente/i)).toBeNull();
+  });
+
+  it("gives the Kit 24h the essential deck, and no deck callout to loose products", async () => {
+    const { unmount } = await renderProduct("kit-24h");
+    const contents = screen.getByRole("region", { name: "Contenido completo" });
+    expect(within(contents).getByRole("heading", { level: 3, name: "Incluye 29 tarjetas de acción" })).toBeInTheDocument();
+    unmount();
+
+    await renderProduct("radio-solar");
+    expect(screen.queryByText(/tarjetas de acción/)).toBeNull();
   });
 
   it("turns the build-your-own kit page into a builder instead of selling the kit itself", async () => {

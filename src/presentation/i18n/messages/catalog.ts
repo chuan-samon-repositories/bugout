@@ -169,6 +169,10 @@ export const catalog = {
     contentsTitle: 'Contenido completo',
     contentsQuantityNote: 'Cantidades del kit para 1 persona; las versiones para más personas las multiplican.',
     contentsQuantity: (quantity: string) => `× ${quantity}`,
+    /** Under the contents of a kit that carries the printed action-card deck. */
+    actionCardsTitle: (count: number) => `Incluye ${count} tarjetas de acción`,
+    actionCardsText: 'Qué hacer en cada emergencia, paso a paso y con fuentes oficiales. También puedes consultarlas aquí.',
+    actionCardsLink: 'Ver las tarjetas',
     galleryContents: 'Lo que incluye el kit',
     crossSellTitle: 'Añade productos',
     crossSellDescription: 'Completa tu kit con material suelto del catálogo.',
@@ -240,8 +244,9 @@ export const catalog = {
     whyParagraphs: [
       'Un apagón, una inundación repentina o una evacuación temporal pueden pasar en cualquier zona y en cualquier momento. Tener un kit básico a mano no es alarmismo: es el mismo sentido común que tener un seguro o un extintor en casa.',
       'Las autoridades de protección civil recomiendan que cada hogar tenga a mano material básico de subsistencia y primeros auxilios para las primeras horas de una emergencia, antes de que llegue la ayuda.',
+      'Para empezar, tienes una guía en 5 pasos y tarjetas de acción para cada emergencia, con la fuente oficial de cada consejo.',
     ],
-    whyMore: 'Leer más',
+    whyMore: 'Cómo prepararte',
 
     shopEyebrow: 'Productos sueltos',
     shopTitle: 'Completa o renueva tu kit',

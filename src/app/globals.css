@@ -11,6 +11,8 @@
  * - orange-on-navy: orange text on navy (#243c58) and for hover states of orange buttons.
  * - accent: orange-family text and links on light backgrounds (white, sand, sand-dim).
  * - muted: secondary text on white, sand and sand-dim.
+ * - deck-*: action-card category badges and bands, with white text (ink on deck-na).
+ *   Never text on light backgrounds; always next to the category's letters and shape.
  */
 @theme {
   --color-navy: #243c58;
@@ -30,6 +32,14 @@
   --color-muted: #4a586c;
   --color-danger: #a51f16;
   --color-success: #176040;
+  /* Action-card categories (presentation/prepare): the printed deck's colours, ISO 3864/7010 meanings. */
+  --color-deck-pm: #1c1c1c;
+  --color-deck-cl: #5b3a93;
+  --color-deck-ev: #1d5aa8;
+  --color-deck-na: #f2b705;
+  --color-deck-te: #b3261e;
+  --color-deck-pa: #16784a;
+  --color-deck-ad: #0e6d73;
 
   --font-sans: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;

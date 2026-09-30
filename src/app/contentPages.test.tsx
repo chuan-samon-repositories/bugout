@@ -1,7 +1,11 @@
 // @vitest-environment jsdom
 import { render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildProduct } from "@/domain/testing/buildProduct";
 import { getContainer } from "@/infrastructure/config";
+import { ACTION_CARDS } from "@/presentation/prepare/cards";
+import { CARD_CATEGORIES } from "@/presentation/prepare/categories";
+import { deckCards } from "@/presentation/prepare/deck";
 
 vi.mock("next/navigation", () => ({
   usePathname: () => "/",
@@ -56,19 +60,101 @@ describe("/how-to-choose", () => {
 });
 
 describe("/why-prepare", () => {
-  it("explains why to prepare, cites official guidance without statistics and links the kits", async () => {
+  it("guides the visitor from the emergency now to preparing, the cards and their sources", async () => {
     render(await WhyPreparePage());
-    expect(screen.getByRole("heading", { level: 1, name: "Por qué prepararse" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Prepárate" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
-      "Apagones y cortes de suministro",
-      "Inundaciones y temporales",
-      "Qué recomiendan las autoridades",
+      "Si la emergencia es ahora",
+      "Las emergencias más habituales no son de película",
+      "Prepárate en 5 pasos",
+      "Tarjetas de acción",
+      "La misma guía, en papel",
+      "Fuentes oficiales",
+      "Elige tu kit",
     ]);
-    const official = screen.getByRole("link", { name: /Recomendaciones de Protección Civil/ });
-    expect(official).toHaveAttribute("href", "https://www.proteccioncivil.es");
-    expect(official).toHaveAttribute("rel", "noopener noreferrer");
+    expect(screen.getByRole("link", { name: "Ver los primeros 15 minutos" })).toHaveAttribute(
+      "href",
+      "/why-prepare/primeros-15-minutos",
+    );
+    expect(screen.getByRole("link", { name: "112" })).toHaveAttribute("href", "tel:112");
+    expect(screen.getByRole("link", { name: "91 562 04 20" })).toHaveAttribute("href", "tel:+34915620420");
     expect(screen.getByRole("link", { name: "Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
     expect(document.body).not.toHaveTextContent(/TODO/);
+  });
+
+  it("lists the 5 steps, each with its cards and an official source", async () => {
+    render(await WhyPreparePage());
+    const steps = screen.getByRole("region", { name: "Prepárate en 5 pasos" });
+    expect(within(steps).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      "Infórmate",
+      "Haz tu plan familiar",
+      "Prepara tu kit",
+      "Aprende primeros auxilios",
+      "Revisa y practica",
+    ]);
+    for (const item of within(steps).getAllByRole("listitem").filter((li) => li.parentElement?.tagName === "OL")) {
+      expect(within(item).getAllByRole("link").some((link) => link.getAttribute("href")?.startsWith("/why-prepare/"))).toBe(true);
+      const external = within(item).getAllByRole("link").filter((link) => link.getAttribute("target") === "_blank");
+      expect(external.length).toBeGreaterThan(0);
+      for (const link of external) expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    }
+  });
+
+  it("groups every card by category, with jump links to each", async () => {
+    render(await WhyPreparePage());
+    const cards = screen.getByRole("region", { name: "Tarjetas de acción" });
+    const jump = within(cards).getByRole("navigation", { name: "Categorías de tarjetas" });
+    expect(within(jump).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")])).toEqual(
+      CARD_CATEGORIES.map((category) => [category.name, `#${category.anchor}`]),
+    );
+    for (const category of CARD_CATEGORIES) {
+      const group = within(cards).getByRole("region", { name: new RegExp(`^${category.name}`) });
+      expect(group).toHaveAttribute("id", category.anchor);
+      const count = ACTION_CARDS.filter((card) => card.category === category.id).length;
+      expect(within(group).getAllByRole("link")).toHaveLength(count);
+    }
+    expect(within(cards).getByRole("link", { name: /Hemorragia grave/ })).toHaveAttribute("href", "/why-prepare/hemorragia-grave");
+  });
+
+  it("says which deck each kit carries, with counts from the catalog", async () => {
+    render(await WhyPreparePage());
+    const deck = screen.getByRole("region", { name: "La misma guía, en papel" });
+    expect(within(deck).getByRole("link", { name: `El Kit 24h incluye ${deckCards("essential").length} tarjetas` })).toHaveAttribute(
+      "href",
+      "/products/kit-24h",
+    );
+    expect(within(deck).getByRole("link", { name: `El Kit 72h incluye ${deckCards("complete").length} tarjetas` })).toHaveAttribute(
+      "href",
+      "/products/kit-72h",
+    );
+    expect(within(deck).queryByText(/Kit Custom/)).toBeNull();
+  });
+
+  it("never says a kit includes the cards when the catalog does not", async () => {
+    const products = await getContainer().getGetProductsUseCase().execute();
+    const withoutDecks = products.map((product) =>
+      product.details?.kit?.actionCards
+        ? buildProduct({ id: product.slug, name: product.name, details: { ...product.details, kit: { label: product.details.kit.label } } })
+        : product,
+    );
+    vi.spyOn(getContainer().getGetProductsUseCase(), "execute").mockResolvedValueOnce(withoutDecks);
+    render(await WhyPreparePage());
+    expect(screen.queryByText(/incluye \d+ tarjetas/)).toBeNull();
+    expect(screen.getByRole("heading", { level: 2, name: "Cómo leer las tarjetas" })).toBeInTheDocument();
+  });
+
+  it("names its sources and the review date, and claims no medical review", async () => {
+    render(await WhyPreparePage());
+    const sources = screen.getByRole("region", { name: "Fuentes oficiales" });
+    expect(within(sources).getByText("Cruz Roja Española")).toBeInTheDocument();
+    expect(within(sources).getByText("European Resuscitation Council (ERC)")).toBeInTheDocument();
+    expect(within(sources).getByRole("link", { name: /busca un curso de Cruz Roja/ })).toHaveAttribute(
+      "href",
+      "https://www2.cruzroja.es/cursos-primeros-auxilios",
+    );
+    expect(sources).toHaveTextContent("Contenido revisado el 30 de septiembre de 2026.");
+    expect(sources).toHaveTextContent(/No sustituye a un curso de primeros auxilios/);
+    expect(document.body).not.toHaveTextContent(/Revisión sanitaria/);
   });
 });
 

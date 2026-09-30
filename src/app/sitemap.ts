@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getContainer } from "@/infrastructure/config";
 import { siteConfig } from "@/presentation/config/site";
+import { ACTION_CARDS } from "@/presentation/prepare/cards";
 import { routes } from "@/presentation/routes";
 
 /** Regenerated at most every 5 minutes so new and removed products are listed without a redeploy. */
@@ -18,6 +19,7 @@ const staticPaths = [
   routes.privacy,
   routes.cookies,
   routes.terms,
+  ...ACTION_CARDS.map((card) => routes.actionCard(card.slug)),
 ];
 
 const absolute = (path: string) => new URL(path, siteConfig.url).toString();

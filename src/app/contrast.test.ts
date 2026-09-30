@@ -44,6 +44,11 @@ const TEXT_PAIRS: Array<[string, string]> = [
   ),
   ["orange", "navy-deep"],
   ["orange", "navy-darker"],
+  // "Llama al 112" box on the action cards.
+  ["white", "danger"],
+  // Action-card category badges and bands: white text, except ink on the amber of "Fenómenos naturales".
+  ...["deck-pm", "deck-cl", "deck-ev", "deck-te", "deck-pa", "deck-ad"].map((bg) => ["white", bg] as [string, string]),
+  ["ink", "deck-na"],
 ];
 
 describe("theme colour contrast", () => {

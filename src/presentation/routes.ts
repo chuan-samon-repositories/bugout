@@ -10,6 +10,10 @@ export const routes = {
   shareImage: '/share-image',
   howToChoose: '/how-to-choose',
   whyPrepare: '/why-prepare',
+  /** An action card's page (`/why-prepare/hemorragia-grave`); `/why-prepare/<code>` redirects to it. */
+  actionCard: (slug: string) => `/why-prepare/${slug}`,
+  /** A section of the Prepárate page (`prepareAnchors` or a card category's anchor). */
+  prepareSection: (anchor: string) => `/why-prepare#${anchor}`,
   faq: '/faq',
   about: '/about',
   contact: '/contact',
@@ -17,6 +21,16 @@ export const routes = {
   cookies: '/cookies',
   terms: '/terms',
   shippingReturns: '/shipping-returns',
+} as const;
+
+/** Ids of the Prepárate page's sections, for `routes.prepareSection`. */
+export const prepareAnchors = {
+  startHere: 'empieza-aqui',
+  why: 'por-que-prepararse',
+  steps: 'como-prepararte',
+  cards: 'tarjetas',
+  kitDeck: 'tarjetas-del-kit',
+  sources: 'fuentes',
 } as const;
 
 /** Query-string keys understood by the catalog page (`/products?category=herramientas&sale=1`). */

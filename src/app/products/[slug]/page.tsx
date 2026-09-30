@@ -30,6 +30,7 @@ import { KitContentsList } from "@/presentation/components/kits/KitContents";
 import { KitGallery } from "@/presentation/components/kits/KitGallery";
 import { KitSpecsTable } from "@/presentation/components/kits/KitSpecsTable";
 import { PurchasePanel } from "@/presentation/components/kits/PurchasePanel";
+import { KitDeckCallout } from "@/presentation/components/prepare/KitDeckCallout";
 import {
   ArrowRightIcon,
   Breadcrumbs,
@@ -257,6 +258,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             </h2>
             {product.hasVariants() && <p className="mb-4 text-sm text-muted">{k.contentsQuantityNote}</p>}
             <KitContentsList lines={lines} />
+            {kit.actionCards && <KitDeckCallout edition={kit.actionCards} className="mt-8" />}
           </section>
         )}
 

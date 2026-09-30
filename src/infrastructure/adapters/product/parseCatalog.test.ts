@@ -125,6 +125,15 @@ describe('parseCatalog', () => {
       ]);
     });
 
+    it('reads the action-card deck a kit carries and rejects unknown decks', () => {
+      const withDeck = { ...kit, details: { ...kit.details, kit: { label: '72H', actionCards: 'complete' } } };
+      expect(parseCatalog([withDeck, loose], 'EUR')[0].details?.kit).toEqual({ label: '72H', actionCards: 'complete' });
+      const badDeck = { ...kit, details: { ...kit.details, kit: { label: '72H', actionCards: 'all' } } };
+      expect(() => parseCatalog([badDeck, loose], 'EUR')).toThrow(
+        /products\[0\]\.details\.kit\.actionCards: expected one of essential, complete/,
+      );
+    });
+
     it('reports malformed variants with their path', () => {
       const broken = { ...kit, variants: [{ ...kit.variants[0], price: 'x' }] };
       expect(() => parseCatalog([broken, loose], 'EUR')).toThrow(/products\[0\]\.variants\[0\]\.price: expected a number/);

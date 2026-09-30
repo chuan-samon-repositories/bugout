@@ -1,4 +1,4 @@
-export { Product } from './product/Product';
+export { Product, ACTION_CARD_DECKS, isActionCardDeck } from './product/Product';
 export type {
   ProductProps,
   ProductImage,
@@ -9,6 +9,7 @@ export type {
   ProductVariant,
   ProductVariantOption,
   KitInfo,
+  ActionCardDeck,
 } from './product/Product';
 export { Cart, MAX_QUANTITY_PER_ITEM } from './cart/Cart';
 export { CartItem } from './cart/CartItem';

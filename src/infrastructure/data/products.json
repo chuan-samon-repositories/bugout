@@ -105,11 +105,16 @@
         {
           "item": "Mascarilla y guantes desechables",
           "quantity": "1"
+        },
+        {
+          "item": "Baraja de tarjetas de acción (1 por kit)",
+          "quantity": "1"
         }
       ],
       "kit": {
         "label": "24H",
-        "idealFor": "Ideal como primer kit, para el coche, o para cortes de suministro cortos donde la ayuda llega en pocas horas."
+        "idealFor": "Ideal como primer kit, para el coche, o para cortes de suministro cortos donde la ayuda llega en pocas horas.",
+        "actionCards": "essential"
       },
       "related": [
         "cinta-adhesiva",
@@ -273,11 +278,16 @@
         {
           "item": "Mascarilla y guantes desechables",
           "quantity": "2"
+        },
+        {
+          "item": "Baraja de tarjetas de acción (1 por kit)",
+          "quantity": "1"
         }
       ],
       "kit": {
         "label": "72H",
-        "idealFor": "Pensado para evacuaciones, aislamiento en casa o zonas de mayor riesgo, donde se necesita autonomía de varios días."
+        "idealFor": "Pensado para evacuaciones, aislamiento en casa o zonas de mayor riesgo, donde se necesita autonomía de varios días.",
+        "actionCards": "complete"
       },
       "related": [
         "lampara-camping",

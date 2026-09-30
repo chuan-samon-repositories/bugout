@@ -1,5 +1,6 @@
 import { isPeopleOption } from '@/application/catalog/variants';
 import {
+  isActionCardDeck,
   Product,
   type KitInfo,
   type ProductContentItem,
@@ -163,7 +164,7 @@ function readContent(item: unknown): ProductContentItem | null {
   };
 }
 
-/** Reads `custom.kit`: {"label":"72H","idealFor":"…","buildYourOwn":false}. */
+/** Reads `custom.kit`: {"label":"72H","idealFor":"…","buildYourOwn":false,"actionCards":"complete"}. */
 function parseKit(metafield: ShopifyMetafield): KitInfo | null {
   const data = parseJson(metafield?.value);
   if (!isRecord(data) || typeof data.label !== 'string' || !data.label.trim()) return null;
@@ -171,6 +172,7 @@ function parseKit(metafield: ShopifyMetafield): KitInfo | null {
     label: data.label.trim(),
     ...(typeof data.idealFor === 'string' && data.idealFor.trim() ? { idealFor: data.idealFor.trim() } : {}),
     ...(data.buildYourOwn === true ? { buildYourOwn: true } : {}),
+    ...(isActionCardDeck(data.actionCards) ? { actionCards: data.actionCards } : {}),
   };
 }
 

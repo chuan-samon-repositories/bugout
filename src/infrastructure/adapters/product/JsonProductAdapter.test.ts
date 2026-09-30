@@ -67,6 +67,16 @@ describe('JsonProductAdapter with the bundled catalog', () => {
     expect(custom.details?.kit).toMatchObject({ label: 'CUSTOM', buildYourOwn: true });
   });
 
+  it('ships the essential action-card deck with the Kit 24h and the complete one with the Kit 72h', async () => {
+    const deck = async (slug: string) => (await adapter.findBySlug(slug)).details;
+    expect((await deck('kit-24h'))?.kit?.actionCards).toBe('essential');
+    expect((await deck('kit-72h'))?.kit?.actionCards).toBe('complete');
+    expect((await deck('kit-custom'))?.kit?.actionCards).toBeUndefined();
+    for (const slug of ['kit-24h', 'kit-72h']) {
+      expect((await deck(slug))?.contents?.map((line) => line.item)).toContain('Baraja de tarjetas de acción (1 por kit)');
+    }
+  });
+
   it('has no fabricated merchandising: no ratings, badges or strike-through prices', async () => {
     for (const product of await adapter.findAll()) {
       expect(product.rating).toBeNull();

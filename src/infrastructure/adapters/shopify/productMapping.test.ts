@@ -226,6 +226,15 @@ describe('mapShopifyProduct: kits and variants', () => {
     ]);
   });
 
+  it('reads the action-card deck from custom.kit and ignores unknown values', () => {
+    const deck = (actionCards: unknown) =>
+      mapShopifyProduct(productNode({ kit: metafield({ label: '24H', actionCards }) }), variantNode(1)).details?.kit;
+    expect(deck('essential')).toEqual({ label: '24H', actionCards: 'essential' });
+    expect(deck('complete')).toEqual({ label: '24H', actionCards: 'complete' });
+    expect(deck('todas')).toEqual({ label: '24H' });
+    expect(deck(true)).toEqual({ label: '24H' });
+  });
+
   it('ignores a kit metafield without a label', () => {
     const product = mapShopifyProduct(productNode({ kit: metafield({ idealFor: 'x' }) }), variantNode(1));
     expect(product.isKit()).toBe(false);

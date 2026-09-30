@@ -27,6 +27,15 @@ export interface ProductContentItem {
   productSlug?: string;
 }
 
+/** Deck of "Tarjetas de acción" a kit carries: the essential subset or every main card. */
+export type ActionCardDeck = 'essential' | 'complete';
+
+export const ACTION_CARD_DECKS: readonly ActionCardDeck[] = ['essential', 'complete'];
+
+export function isActionCardDeck(value: unknown): value is ActionCardDeck {
+  return typeof value === 'string' && (ACTION_CARD_DECKS as readonly string[]).includes(value);
+}
+
 /** Marks a product as a kit (Kit 24h, Kit 72h, Kit Custom) and holds its kit-only copy. */
 export interface KitInfo {
   /** Short label shown on kit cards and as the eyebrow, e.g. "24H". */
@@ -35,6 +44,8 @@ export interface KitInfo {
   idealFor?: string;
   /** The kit is a base the customer completes with loose products (Kit Custom). */
   buildYourOwn?: boolean;
+  /** The printed action-card deck the kit includes, if any (the Prepárate page lists its cards). */
+  actionCards?: ActionCardDeck;
 }
 
 /** Search-engine title and description, when they differ from the product name and short description. */

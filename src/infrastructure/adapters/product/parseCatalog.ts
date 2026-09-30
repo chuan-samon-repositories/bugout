@@ -1,4 +1,6 @@
 import {
+  ACTION_CARD_DECKS,
+  isActionCardDeck,
   Product,
   type KitInfo,
   type ProductDetails,
@@ -119,10 +121,18 @@ function parseDetails(fields: Fields): ProductDetails {
 function parseKit(fields: Fields): KitInfo {
   const idealFor = fields.optional('idealFor', (f, k) => f.string(k));
   const buildYourOwn = fields.optional('buildYourOwn', (f, k) => f.boolean(k));
+  const actionCards = fields.optional('actionCards', (f, k) => {
+    const value = f.string(k);
+    if (!isActionCardDeck(value)) {
+      throw new CatalogFormatError(`${f.path}.${k}`, `expected one of ${ACTION_CARD_DECKS.join(', ')}`);
+    }
+    return value;
+  });
   return {
     label: fields.string('label'),
     ...(idealFor ? { idealFor } : {}),
     ...(buildYourOwn ? { buildYourOwn } : {}),
+    ...(actionCards ? { actionCards } : {}),
   };
 }
 

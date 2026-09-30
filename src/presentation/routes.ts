@@ -9,11 +9,16 @@ export const routes = {
   /** The site's default share image (Open Graph). */
   shareImage: '/share-image',
   howToChoose: '/how-to-choose',
-  whyPrepare: '/why-prepare',
-  /** An action card's page (`/why-prepare/hemorragia-grave`); `/why-prepare/<code>` redirects to it. */
-  actionCard: (slug: string) => `/why-prepare/${slug}`,
+  /** The Prepárate section (guide and action cards). The old English `/preparate` paths redirect here. */
+  prepare: '/preparate',
+  /** An action card's page (`/preparate/hemorragia-grave`); `/preparate/<code>` redirects to it. */
+  actionCard: (slug: string) => `/preparate/${slug}`,
+  /** The emergency kit checklist (a static segment, so it wins over the card pages' `[slug]`). */
+  kitChecklist: '/preparate/lista-del-kit-de-emergencia',
+  /** Generated share image (Open Graph) of an action card: its code, category and title. */
+  actionCardShareImage: (slug: string) => `/preparate/${slug}/share-image`,
   /** A section of the Prepárate page (`prepareAnchors` or a card category's anchor). */
-  prepareSection: (anchor: string) => `/why-prepare#${anchor}`,
+  prepareSection: (anchor: string) => `/preparate#${anchor}`,
   faq: '/faq',
   about: '/about',
   contact: '/contact',

@@ -13,8 +13,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'como-usar-las-tarjetas',
     category: 'pm',
     title: 'Cómo usar las tarjetas',
-    metaTitle: 'Cómo usar las tarjetas de acción en una emergencia',
+    metaTitle: 'Cómo usar las tarjetas de acción',
     summary: 'Encuentra en segundos la tarjeta de lo que está pasando y sigue sus pasos.',
+    description:
+      'Encuentra en segundos la tarjeta de cada emergencia por su color, sus letras y su forma, y sigue sus pasos. Si hay una vida en peligro, llama antes al 112.',
     steps: [
       { text: 'Busca la categoría de lo que pasa por su color, sus letras y su forma.' },
       { text: 'Saca la tarjeta de esa situación.' },
@@ -37,8 +39,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'primeros-15-minutos',
     category: 'pm',
     title: 'Primeros 15 minutos',
-    metaTitle: 'Qué hacer en los primeros 15 minutos de una emergencia',
+    metaTitle: 'Primeros 15 minutos de una emergencia: qué hacer',
     summary: 'El orden para no olvidar nada al empezar cualquier emergencia.',
+    description:
+      'Qué hacer al empezar una emergencia: aléjate del peligro, llama al 112 si hay heridos, infórmate por canales oficiales y decide si confinarte o salir.',
     steps: [
       { text: 'Para, respira y aléjate del peligro inmediato.' },
       { text: 'Si alguien está herido grave, llama al 112.', see: ['PM-03'] },
@@ -57,6 +61,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'En los primeros minutos se toman las decisiones más importantes. Esta tarjeta te da un orden para no olvidar nada.',
       'La Comisión Europea recomienda que cada hogar pueda arreglárselas solo durante al menos 72 horas.',
     ],
+    productCategories: ['kits'],
     sources: ['gencatPrepare', 'gencatChemicalFaq', 'gencatNuclear', 'euPreparedness'],
     essential: true,
   },
@@ -65,8 +70,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'confinarse-o-evacuar',
     category: 'pm',
     title: '¿Me quedo o me voy?',
-    metaTitle: 'Confinarse o evacuar: cómo decidir en una emergencia',
+    metaTitle: '¿Confinarse o evacuar? Cómo decidir',
     summary: 'Cuándo quedarse dentro y cuándo salir de casa.',
+    description:
+      'En una emergencia, la norma general es confinarse. Cuándo salir de casa, cuándo quedarse dentro y qué hacer en cada caso, según Protección Civil.',
     steps: [
       { text: 'La norma general es confinarse: entra en un edificio y cierra puertas y ventanas.' },
       { text: 'Sal solo si lo ordenan las autoridades o si tu casa no es segura: fuego dentro, olor a gas o agua que sube.' },
@@ -85,8 +92,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'persona-herida',
     category: 'pm',
     title: 'Hay una persona herida',
-    metaTitle: 'Qué hacer si hay una persona herida: proteger, avisar y socorrer',
+    metaTitle: 'Persona herida: proteger, avisar y socorrer',
     summary: 'Proteger, avisar y socorrer: qué atender primero.',
+    description:
+      'Qué hacer si hay una persona herida: comprueba que es seguro, llama al 112 con el altavoz y atiende primero el sangrado fuerte y a quien no responde.',
     steps: [
       { text: 'Protege: comprueba que el lugar es seguro para ti y para la persona. Si no lo es, no entres.' },
       { text: 'Avisa: llama al 112 y pon el altavoz para tener las manos libres.', see: ['CL-01'] },
@@ -102,6 +111,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'PAS son las iniciales de Proteger, Avisar y Socorrer, el esquema que enseña Cruz Roja para no perder la calma ante un accidente.',
     ],
+    productCategories: ['primeros-auxilios'],
     sources: ['cruzRojaFirstAid', 'ercFirstAid'],
     essential: true,
   },
@@ -114,6 +124,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Llamar al 112',
     metaTitle: 'Cómo llamar al 112 y qué decir',
     summary: 'Qué decir al 112 para que la ayuda llegue antes.',
+    description:
+      'El 112 es gratuito y atiende todas las emergencias. Qué decir para que la ayuda llegue antes: dónde estás, qué pasa, cuántas personas hay y cómo están.',
     steps: [
       { text: 'Marca 112. Es gratuito y atiende todas las emergencias.' },
       { text: 'Di dónde estás: calle, número, pueblo o un punto de referencia.' },
@@ -136,8 +148,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'alertas-es-alert',
     category: 'cl',
     title: 'Alertas en el móvil (ES-Alert)',
-    metaTitle: 'ES-Alert: qué hacer cuando recibes una alerta en el móvil',
+    metaTitle: 'ES-Alert: qué hacer si recibes una alerta',
     summary: 'Qué hacer cuando el móvil suena con una alerta de Protección Civil.',
+    description:
+      'Qué hacer cuando el móvil suena con una alerta ES-Alert de Protección Civil: lee el mensaje entero, sigue sus instrucciones y confírmalo por canales oficiales.',
     steps: [
       { text: 'Si el móvil suena fuerte aunque esté en silencio, lee el mensaje entero.' },
       { text: 'Haz lo que diga el mensaje.' },
@@ -148,6 +162,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'ES-Alert es el sistema de avisos de Protección Civil. El mensaje llega a todos los móviles de la zona afectada a través de las antenas, sin registrarte y sin usar tu número de teléfono.',
     ],
+    productCategories: ['luz-y-energia'],
     sources: ['proteccionCivilEsAlert'],
     essential: true,
   },
@@ -156,8 +171,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'plan-familiar-sin-cobertura',
     category: 'cl',
     title: 'Sin cobertura: plan familiar',
-    metaTitle: 'Plan familiar de emergencia: qué hacer si no hay cobertura',
+    metaTitle: 'Plan familiar de emergencia sin cobertura',
     summary: 'Cómo reuniros y avisaros cuando no funcionan las llamadas.',
+    description:
+      'Cómo reuniros y avisaros cuando no funcionan las llamadas: un punto de encuentro, mensajes cortos, una hora fija para comunicaros y una nota en casa.',
     steps: [
       { text: 'Id al punto de encuentro que acordasteis.', see: ['CL-10'] },
       { text: 'Envía mensajes cortos en lugar de llamar.' },
@@ -169,6 +186,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'Un plan familiar sirve para cuando no podéis hablar: todos saben a dónde ir y cómo avisar. Incluye un contacto que viva fuera de tu zona, porque es más fácil que su teléfono funcione.',
     ],
+    productCategories: ['luz-y-energia'],
     sources: ['gencatFamilyPlan', 'gencatPrepare'],
     essential: true,
   },
@@ -177,8 +195,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'reserva-de-agua',
     category: 'cl',
     title: 'Agua: reserva y consumo',
-    metaTitle: 'Cuánta agua guardar para una emergencia y cómo usarla',
+    metaTitle: 'Cuánta agua guardar para una emergencia',
     summary: 'Cuánta agua guardar por persona y cómo repartirla.',
+    description:
+      'Guarda al menos 2 litros de agua por persona y día para beber, y agua aparte para cocinar y la higiene. Cómo calcular la reserva para 72 horas y repartirla.',
     steps: [
       { text: 'Guarda al menos 2 litros por persona y día para beber.' },
       { text: 'Guarda aparte agua para cocinar y para la higiene.' },
@@ -191,6 +211,19 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'Protección Civil de Cataluña recomienda como mínimo 1,5 litros por persona y día para beber. Aquí proponemos 2 litros para tener margen, sobre todo con calor.',
       'Para las 72 horas que recomienda la Comisión Europea, 2 personas necesitan al menos 12 litros de agua de beber.',
     ],
+    faq: [
+      {
+        question: '¿Cuánta agua necesito para 72 horas?',
+        answer:
+          'Al menos 2 litros por persona y día para beber: 6 litros por persona para 3 días, más el agua para cocinar y para la higiene.',
+      },
+      {
+        question: '¿Cada cuánto hay que renovar el agua guardada?',
+        answer:
+          'Mira la fecha de consumo preferente de cada envase y cámbialo antes de que llegue. Revísalo de vez en cuando junto con el resto del kit.',
+      },
+    ],
+    productCategories: ['agua'],
     sources: ['gencatKit', 'euPreparedness'],
     essential: false,
   },
@@ -199,8 +232,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'potabilizar-agua',
     category: 'cl',
     title: 'Potabilizar agua',
-    metaTitle: 'Cómo potabilizar agua en una emergencia: hervir o lejía apta',
+    metaTitle: 'Cómo potabilizar agua: hervir o lejía apta',
     summary: 'Cómo hacer segura el agua cuando no sabes si es potable.',
+    description:
+      'Cómo hacer segura el agua en una emergencia: fíltrala si está turbia, hiérvela al menos 1 minuto o usa lejía apta para agua de bebida según su etiqueta.',
     steps: [
       { text: 'Si el agua está turbia, fíltrala con un paño limpio y déjala reposar.' },
       { text: 'Hiérvela al menos 1 minuto, con burbujas fuertes.' },
@@ -215,6 +250,24 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'La cantidad de lejía depende de la concentración de cada marca. Por eso manda siempre la etiqueta de una lejía apta para la desinfección del agua de bebida.',
     ],
+    faq: [
+      {
+        question: '¿Cuánto tiempo hay que hervir el agua?',
+        answer:
+          'Al menos 1 minuto desde que hierve con burbujas fuertes. Déjala enfriar antes de beber.',
+      },
+      {
+        question: '¿Qué lejía puedo usar?',
+        answer:
+          'Solo la que dice en su etiqueta que es apta para la desinfección del agua de bebida, sin perfume ni detergente.',
+      },
+      {
+        question: '¿Cuánta lejía hay que poner?',
+        answer:
+          'La que indique su etiqueta, porque depende de la concentración de cada lejía. No uses la dosis de otra marca.',
+      },
+    ],
+    productCategories: ['agua'],
     sources: ['gvaFloodWater', 'sanidadDana'],
     essential: false,
   },
@@ -223,8 +276,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'comida-sin-nevera',
     category: 'cl',
     title: 'Comida sin frío',
-    metaTitle: 'Apagón: qué hacer con la comida de la nevera y el congelador',
+    metaTitle: 'Apagón: qué hacer con la comida de la nevera',
     summary: 'Qué comida guardar y cuál tirar cuando la nevera se queda sin luz.',
+    description:
+      'Si se va la luz, no abras la nevera: si el corte dura menos de 4 horas, la comida aguanta. Qué tirar después y cuánto aguanta el congelador cerrado.',
     steps: [
       { text: 'No abras la nevera ni el congelador.' },
       { text: 'Apunta la hora a la que empezó el corte.' },
@@ -236,6 +291,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'Según AESAN, si el corte dura menos de 4 horas y la nevera sigue cerrada, los alimentos se mantienen por debajo de 5 °C.',
     ],
+    productCategories: ['comida'],
     sources: ['aesanFridge', 'acsaBlackout'],
     essential: false,
   },
@@ -246,6 +302,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Higiene sin agua corriente',
     metaTitle: 'Higiene en una emergencia sin agua corriente',
     summary: 'Cómo mantener la higiene cuando no sale agua del grifo.',
+    description:
+      'Higiene sin agua corriente: lávate las manos, usa un cubo con bolsa doble para el váter, cierra bien la basura y limpia las superficies con lejía diluida.',
     steps: [
       { text: 'Lávate las manos antes de comer y después de ir al baño, con gel o con agua y jabón.' },
       { text: 'Si no hay agua para la cisterna, usa un cubo con una bolsa doble.' },
@@ -253,6 +311,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       { text: 'Limpia las superficies con lejía diluida en agua.' },
     ],
     dont: ['No uses agua de una inundación para lavarte ni para cocinar.'],
+    productCategories: ['higiene'],
     sources: ['gvaAfterFlood', 'sanidadDana', 'gencatKit'],
     essential: false,
   },
@@ -261,8 +320,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'luz-radio-y-bateria',
     category: 'cl',
     title: 'Luz, radio y batería',
-    metaTitle: 'Luz, radio y batería en un apagón: cómo usarlas y ahorrar',
+    metaTitle: 'Luz, radio y batería en un apagón',
     summary: 'Cómo tener luz e información el mayor tiempo posible.',
+    description:
+      'Cómo tener luz e información el mayor tiempo posible en un apagón: linterna en vez de velas, móvil en ahorro de energía y radio a las horas en punto.',
     steps: [
       { text: 'Usa linterna o frontal, no velas.' },
       { text: 'Pon el móvil en ahorro de energía y baja el brillo.' },
@@ -274,6 +335,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'Protección Civil de Cataluña incluye en su kit de emergencia una linterna, una radio de pilas o de manivela, pilas de repuesto y una batería externa.',
     ],
+    productCategories: ['luz-y-energia'],
     sources: ['gencatKit'],
     essential: true,
   },
@@ -282,8 +344,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'manta-termica',
     category: 'cl',
     title: 'Manta térmica',
-    metaTitle: 'Cómo usar una manta térmica en una emergencia',
+    metaTitle: 'Cómo usar una manta térmica',
     summary: 'Cómo usar la manta térmica para no perder calor.',
+    description:
+      'Cómo usar la manta térmica para no perder calor: quita la ropa mojada, aísla a la persona del suelo, cúbrele también la cabeza y protégela del viento.',
     steps: [
       { text: 'Si la persona lleva ropa mojada, quítasela y ponle ropa seca.', see: ['PA-09'] },
       { text: 'Aíslala del suelo con algo seco debajo.' },
@@ -295,6 +359,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'La manta térmica ayuda a no perder calor y protege del viento y de la lluvia. Funciona mejor si la persona está seca y aislada del suelo.',
     ],
+    productCategories: ['refugio-y-abrigo'],
     sources: ['ercFirstAid'],
     essential: true,
   },
@@ -303,8 +368,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'ficha-familiar',
     category: 'cl',
     title: 'Ficha familiar',
-    metaTitle: 'Ficha familiar de emergencia: qué datos apuntar',
+    metaTitle: 'Ficha familiar de emergencia: qué apuntar',
     summary: 'Los datos de tu familia que conviene tener en papel, sin depender del móvil.',
+    description:
+      'Qué datos de tu familia conviene tener en papel para una emergencia: teléfonos, un contacto fuera de tu zona, puntos de encuentro, alergias y medicación.',
     steps: [],
     fields: [
       'El nombre de cada persona de la casa.',
@@ -333,6 +400,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Evacuar la vivienda',
     metaTitle: 'Cómo evacuar tu casa en una emergencia',
     summary: 'Qué coger y cómo salir cuando hay que dejar la casa.',
+    description:
+      'Qué coger y cómo salir cuando hay que dejar la casa: kit, documentos y medicación. Cierra gas, agua y luz si da tiempo y sigue la ruta oficial.',
     steps: [
       { text: 'Coge el kit, la documentación, la medicación y el móvil.' },
       { text: 'Si da tiempo, cierra el gas, el agua y la luz.' },
@@ -347,6 +416,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No tomes atajos que no indiquen las autoridades.',
     ],
     context: ['Ten la mochila cerca de la puerta de casa, para cogerla en segundos.'],
+    productCategories: ['kits'],
     sources: ['cv112Floods', 'gencatPrepare', 'proteccionCivilRecommendations'],
     essential: true,
   },
@@ -355,8 +425,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'confinarse-en-casa',
     category: 'ev',
     title: 'Confinarse en casa',
-    metaTitle: 'Cómo confinarse en casa durante una emergencia',
+    metaTitle: 'Cómo confinarse en casa en una emergencia',
     summary: 'Cómo protegerte dentro de un edificio hasta que pase el peligro.',
+    description:
+      'Cómo protegerte dentro de un edificio hasta que pase el peligro: cierra puertas y ventanas, infórmate por la radio y sal solo cuando lo digan las autoridades.',
     steps: [
       { text: 'Entra en el edificio más cercano.' },
       { text: 'Cierra puertas y ventanas.' },
@@ -369,6 +441,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No uses el teléfono si no es necesario: deja las líneas libres.',
     ],
     context: ['En un accidente químico hay que hacer algo más: sellar una habitación interior.'],
+    productCategories: ['luz-y-energia'],
     sources: ['gencatPrepare', 'gencatChemical', 'gencatNuclear'],
     essential: true,
   },
@@ -377,8 +450,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'atrapado-en-el-coche',
     category: 'ev',
     title: 'Atrapado en el coche',
-    metaTitle: 'Atrapado en el coche por nieve, inundación o atasco: qué hacer',
+    metaTitle: 'Atrapado en el coche por nieve o agua',
     summary: 'Qué hacer si te quedas atrapado en el coche por la nieve, el agua o un atasco.',
+    description:
+      'Qué hacer si te quedas atrapado en el coche: si entra agua, sal y sube a un sitio alto; con nieve, quédate dentro con el escape libre y llama al 112.',
     steps: [
       { text: 'Si entra agua o la corriente mueve el coche, sal y sube a un sitio alto.', see: ['NA-02'] },
       { text: 'Si estás parado por la nieve o en un atasco largo, quédate dentro con las luces de emergencia puestas.' },
@@ -389,6 +464,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     ],
     dont: ['No cruces tramos inundados.', 'No intentes salvar el coche.'],
     context: ['Antes de salir con mal tiempo, llena el depósito y lleva manta, agua y el móvil cargado.'],
+    productCategories: ['refugio-y-abrigo'],
     sources: ['dgtRoadEmergencies', 'gencatSnow', 'cv112Floods'],
     essential: true,
   },
@@ -397,8 +473,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'volver-a-casa',
     category: 'ev',
     title: 'Volver a casa',
-    metaTitle: 'Volver a casa después de una emergencia: qué revisar',
+    metaTitle: 'Volver a casa tras una emergencia',
     summary: 'Qué revisar antes de volver a vivir en casa tras una emergencia.',
+    description:
+      'Qué revisar antes de volver a casa tras una emergencia: espera la autorización, no entres si huele a gas, revisa grietas y cables y haz fotos para el seguro.',
     steps: [
       { text: 'Vuelve solo cuando lo autoricen las autoridades.' },
       { text: 'Si huele a gas, no entres.', see: ['TE-02'] },
@@ -417,8 +495,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'lluvias-torrenciales-dana',
     category: 'na',
     title: 'Lluvias torrenciales o DANA: en casa',
-    metaTitle: 'DANA y lluvias torrenciales: qué hacer si estás en casa',
+    metaTitle: 'DANA y lluvias torrenciales: qué hacer en casa',
     summary: 'Cómo protegerte en casa cuando llueve con fuerza y puede haber inundaciones.',
+    description:
+      'Qué hacer en casa ante una DANA o lluvias torrenciales: sigue los avisos de AEMET, sube a los pisos altos, no bajes al garaje y desconecta la luz si entra agua.',
     steps: [
       { text: 'Sigue los avisos de AEMET y de Protección Civil.', see: ['CL-02'] },
       { text: 'Sube a los pisos altos. No bajes a sótanos ni garajes.' },
@@ -431,7 +511,25 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No te quedes en una planta baja si sube el agua.',
     ],
     call112: 'el agua entra rápido o hay personas atrapadas.',
-    sources: ['gencatHeavyRain', 'cv112Floods', 'aemetWarnings', 'proteccionCivilFloods'],
+    faq: [
+      {
+        question: '¿Por qué no hay que bajar al garaje a por el coche?',
+        answer:
+          'Los sótanos y los garajes se inundan antes que el resto de la casa y puedes quedarte atrapado. Protección Civil pide quedarse en las zonas altas.',
+      },
+      {
+        question: '¿Dónde veo los avisos por lluvias?',
+        answer:
+          'AEMET publica en su web los avisos por mal tiempo, con colores según el riesgo. Si hay peligro, Protección Civil puede enviar además una alerta ES-Alert a los móviles de la zona.',
+      },
+      {
+        question: '¿Qué hago si el agua ya entra en casa?',
+        answer:
+          'Desconecta la luz, sube a los pisos altos con los documentos y las medicinas y llama al 112 si el agua sube rápido o hay personas atrapadas.',
+      },
+    ],
+    productCategories: ['herramientas'],
+    sources: ['gencatHeavyRain', 'cv112Floods', 'aemetWarnings', 'proteccionCivilFloods', 'proteccionCivilEsAlert'],
     essential: true,
   },
   {
@@ -439,8 +537,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'inundacion-en-la-calle',
     category: 'na',
     title: 'Inundación: en la calle o en el coche',
-    metaTitle: 'Inundación: qué hacer si te pilla en la calle o en el coche',
+    metaTitle: 'Inundación en la calle o en el coche',
     summary: 'Cómo ponerte a salvo si el agua te pilla fuera de casa.',
+    description:
+      'Cómo ponerte a salvo si una inundación te pilla fuera de casa: sube a un lugar alto, no cruces zonas con agua y aléjate de ríos, ramblas y barrancos.',
     steps: [
       { text: 'Sube a un lugar alto.' },
       { text: 'No cruces zonas con agua, ni a pie ni en coche.' },
@@ -464,8 +564,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'incendio-forestal',
     category: 'na',
     title: 'Incendio forestal cerca',
-    metaTitle: 'Incendio forestal cerca: qué hacer para protegerte',
+    metaTitle: 'Incendio forestal cerca: qué hacer',
     summary: 'Qué hacer si hay un incendio forestal cerca de donde estás.',
+    description:
+      'Incendio forestal cerca: llama al 112, haz lo que digan las autoridades, tapa las rendijas si te quedas en casa y protégete del humo con un paño húmedo.',
     steps: [
       { text: 'Llama al 112 y di dónde está el fuego.', see: ['CL-01'] },
       { text: 'Haz lo que digan las autoridades: confinarte o evacuar.', see: ['PM-02'] },
@@ -478,6 +580,18 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No salgas por caminos que no indiquen las autoridades.',
       'No vuelvas hasta que lo permitan.',
     ],
+    faq: [
+      {
+        question: '¿Me quedo en casa o me voy?',
+        answer:
+          'Haz lo que digan las autoridades: te dirán si debes confinarte o salir, y por qué ruta. No te marches por caminos que no indiquen.',
+      },
+      {
+        question: '¿Cómo me protejo del humo?',
+        answer:
+          'Cierra puertas y ventanas, baja las persianas, tapa las rendijas con trapos mojados y cúbrete la nariz y la boca con un paño húmedo.',
+      },
+    ],
     sources: ['gencatForestFire'],
     essential: true,
   },
@@ -486,8 +600,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'ola-de-calor',
     category: 'na',
     title: 'Ola de calor',
-    metaTitle: 'Ola de calor: cómo protegerte y proteger a los tuyos',
+    metaTitle: 'Ola de calor: cómo protegerte',
     summary: 'Cómo pasar los días de mucho calor sin riesgos.',
+    description:
+      'Cómo pasar una ola de calor sin riesgos: bebe agua aunque no tengas sed, busca sitios frescos, evita el esfuerzo en las horas centrales y vigila a los mayores.',
     steps: [
       { text: 'Bebe agua aunque no tengas sed.' },
       { text: 'Quédate en las zonas más frescas de casa y pasa al menos 2 horas al día en un lugar con aire acondicionado.' },
@@ -500,6 +616,24 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'Tienen más riesgo las personas mayores, las embarazadas, los niños pequeños, las personas con enfermedades crónicas y quienes trabajan al aire libre.',
       'Guarda las medicinas en un sitio fresco.',
     ],
+    faq: [
+      {
+        question: '¿Quién tiene más riesgo con el calor?',
+        answer:
+          'Las personas mayores, las embarazadas, los niños pequeños, las personas con enfermedades crónicas y quienes trabajan al aire libre.',
+      },
+      {
+        question: '¿Cómo sé si alguien tiene un golpe de calor?',
+        answer:
+          'Si tiene la piel muy caliente, está confuso o convulsiona, puede ser un golpe de calor: es una urgencia. Llama al 112 y enfríale enseguida.',
+      },
+      {
+        question: '¿Dónde guardo las medicinas cuando hace mucho calor?',
+        answer:
+          'En un sitio fresco y seco, dentro de su envase, y nunca al sol ni dentro del coche.',
+      },
+    ],
+    productCategories: ['agua'],
     sources: ['sanidadHeat', 'gencatHeat', 'aempsMedicinesHeat'],
     essential: false,
   },
@@ -508,8 +642,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'ola-de-frio-y-nevada',
     category: 'na',
     title: 'Ola de frío y nevada',
-    metaTitle: 'Ola de frío y nevadas: qué hacer para protegerte',
+    metaTitle: 'Ola de frío y nevadas: qué hacer',
     summary: 'Cómo protegerte del frío y de quedarte aislado por la nieve.',
+    description:
+      'Cómo protegerte del frío y de quedarte aislado por la nieve: cierra las habitaciones que no uses, abrígate por capas y calienta la casa sin riesgo de monóxido.',
     steps: [
       { text: 'Quédate en casa y cierra las habitaciones que no uses.' },
       { text: 'Ponte varias capas de ropa y cúbrete la cabeza.' },
@@ -521,6 +657,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'La Comunidad de Madrid recomienda poder vivir en casa durante 2 semanas si una nevada te deja aislado.',
     ],
+    productCategories: ['refugio-y-abrigo'],
     sources: ['sanidadCold', 'gencatSnow', 'madridAdverseWeather'],
     essential: false,
   },
@@ -529,8 +666,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'terremoto',
     category: 'na',
     title: 'Terremoto',
-    metaTitle: 'Terremoto: qué hacer durante y después del temblor',
+    metaTitle: 'Terremoto: qué hacer durante y después',
     summary: 'Cómo protegerte mientras tiembla y qué hacer después.',
+    description:
+      'Qué hacer en un terremoto: agáchate, cúbrete la cabeza bajo una mesa resistente y agárrate hasta que pare. Después, mira si hay heridos y si huele a gas.',
     steps: [
       { text: 'Agáchate.' },
       { text: 'Cúbrete la cabeza y el cuello bajo una mesa resistente o junto a una pared interior, lejos de las ventanas.' },
@@ -539,6 +678,19 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       { text: 'Sal por la escalera y espera réplicas.' },
     ],
     dont: ['No salgas corriendo mientras tiembla.', 'No uses el ascensor.'],
+    faq: [
+      {
+        question: '¿Salgo a la calle mientras tiembla?',
+        answer:
+          'No. Protégete donde estás hasta que pare: bajo una mesa resistente o junto a una pared interior, lejos de las ventanas.',
+      },
+      {
+        question: '¿Qué hago cuando para?',
+        answer:
+          'Ponte zapatos, mira si hay heridos y si huele a gas, y sal por la escalera, nunca en ascensor. Puede haber réplicas.',
+      },
+    ],
+    productCategories: ['kits'],
     sources: ['gencatEarthquake', 'ignEarthquake'],
     essential: true,
   },
@@ -547,8 +699,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'viento-y-tormenta-electrica',
     category: 'na',
     title: 'Temporal de viento y tormenta eléctrica',
-    metaTitle: 'Temporal de viento y tormenta eléctrica: qué hacer',
+    metaTitle: 'Viento fuerte y tormenta eléctrica: qué hacer',
     summary: 'Cómo protegerte del viento fuerte y de los rayos.',
+    description:
+      'Cómo protegerte de un temporal de viento o una tormenta eléctrica: sujeta los objetos del balcón, aléjate de ventanas y fachadas y no te refugies bajo un árbol.',
     steps: [
       { text: 'Recoge o sujeta macetas, toldos y objetos del balcón.' },
       { text: 'Quédate dentro y lejos de las ventanas.' },
@@ -565,8 +719,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'despues-de-una-inundacion',
     category: 'na',
     title: 'Después de la inundación',
-    metaTitle: 'Después de una inundación: limpieza, agua y comida',
+    metaTitle: 'Después de una inundación: qué hacer',
     summary: 'Cómo limpiar y qué tirar cuando baja el agua.',
+    description:
+      'Qué hacer cuando baja el agua: usa guantes y botas, no enciendas la luz si la instalación se ha mojado, tira la comida mojada y potabiliza el agua.',
     steps: [
       { text: 'No toques el agua estancada ni el barro sin guantes ni botas.' },
       { text: 'No enciendas la luz si hay agua en la instalación.' },
@@ -575,6 +731,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       { text: 'Ventila, retira el barro y desinfecta con lejía.' },
     ],
     dont: ['No uses aparatos que se hayan mojado.'],
+    productCategories: ['higiene'],
     sources: ['gvaAfterFlood', 'gvaFloodWater', 'sanidadDana'],
     essential: false,
   },
@@ -587,6 +744,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Apagón prolongado',
     metaTitle: 'Qué hacer en un apagón largo',
     summary: 'Qué hacer cuando se va la luz durante horas.',
+    description:
+      'Qué hacer cuando se va la luz durante horas: comprueba el diferencial, enciende una radio de pilas, no abras la nevera, usa linterna y ten dinero en efectivo.',
     steps: [
       { text: 'Mira si el corte es solo en tu casa (el diferencial) o en toda la zona.' },
       { text: 'Desenchufa los aparatos delicados y deja una luz encendida para saber cuándo vuelve.' },
@@ -604,7 +763,25 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'El 28 de abril de 2025 se cayó el sistema eléctrico de toda la España peninsular, y el Gobierno declaró la emergencia de interés nacional en varias comunidades.',
     ],
-    sources: ['boeBlackout', 'aesanFridge', 'gencatPrepare'],
+    faq: [
+      {
+        question: '¿Cuánto aguanta la comida de la nevera sin luz?',
+        answer:
+          'Si el corte dura menos de 4 horas y no abres la nevera, los alimentos se mantienen por debajo de 5 °C, según AESAN. Un congelador lleno y cerrado aguanta unas 48 horas, y unas 24 si está medio lleno.',
+      },
+      {
+        question: '¿Puedo usar un generador o una barbacoa dentro de casa?',
+        answer:
+          'No. Producen monóxido de carbono, un gas que no huele ni se ve y que puede intoxicar a toda la familia. Úsalos solo al aire libre.',
+      },
+      {
+        question: '¿Llamo al 112 para saber qué pasa?',
+        answer:
+          'No. El 112 es solo para emergencias. Para saber qué pasa, escucha una radio de pilas o sigue los canales oficiales.',
+      },
+    ],
+    productCategories: ['luz-y-energia'],
+    sources: ['boeBlackout', 'aesanFridge', 'gencatPrepare', 'acsaBlackout', 'gencatCarbonMonoxide'],
     essential: true,
   },
   {
@@ -614,6 +791,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Fuga de gas',
     metaTitle: 'Fuga de gas en casa: qué hacer',
     summary: 'Qué hacer si huele a gas.',
+    description:
+      'Si huele a gas: no toques los interruptores, cierra la llave general, abre puertas y ventanas y sal de casa. Llama al 112 o a urgencias del gas desde fuera.',
     steps: [
       { text: 'No toques los interruptores: ni para encender ni para apagar.' },
       { text: 'Cierra la llave general del gas.' },
@@ -626,6 +805,23 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No toques el timbre.',
       'No uses el móvil dentro de casa.',
     ],
+    faq: [
+      {
+        question: '¿Por qué no hay que tocar los interruptores?',
+        answer:
+          'Porque al encender o apagar puede saltar una chispa, y una chispa o una llama pueden hacer explotar el gas acumulado.',
+      },
+      {
+        question: '¿A quién llamo?',
+        answer:
+          'Desde fuera de casa, al 112 o al teléfono de urgencias de tu compañía del gas.',
+      },
+      {
+        question: '¿Cuándo puedo volver a entrar?',
+        answer:
+          'Cuando los servicios de emergencia o un técnico del gas te digan que es seguro.',
+      },
+    ],
     sources: ['madridGas', 'gencatHomeSafety'],
     essential: true,
   },
@@ -636,6 +832,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Incendio en casa o en el edificio',
     metaTitle: 'Incendio en casa o en el edificio: qué hacer',
     summary: 'Cómo salir a salvo si hay fuego en casa o en el edificio.',
+    description:
+      'Fuego en casa o en el edificio: sal y cierra la puerta, avanza agachado si hay humo, toca las puertas antes de abrirlas y llama al 112 desde fuera.',
     steps: [
       { text: 'Sal enseguida y cierra la puerta al salir.' },
       { text: 'Si hay humo, avanza agachado.' },
@@ -656,8 +854,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'accidente-quimico',
     category: 'te',
     title: 'Accidente químico o nube tóxica',
-    metaTitle: 'Accidente químico o nube tóxica: cómo confinarse',
+    metaTitle: 'Accidente químico o nube tóxica: qué hacer',
     summary: 'Cómo protegerte si hay un escape químico o suena la sirena de alerta.',
+    description:
+      'Cómo confinarse ante un escape químico o si suena la sirena de alerta: entra en un edificio, cierra, apaga la ventilación y sella una habitación interior.',
     steps: [
       { text: 'Entra en el edificio más cercano.' },
       { text: 'Cierra puertas y ventanas y baja las persianas.' },
@@ -675,6 +875,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'Si dudas de si debes confinarte, confínate.',
       'En Euskadi, la sirena de alerta son 3 señales de 1 minuto separadas por 5 segundos. El fin de la alerta es una señal continua de 30 segundos.',
     ],
+    productCategories: ['herramientas'],
     sources: ['gencatChemical', 'gencatChemicalFaq', 'euskadiChemical'],
     essential: true,
   },
@@ -685,6 +886,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Corte de agua',
     metaTitle: 'Corte de agua: qué hacer mientras dura',
     summary: 'Cómo arreglarte mientras no sale agua del grifo.',
+    description:
+      'Cómo arreglarte durante un corte de agua: cierra los grifos, usa tu reserva, guarda agua para la cisterna y, cuando vuelva, déjala correr antes de beber.',
     steps: [
       { text: 'Cierra los grifos para que no se inunde nada cuando vuelva el agua.' },
       { text: 'Usa tu reserva de agua.', see: ['CL-04'] },
@@ -693,6 +896,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       { text: 'Si avisan de que no es potable, hiérvela o potabilízala.', see: ['CL-05'] },
     ],
     dont: ['No bebas agua de origen dudoso sin tratarla.'],
+    productCategories: ['agua'],
     sources: ['gencatKit', 'gvaFloodWater'],
     essential: false,
   },
@@ -701,8 +905,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'monoxido-de-carbono',
     category: 'te',
     title: 'Monóxido de carbono',
-    metaTitle: 'Intoxicación por monóxido de carbono: síntomas y qué hacer',
+    metaTitle: 'Monóxido de carbono: síntomas y qué hacer',
     summary: 'Qué hacer si sospechas que hay monóxido de carbono en casa.',
+    description:
+      'Si varias personas tienen a la vez dolor de cabeza, mareo o náuseas, puede ser monóxido de carbono: sal al aire libre, llama al 112 y ventila la casa.',
     steps: [
       { text: 'Si varias personas tienen a la vez dolor de cabeza, mareo o náuseas, sal al aire libre.' },
       { text: 'Si es seguro, apaga el aparato que puede causarlo.' },
@@ -723,8 +929,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'atrapado-en-un-ascensor',
     category: 'te',
     title: 'Atrapado en un ascensor o un transporte',
-    metaTitle: 'Atrapado en un ascensor, tren o metro: qué hacer',
+    metaTitle: 'Atrapado en un ascensor, tren o metro',
     summary: 'Qué hacer si te quedas encerrado en un ascensor, un tren o un metro.',
+    description:
+      'Qué hacer si te quedas encerrado en un ascensor, un tren o un metro: mantén la calma, pulsa la alarma, llama al 112 si nadie responde y no fuerces las puertas.',
     steps: [
       { text: 'Mantén la calma.' },
       { text: 'Pulsa el botón de alarma y habla por el interfono.' },
@@ -745,6 +953,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'No responde y no respira: RCP en adultos',
     metaTitle: 'RCP en adultos paso a paso (guías ERC 2025)',
     summary: 'Qué hacer si un adulto no responde y no respira con normalidad.',
+    description:
+      'Qué hacer si un adulto no responde y no respira con normalidad: llama al 112, aprieta el centro del pecho 5-6 cm, 100-120 veces por minuto, y usa el DEA.',
     steps: [
       { text: 'Comprueba si responde: háblale fuerte y tócale los hombros. Mira si respira con normalidad.' },
       { text: 'Llama al 112 con el altavoz y pide que traigan un desfibrilador (DEA).', see: ['CL-01'] },
@@ -764,6 +974,23 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'Al principio puede haber movimientos parecidos a una convulsión. Cuando paren, vuelve a mirar si respira. Si la persona está sobre un colchón, aprieta más fuerte.',
       'La RCP se aprende mejor practicando: Cruz Roja organiza cursos presenciales de primeros auxilios.',
     ],
+    faq: [
+      {
+        question: '¿Y si no sé hacer insuflaciones?',
+        answer:
+          'Haz solo compresiones, fuertes y sin parar. El 112 te puede guiar por teléfono mientras llega la ayuda.',
+      },
+      {
+        question: '¿Puedo usar un desfibrilador sin formación?',
+        answer:
+          'Sí. El DEA te dice en voz alta qué hacer en cada momento y solo da una descarga si la persona la necesita.',
+      },
+      {
+        question: '¿Y si le hago daño?',
+        answer:
+          'Al hacer RCP se puede dañar alguna costilla, pero no hacerla es mucho peor: sin ayuda, una persona en parada no sobrevive.',
+      },
+    ],
     sources: ['ercAdultBls', 'ercGuidelines', 'cruzRojaCourses'],
     essential: true,
   },
@@ -772,8 +999,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'rcp-nino-y-bebe',
     category: 'pa',
     title: 'RCP en niños y bebés',
-    metaTitle: 'RCP en niños y bebés paso a paso (guías ERC 2025)',
+    metaTitle: 'RCP en niños y bebés (guías ERC 2025)',
     summary: 'Qué hacer si un niño o un bebé no responde y no respira con normalidad.',
+    description:
+      'RCP en niños y bebés según las guías ERC 2025: llama al 112, da 5 insuflaciones y comprime un tercio del pecho, con los 2 pulgares en los bebés.',
     steps: [
       { text: 'Comprueba si responde y si respira con normalidad.' },
       { text: 'Llama al 112 con el altavoz. Si hay otra persona, que busque un DEA.', see: ['CL-01'] },
@@ -794,6 +1023,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Posición lateral de seguridad',
     metaTitle: 'Posición lateral de seguridad paso a paso',
     summary: 'Cómo poner de lado a una persona que no responde pero respira con normalidad.',
+    description:
+      'Cómo poner de lado, paso a paso, a quien no responde pero respira con normalidad, y cuándo no hacerlo: si respira con boqueos o ha tenido un golpe fuerte.',
     steps: [
       { text: 'Si no responde pero respira con normalidad, ponla de lado.' },
       { text: 'Estira hacia arriba el brazo que queda más cerca de ti.' },
@@ -807,6 +1038,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       'No la muevas si ha sufrido un golpe fuerte o una caída.',
     ],
     call112: 'alguien no responde, aunque respire.',
+    productCategories: ['primeros-auxilios'],
     sources: ['ercFirstAid'],
     essential: true,
   },
@@ -817,6 +1049,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Hemorragia grave',
     metaTitle: 'Hemorragia grave: cómo parar el sangrado',
     summary: 'Cómo parar un sangrado fuerte hasta que llegue la ayuda.',
+    description:
+      'Cómo parar un sangrado fuerte hasta que llegue la ayuda: llama al 112, aprieta con una gasa, rellena las heridas profundas y usa un torniquete si sabes.',
     steps: [
       { text: 'Llama al 112.', see: ['CL-01'] },
       { text: 'Aprieta fuerte sobre la herida con una gasa o un paño limpio.' },
@@ -833,6 +1067,19 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'Cruz Roja aconseja apretar con firmeza durante 10 minutos. El torniquete duele: es normal.',
     ],
+    faq: [
+      {
+        question: '¿Cuánto tiempo hay que apretar la herida?',
+        answer:
+          'Con firmeza y sin soltar para mirar. Cruz Roja aconseja apretar al menos 10 minutos.',
+      },
+      {
+        question: '¿Se puede quitar el torniquete cuando para de sangrar?',
+        answer:
+          'No. Una vez puesto, solo lo quita un sanitario. Apunta la hora a la que lo pusiste para decírsela.',
+      },
+    ],
+    productCategories: ['primeros-auxilios'],
     sources: ['ercFirstAid', 'cruzRojaFirstAid'],
     essential: true,
   },
@@ -841,8 +1088,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'atragantamiento-adulto-y-nino',
     category: 'pa',
     title: 'Atragantamiento: adultos y niños',
-    metaTitle: 'Atragantamiento en adultos y niños mayores de 1 año: qué hacer',
+    metaTitle: 'Atragantamiento en adultos y niños: qué hacer',
     summary: 'Qué hacer si un adulto o un niño mayor de 1 año se atraganta.',
+    description:
+      'Qué hacer si un adulto o un niño mayor de 1 año se atraganta: anímale a toser y, si no puede, alterna 5 golpes en la espalda y 5 compresiones abdominales.',
     steps: [
       { text: 'Pregunta: «¿Te estás atragantando?».' },
       { text: 'Si puede toser, anímale a toser.' },
@@ -853,6 +1102,18 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     ],
     dont: ['No metas los dedos en su boca a ciegas.'],
     context: ['Después de las compresiones abdominales, que le vea un médico aunque se encuentre bien.'],
+    faq: [
+      {
+        question: '¿Cuándo basta con animarle a toser?',
+        answer:
+          'Mientras pueda toser, hablar o respirar. En ese caso, anímale a toser y no le des golpes.',
+      },
+      {
+        question: '¿Hay que ir al médico después?',
+        answer:
+          'Sí, si le has hecho compresiones abdominales, aunque se encuentre bien: pueden causar lesiones internas.',
+      },
+    ],
     sources: ['ercFirstAid'],
     essential: true,
   },
@@ -861,8 +1122,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'atragantamiento-bebe',
     category: 'pa',
     title: 'Atragantamiento: bebés',
-    metaTitle: 'Atragantamiento en bebés menores de 1 año: qué hacer',
+    metaTitle: 'Atragantamiento en bebés: qué hacer',
     summary: 'Qué hacer si un bebé menor de 1 año se atraganta.',
+    description:
+      'Qué hacer si un bebé menor de 1 año se atraganta: 5 golpes en la espalda, boca abajo sobre tu antebrazo, y 5 compresiones en el pecho con los 2 pulgares.',
     steps: [
       { text: 'Pon al bebé boca abajo sobre tu antebrazo, con la cabeza más baja que el cuerpo.' },
       { text: 'Dale hasta 5 golpes en la espalda.' },
@@ -881,6 +1144,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Quemaduras',
     metaTitle: 'Quemaduras: primeros auxilios paso a paso',
     summary: 'Cómo enfriar y cubrir una quemadura.',
+    description:
+      'Cómo actuar ante una quemadura: enfríala enseguida con agua del grifo 10-15 minutos, quita anillos y cúbrela sin apretar. Sin hielo ni pasta de dientes.',
     steps: [
       { text: 'Aparta a la persona de lo que la ha quemado.' },
       { text: 'Enfría la quemadura enseguida con un chorro suave de agua fría del grifo, no helada, durante 10-15 minutos o más si sigue doliendo.' },
@@ -896,6 +1161,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     context: [
       'Cruz Roja aconseja ir a un centro sanitario si el dolor sigue, salen ampollas o la piel parece carbonizada.',
     ],
+    productCategories: ['primeros-auxilios'],
     sources: ['cruzRojaFirstAid'],
     essential: true,
   },
@@ -904,8 +1170,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'fracturas-y-golpes-en-la-cabeza',
     category: 'pa',
     title: 'Fracturas, esguinces y golpes en la cabeza',
-    metaTitle: 'Fracturas, esguinces y golpes en la cabeza: qué hacer',
+    metaTitle: 'Fracturas, esguinces y golpes en la cabeza',
     summary: 'Qué hacer ante una posible fractura, un esguince o un golpe en la cabeza.',
+    description:
+      'Qué hacer ante una posible fractura, un esguince o un golpe en la cabeza: inmoviliza la zona, pon frío envuelto en un paño y vigila las señales de alarma.',
     steps: [
       { text: 'No muevas la zona: inmovilízala tal como está.' },
       { text: 'Pon frío envuelto en un paño.' },
@@ -914,6 +1182,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     ],
     dont: ['No intentes recolocar el hueso.'],
     call112: 'se ve el hueso, hay una deformidad grave, ha perdido el conocimiento o puede tener una lesión en el cuello.',
+    productCategories: ['primeros-auxilios'],
     sources: ['ercFirstAid'],
     essential: false,
   },
@@ -922,8 +1191,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'hipotermia',
     category: 'pa',
     title: 'Hipotermia',
-    metaTitle: 'Hipotermia: primeros auxilios paso a paso',
+    metaTitle: 'Hipotermia: primeros auxilios',
     summary: 'Qué hacer si alguien se ha enfriado demasiado.',
+    description:
+      'Qué hacer si alguien se ha enfriado demasiado: llévale a un lugar sin viento, cambia su ropa mojada por seca, aíslale del suelo y abrígale, cabeza incluida.',
     steps: [
       { text: 'Llévala a un lugar protegido del viento.' },
       { text: 'Quítale la ropa mojada con cuidado y ponle ropa seca.' },
@@ -932,6 +1203,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     ],
     dont: ['No la frotes.', 'No le des alcohol.', 'No la muevas de forma brusca.'],
     call112: 'tiembla mucho y de pronto deja de temblar, está confusa o tiene mucho sueño.',
+    productCategories: ['refugio-y-abrigo'],
     sources: ['ercFirstAid', 'ercSpecialCircumstancesEs'],
     essential: false,
   },
@@ -942,6 +1214,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Golpe de calor',
     metaTitle: 'Golpe de calor: señales y qué hacer',
     summary: 'Cómo enfriar a una persona con golpe de calor.',
+    description:
+      'El golpe de calor es una urgencia: llama al 112 y enfría a la persona ya, con agua fría por todo el cuerpo. Enfría primero y traslada después.',
     steps: [
       { text: 'Llama al 112: es una urgencia.', see: ['CL-01'] },
       { text: 'Llévala a la sombra o a un lugar fresco y quítale ropa.' },
@@ -952,6 +1226,23 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     dont: ['No des de beber a una persona que no responde.'],
     call112: 'siempre: el golpe de calor es una urgencia.',
     context: ['Señales: piel muy caliente, 40 °C o más, confusión o convulsiones.'],
+    faq: [
+      {
+        question: '¿Cuánto tiempo hay que enfriarle?',
+        answer:
+          'Unos 15 minutos o hasta que vuelva a estar despierto y lúcido. Lo más rápido y eficaz es meterle en agua fría hasta el cuello.',
+      },
+      {
+        question: '¿Le doy de beber?',
+        answer:
+          'Solo si está despierto y puede tragar. A una persona que no responde nunca le des de beber.',
+      },
+      {
+        question: '¿Por qué no llevarle directamente al hospital?',
+        answer:
+          'Porque el daño avanza mientras el cuerpo sigue tan caliente. Las guías ERC 2025 lo resumen así: enfría primero, traslada después.',
+      },
+    ],
     sources: ['ercFirstAid', 'sanidadHeat'],
     essential: true,
   },
@@ -960,8 +1251,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'reaccion-alergica-grave',
     category: 'pa',
     title: 'Reacción alérgica grave (anafilaxia)',
-    metaTitle: 'Reacción alérgica grave (anafilaxia): qué hacer',
+    metaTitle: 'Reacción alérgica grave (anafilaxia)',
     summary: 'Qué hacer ante una reacción alérgica grave.',
+    description:
+      'Qué hacer ante una reacción alérgica grave: llama al 112, ayúdale a usar su autoinyector de adrenalina en el muslo y túmbale; si le cuesta respirar, siéntale.',
     steps: [
       { text: 'Llama al 112.', see: ['CL-01'] },
       { text: 'Si tiene un autoinyector de adrenalina, ayúdale a ponérselo en la parte de fuera del muslo.' },
@@ -985,8 +1278,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'dolor-de-pecho-e-ictus',
     category: 'pa',
     title: 'Dolor de pecho e ictus',
-    metaTitle: 'Dolor de pecho o ictus: cómo reconocerlos y qué hacer',
+    metaTitle: 'Dolor de pecho o ictus: qué hacer',
     summary: 'Qué hacer ante un dolor fuerte en el pecho o las señales de un ictus.',
+    description:
+      'Cómo reconocer un ictus (cara torcida, brazo que cae, habla rara) o un dolor de pecho grave, y qué hacer: llama al 112 enseguida y apunta la hora.',
     steps: [
       { text: 'Si le duele el pecho, siéntala cómoda y tranquilízala.' },
       { text: 'Llama al 112.', see: ['CL-01'] },
@@ -1008,6 +1303,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Bajada de azúcar (hipoglucemia)',
     metaTitle: 'Bajada de azúcar (hipoglucemia): qué hacer',
     summary: 'Qué hacer si una persona con diabetes tiene una bajada de azúcar.',
+    description:
+      'Qué hacer si una persona con diabetes tiene una bajada de azúcar: si puede tragar, dale 15-20 g de azúcar y espera 15 minutos; si no responde, llama al 112.',
     steps: [
       { text: 'Si una persona con diabetes está rara, sudorosa o confusa y puede tragar, dale 15-20 g de azúcar: tabletas de glucosa, un zumo o un refresco con azúcar.' },
       { text: 'Espera 15 minutos. Si sigue igual, repite.' },
@@ -1026,6 +1323,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Ahogamiento',
     metaTitle: 'Ahogamiento: cómo ayudar sin ponerte en peligro',
     summary: 'Cómo ayudar a alguien que se ahoga sin ponerte en peligro.',
+    description:
+      'Cómo ayudar a alguien que se ahoga sin ponerte en peligro: lánzale algo que flote, llama al 112 y, fuera del agua, da 5 insuflaciones y empieza la RCP.',
     steps: [
       { text: 'Lánzale algo que flote.' },
       { text: 'Llama al 112.', see: ['CL-01'] },
@@ -1043,8 +1342,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'mordedura-de-vibora-y-picaduras',
     category: 'pa',
     title: 'Mordedura de víbora y picaduras',
-    metaTitle: 'Mordedura de víbora y picaduras: primeros auxilios',
+    metaTitle: 'Mordedura de víbora y picaduras',
     summary: 'Qué hacer ante una mordedura de serpiente o una picadura.',
+    description:
+      'Qué hacer ante una mordedura de víbora o una picadura: llama al 112, mantén quieta a la persona e inmoviliza el miembro. Sin torniquete, sin cortar ni chupar.',
     steps: [
       { text: 'Llama al 112.', see: ['CL-01'] },
       { text: 'Mantén a la persona quieta y tranquila.' },
@@ -1067,8 +1368,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'heridas-pequenas',
     category: 'pa',
     title: 'Heridas pequeñas y signos de infección',
-    metaTitle: 'Cómo curar una herida pequeña y reconocer una infección',
+    metaTitle: 'Cómo curar una herida pequeña',
     summary: 'Cómo limpiar y tapar una herida pequeña, y cuándo consultar.',
+    description:
+      'Cómo limpiar y tapar una herida pequeña paso a paso, según Cruz Roja, y cuándo consultar: si se enrojece cada vez más, sale pus, hay fiebre o huele mal.',
     steps: [
       { text: 'Lávate bien las manos con agua y jabón.' },
       { text: 'Lava la herida a chorro con agua y jabón o con suero fisiológico.' },
@@ -1078,6 +1381,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     ],
     dont: ['No tapes la herida sin lavarla antes.'],
     context: ['Consulta a un sanitario si la zona se pone cada vez más roja, sale pus, tienes fiebre o huele mal.'],
+    productCategories: ['primeros-auxilios'],
     sources: ['cruzRojaFirstAid'],
     essential: false,
   },
@@ -1086,8 +1390,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'intoxicacion',
     category: 'pa',
     title: 'Intoxicación',
-    metaTitle: 'Intoxicación: qué hacer y a qué teléfono llamar',
+    metaTitle: 'Intoxicación: qué hacer y a quién llamar',
     summary: 'Qué hacer si alguien ha tragado, respirado o tocado un producto tóxico.',
+    description:
+      'Qué hacer ante una intoxicación: aparta a la persona del producto, guarda el envase y llama al Servicio de Información Toxicológica, 91 562 04 20, 24 horas.',
     steps: [
       { text: 'Aparta a la persona del producto y ventila.' },
       { text: 'Guarda el envase para saber qué ha tomado.' },
@@ -1106,8 +1412,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'ninos',
     category: 'ad',
     title: 'Niños',
-    metaTitle: 'Emergencias con niños: cómo prepararlos y qué llevar',
+    metaTitle: 'Emergencias con niños: cómo prepararlos',
     summary: 'Cómo preparar a los niños y qué añadir al kit para ellos.',
+    description:
+      'Cómo preparar a los niños para una emergencia: explicarles lo que pasa, enseñarles el punto de encuentro y el 112, y qué añadir al kit para ellos.',
     steps: [
       { text: 'Explícales lo que pasa con calma y con palabras sencillas.' },
       { text: 'Mete en el kit un juego o su objeto preferido.' },
@@ -1127,6 +1435,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Mascotas',
     metaTitle: 'Emergencias con mascotas: qué preparar',
     summary: 'Qué preparar para tu mascota en una emergencia.',
+    description:
+      'Qué preparar para tu mascota en una emergencia: transportín y correa, comida y agua para 3 días, su cartilla sanitaria, el microchip al día y una foto reciente.',
     steps: [
       { text: 'Prepara un transportín y una correa.' },
       { text: 'Guarda comida y agua para 3 días.' },
@@ -1143,8 +1453,10 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     slug: 'personas-mayores',
     category: 'ad',
     title: 'Personas mayores y dependientes',
-    metaTitle: 'Emergencias con personas mayores o dependientes: qué preparar',
+    metaTitle: 'Emergencias con personas mayores',
     summary: 'Qué preparar si en casa vive una persona mayor o dependiente.',
+    description:
+      'Qué preparar si en casa vive una persona mayor o dependiente: lista de medicación, gafas y audífonos con pilas de repuesto, su andador y un vecino pendiente.',
     steps: [
       { text: 'Haz una lista de su medicación y de las dosis.' },
       { text: 'Mete en el kit sus gafas, sus audífonos y pilas de repuesto.' },
@@ -1164,6 +1476,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Medicación y equipos médicos',
     metaTitle: 'Medicación y equipos médicos en una emergencia',
     summary: 'Cómo preparar la medicación y los equipos médicos para una emergencia.',
+    description:
+      'Cómo preparar la medicación y los equipos médicos para una emergencia: reserva para varios días, lista de dosis, insulina en frío y un plan para la batería.',
     steps: [
       { text: 'Ten una reserva de medicación para varios días.' },
       { text: 'Guarda una lista con los medicamentos y las dosis.' },
@@ -1183,6 +1497,8 @@ export const ACTION_CARDS: readonly ActionCard[] = [
     title: 'Coche',
     metaTitle: 'Kit de emergencia para el coche: qué llevar',
     summary: 'Qué llevar en el coche por si te quedas atrapado en la carretera.',
+    description:
+      'Qué llevar en el coche por si te quedas atrapado en la carretera: manta, agua, linterna, móvil cargado, chaleco y baliza V16, y el depósito lleno.',
     steps: [
       { text: 'Lleva en el coche una manta, agua, una linterna y el móvil cargado.' },
       { text: 'Si hay aviso de mal tiempo, sal con el depósito lleno.' },
@@ -1190,6 +1506,7 @@ export const ACTION_CARDS: readonly ActionCard[] = [
       { text: 'Repasa las tarjetas de coche atrapado, inundación, RCP y hemorragia.', see: ['EV-03', 'NA-02', 'PA-01', 'PA-04'] },
     ],
     dont: ['No cruces tramos inundados.'],
+    productCategories: ['luz-y-energia', 'refugio-y-abrigo'],
     sources: ['gencatKit', 'dgtRoadEmergencies', 'gencatSnow'],
     essential: false,
     extra: true,

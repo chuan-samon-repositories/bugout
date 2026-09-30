@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { siteConfig } from "@/presentation/config/site";
 import {
+  articleJsonLd,
   breadcrumbJsonLd,
+  collectionPageJsonLd,
   faqPageJsonLd,
   organizationJsonLd,
   returnWindowDays,
@@ -88,6 +90,64 @@ describe("faqPageJsonLd", () => {
       mainEntity: [
         { "@type": "Question", name: "¿Caduca?", acceptedAnswer: { "@type": "Answer", text: "Mira la fecha del envase." } },
       ],
+    });
+  });
+});
+
+describe("articleJsonLd", () => {
+  it("describes a guide by the shop with its dates, image and cited sources", () => {
+    const data = articleJsonLd(
+      {
+        headline: "Fuga de gas en casa: qué hacer",
+        description: "Si huele a gas, sal de casa.",
+        path: "/preparate/fuga-de-gas",
+        datePublished: "2026-09-30",
+        dateModified: "2026-10-02",
+        image: "/preparate/fuga-de-gas/share-image",
+        citations: [{ name: "El gas, siempre con seguridad", url: "https://www.comunidad.madrid/energia", publisher: "Comunidad de Madrid" }],
+      },
+      origin,
+    );
+    expect(data).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: "Fuga de gas en casa: qué hacer",
+      description: "Si huele a gas, sal de casa.",
+      url: "https://bugout.example/preparate/fuga-de-gas",
+      mainEntityOfPage: "https://bugout.example/preparate/fuga-de-gas",
+      inLanguage: "es-ES",
+      datePublished: "2026-09-30",
+      dateModified: "2026-10-02",
+      image: "https://bugout.example/preparate/fuga-de-gas/share-image",
+      author: { "@type": "Organization", "@id": "https://bugout.example/#organization", name: "Bugout", url: "https://bugout.example/" },
+      publisher: { "@type": "Organization", "@id": "https://bugout.example/#organization", name: "Bugout", url: "https://bugout.example/" },
+      isPartOf: { "@id": "https://bugout.example/#website" },
+      citation: [
+        {
+          "@type": "CreativeWork",
+          name: "El gas, siempre con seguridad",
+          url: "https://www.comunidad.madrid/energia",
+          publisher: { "@type": "Organization", name: "Comunidad de Madrid" },
+        },
+      ],
+    });
+  });
+});
+
+describe("collectionPageJsonLd", () => {
+  it("lists the pages it links to, in order, with absolute URLs", () => {
+    const data = collectionPageJsonLd(
+      { name: "Prepárate", description: "Guía.", path: "/preparate", items: [{ name: "Fuga de gas", path: "/preparate/fuga-de-gas" }] },
+      origin,
+    );
+    expect(data).toMatchObject({
+      "@type": "CollectionPage",
+      url: "https://bugout.example/preparate",
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: 1,
+        itemListElement: [{ "@type": "ListItem", position: 1, name: "Fuga de gas", url: "https://bugout.example/preparate/fuga-de-gas" }],
+      },
     });
   });
 });

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CloseIcon, cn, focusRing, PhoneIcon } from "@/presentation/components/ui";
 import { messages } from "@/presentation/i18n";
 import { cardByCode } from "@/presentation/prepare/deck";
-import type { CardStep } from "@/presentation/prepare/types";
+import type { CardQuestion, CardStep } from "@/presentation/prepare/types";
 import { routes } from "@/presentation/routes";
 import { CardCodeBadge } from "./CardCodeBadge";
 
@@ -89,6 +89,25 @@ export function DontList({ items, id }: { items: readonly string[]; id: string }
           </li>
         ))}
       </ul>
+    </section>
+  );
+}
+
+/** "Preguntas frecuentes": the questions people search for, each as an h3 with its answer, always visible. */
+export function CardFaq({ items, id }: { items: readonly CardQuestion[]; id: string }) {
+  return (
+    <section aria-labelledby={id}>
+      <h2 id={id} className={sectionTitle}>
+        {copy.faq}
+      </h2>
+      <div className="divide-y divide-sand-line rounded-2xl bg-white px-5 shadow-card sm:px-6">
+        {items.map((item) => (
+          <div key={item.question} className="py-4">
+            <h3 className="mb-1.5 text-base text-navy-deep sm:text-lg">{item.question}</h3>
+            <p className="leading-relaxed text-muted">{item.answer}</p>
+          </div>
+        ))}
+      </div>
     </section>
   );
 }

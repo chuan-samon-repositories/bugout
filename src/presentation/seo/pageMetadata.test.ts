@@ -33,6 +33,12 @@ describe("pageMetadata", () => {
     expect(metadata.openGraph?.images).toEqual(images);
   });
 
+  it("marks an article with the date it was last updated, and plain pages as websites", () => {
+    const article = pageMetadata({ title: "T", description: "D", path: "/preparate/x", article: { modifiedTime: "2026-09-30" } });
+    expect(article.openGraph).toMatchObject({ type: "article", modifiedTime: "2026-09-30" });
+    expect(pageMetadata({ title: "T", description: "D", path: "/about" }).openGraph).toMatchObject({ type: "website" });
+  });
+
   it("can skip the site-name suffix and keep a page out of search results", () => {
     const metadata = pageMetadata({ title: "Inicio", description: "D", path: "/", absoluteTitle: true, noindex: true });
     expect(metadata.title).toEqual({ absolute: "Inicio" });

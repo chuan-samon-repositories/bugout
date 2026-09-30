@@ -35,7 +35,7 @@ function footerColumns(kits: readonly NavKit[]): FooterColumn[] {
       title: copy.columns.company,
       links: [
         { href: routes.about, label: nav.about },
-        { href: routes.whyPrepare, label: copy.whyPrepare },
+        { href: routes.prepare, label: copy.whyPrepare },
         { href: routes.contact, label: nav.contact },
       ],
     },
@@ -67,7 +67,7 @@ export function Footer({ kits }: FooterProps) {
   const columns = footerColumns(kits);
 
   return (
-    <footer className="bg-navy-darker text-sand">
+    <footer className="bg-navy-darker text-sand print:hidden">
       <Container className="grid gap-10 pt-16 pb-12 sm:pt-20 lg:grid-cols-[1.6fr_repeat(4,1fr)] lg:gap-10">
         <div className="min-w-0">
           <Image

@@ -92,6 +92,90 @@ export function websiteJsonLd(origin: string): JsonLdObject {
   };
 }
 
+/** The shop as publisher or author of a page: a reference to the organization, with its name and URL. */
+const organizationRef = (origin: string): JsonLdObject => ({
+  "@type": "Organization",
+  "@id": organizationId(origin),
+  name: siteConfig.name,
+  url: absoluteUrl("/", origin),
+});
+
+export interface ArticleCitation {
+  name: string;
+  url: string;
+  /** The organisation that publishes the cited page. */
+  publisher: string;
+}
+
+export interface ArticleJsonLdInput {
+  headline: string;
+  description: string;
+  path: string;
+  /** ISO dates the content was first published and last checked. */
+  datePublished: string;
+  dateModified: string;
+  image?: string;
+  /** The official pages the article is based on, as shown on the page. */
+  citations: readonly ArticleCitation[];
+}
+
+/**
+ * A guide page written by the shop (an action card): headline, the date its content was last checked, the
+ * shop as author and publisher, and the official pages it cites, like the visible "Fuentes". It claims no
+ * medical review and no rich result (Google shows none for how-to guides).
+ */
+export function articleJsonLd(input: ArticleJsonLdInput, origin: string): JsonLdObject {
+  const url = absoluteUrl(input.path, origin);
+  return {
+    "@context": SCHEMA,
+    "@type": "Article",
+    headline: input.headline,
+    description: input.description,
+    url,
+    mainEntityOfPage: url,
+    inLanguage: LOCALE,
+    datePublished: input.datePublished,
+    dateModified: input.dateModified,
+    ...(input.image ? { image: absoluteUrl(input.image, origin) } : {}),
+    author: organizationRef(origin),
+    publisher: organizationRef(origin),
+    isPartOf: { "@id": websiteId(origin) },
+    citation: input.citations.map((citation) => ({
+      "@type": "CreativeWork",
+      name: citation.name,
+      url: citation.url,
+      publisher: { "@type": "Organization", name: citation.publisher },
+    })),
+  };
+}
+
+/** A page that lists other pages (the Prepárate index): its name and the pages, in the order shown. */
+export function collectionPageJsonLd(
+  input: { name: string; description: string; path: string; items: readonly { name: string; path: string }[] },
+  origin: string,
+): JsonLdObject {
+  return {
+    "@context": SCHEMA,
+    "@type": "CollectionPage",
+    name: input.name,
+    description: input.description,
+    url: absoluteUrl(input.path, origin),
+    inLanguage: LOCALE,
+    isPartOf: { "@id": websiteId(origin) },
+    publisher: organizationRef(origin),
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: input.items.length,
+      itemListElement: input.items.map((item, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        name: item.name,
+        url: absoluteUrl(item.path, origin),
+      })),
+    },
+  };
+}
+
 /** The visible breadcrumbs as a BreadcrumbList; the last item (the current page, without href) is `currentPath`. */
 export function breadcrumbJsonLd(items: readonly BreadcrumbItem[], currentPath: string, origin: string): JsonLdObject {
   return {

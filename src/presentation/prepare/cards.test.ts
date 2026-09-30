@@ -10,10 +10,12 @@ import {
   citedOrganisations,
   CONTENT_REVIEW,
   deckCards,
+  helpfulProducts,
   kitDecks,
   kitsWithCard,
   relatedCards,
 } from './deck';
+import { messages } from '@/presentation/i18n';
 import { SOURCES, type SourceId } from './sources';
 
 /** The Kit 24h deck, as the printed deck's catalogue defines it. */
@@ -74,6 +76,7 @@ describe('the action-card deck', () => {
         card.title,
         card.summary,
         card.metaTitle,
+        card.description,
         ...card.steps.map((step) => step.text),
         ...card.dont,
         ...(card.context ?? []),
@@ -88,6 +91,35 @@ describe('the action-card deck', () => {
         expect(text, card.code).toMatch(/[.?!»)]$/);
       }
       expect(card.call112 ?? 'ok.', card.code).toMatch(/^[a-zá-ú0-9].*\.$/);
+    }
+  });
+
+  it('gives every card a search title that fits the results page and a full search description', () => {
+    for (const card of ACTION_CARDS) {
+      expect(card.metaTitle.length, card.code).toBeLessThanOrEqual(51);
+      expect(card.description.length, card.code).toBeGreaterThanOrEqual(110);
+      expect(card.description.length, card.code).toBeLessThanOrEqual(160);
+      expect(card.description, card.code).toMatch(/\.$/);
+    }
+    const descriptions = ACTION_CARDS.map((card) => card.description);
+    expect(new Set(descriptions).size).toBe(descriptions.length);
+  });
+
+  it('writes its questions as questions and answers them in full sentences, never repeating one', () => {
+    const questions = ACTION_CARDS.flatMap((card) => card.faq ?? []);
+    expect(questions.length).toBeGreaterThan(0);
+    for (const { question, answer } of questions) {
+      expect(question).toMatch(/^¿.+\?$/);
+      expect(answer).toMatch(/\.$/);
+      expect(answer).not.toMatch(/\b[A-Z]{2}-\d{2}\b/);
+    }
+    expect(new Set(questions.map((item) => item.question)).size).toBe(questions.length);
+  });
+
+  it('links products only through real catalog categories', () => {
+    const categories = Object.keys(messages.catalog.categories);
+    for (const card of ACTION_CARDS) {
+      for (const category of card.productCategories ?? []) expect(categories, card.code).toContain(category);
     }
   });
 
@@ -148,6 +180,21 @@ describe('deck helpers', () => {
     expect(related.slice(0, 4)).toEqual(['PM-03', 'CL-02', 'PM-02', 'CL-03']);
     expect(relatedCards(cardByCode('NA-07')!).map((candidate) => candidate.category)).toEqual(['na', 'na', 'na', 'na']);
     expect(relatedCards(card)).not.toContain(card);
+  });
+
+  it('suggests in-stock products of the card\'s categories first, never the build-your-own kit, up to the limit', () => {
+    const product = (id: string, category: string, inStock = true) => buildProduct({ id, category, inStock });
+    const custom = buildProduct({
+      id: 'kit-custom',
+      category: 'kits',
+      details: { features: [], specifications: [], contents: [], kit: { label: 'CUSTOM', buildYourOwn: true } },
+    });
+    const catalog = [product('frontal', 'luz-y-energia', false), product('radio', 'luz-y-energia'), product('agua', 'agua'), custom];
+    const light = cardByCode('CL-08')!;
+    expect(helpfulProducts(light, catalog).map((item) => item.slug)).toEqual(['radio', 'frontal']);
+    expect(helpfulProducts(light, catalog, 1).map((item) => item.slug)).toEqual(['radio']);
+    expect(helpfulProducts(cardByCode('PM-01')!, catalog)).toEqual([]);
+    expect(helpfulProducts(cardByCode('CL-01')!, catalog)).toEqual([]);
   });
 
   it('lists each cited organisation once', () => {

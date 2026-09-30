@@ -98,7 +98,7 @@ describe("/products/[slug]", () => {
     // The kit carries the complete action-card deck: its size comes from the deck, the link goes to the cards.
     expect(within(contents).getByText("Baraja de tarjetas de acción (1 por kit)")).toBeInTheDocument();
     expect(within(contents).getByRole("heading", { level: 3, name: "Incluye 50 tarjetas de acción" })).toBeInTheDocument();
-    expect(within(contents).getByRole("link", { name: /Ver las tarjetas/ })).toHaveAttribute("href", "/why-prepare#tarjetas");
+    expect(within(contents).getByRole("link", { name: /Ver las tarjetas/ })).toHaveAttribute("href", "/preparate#tarjetas");
     const crossSell = screen.getByRole("region", { name: "Añade productos" });
     expect(within(crossSell).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
       "Lámpara de camping",

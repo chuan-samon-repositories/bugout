@@ -9,7 +9,9 @@ import type { ActionCard, CardCategory, CardCode, DeckEdition, Source } from './
  * reviewer stays null (and the site says nothing about a review) until a registered healthcare
  * professional has really signed it off.
  */
-export const CONTENT_REVIEW: { updatedAt: string; reviewer: string | null } = {
+export const CONTENT_REVIEW: { publishedAt: string; updatedAt: string; reviewer: string | null } = {
+  /** When the cards were first published (never changes). */
+  publishedAt: '2026-09-30',
   updatedAt: '2026-09-30',
   reviewer: null,
 };
@@ -93,6 +95,16 @@ export function kitDecks(products: readonly Product[]): KitDeck[] {
     if (!edition) return [];
     return [{ slug: product.slug, name: product.name, edition, cardCount: deckCards(edition).length }];
   });
+}
+
+/**
+ * "Material útil": catalog products in the card's `productCategories`, in stock first, in catalog order, up to
+ * `limit`. The build-your-own kit is left out (it is a builder, not something to take along).
+ */
+export function helpfulProducts(card: ActionCard, products: readonly Product[], limit = 4): Product[] {
+  const categories = new Set(card.productCategories ?? []);
+  const matching = products.filter((product) => categories.has(product.category) && !product.isBuildYourOwn());
+  return [...matching.filter((product) => product.inStock), ...matching.filter((product) => !product.inStock)].slice(0, limit);
 }
 
 /** The kits whose deck holds this card. */

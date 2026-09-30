@@ -101,7 +101,7 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 - `next.config.ts` sends these security headers on every route: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, a restrictive `Permissions-Policy` and `Strict-Transport-Security`. It also disables `X-Powered-By`.
   - Production builds also send a Content-Security-Policy. It allows same-origin scripts and connections, `cdn.shopify.com` images, and the Shopify store domain. A custom absolute PostHog host is added to `script-src` and `connect-src`, together with its `-assets` host for PostHog Cloud.
   - The CSP blocks third-party scripts, so the Vercel and PostHog toolbars don't load in production.
-- Home, product pages, the kit guide pages (`/how-to-choose`, `/why-prepare` and its action card pages, `/faq`) and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
+- Home, product pages, the kit guide pages (`/how-to-choose`, `/preparate` and its action card pages, `/faq`) and the sitemap use `revalidate = 300` (ISR): pages are cached and refreshed at most every 5 minutes.
 - Shopify product images from `cdn.shopify.com` are allowed in `images.remotePatterns`.
 - The `/ingest/*` PostHog proxy is a Next.js rewrite, so it works on any host that runs the Next.js server.
 - `/checkout` is excluded in `robots.txt` and marked `noindex`.
@@ -111,8 +111,8 @@ Newsletter sign-up and the contact form are not connected to a backend yet, so t
 
 ```
 src/
-  app/             Routes: /, /products, /products/[slug], /how-to-choose, /why-prepare,
-                   /why-prepare/[slug] (action cards), /faq,
+  app/             Routes: /, /products, /products/[slug], /how-to-choose, /preparate,
+                   /preparate/[slug] (action cards), /preparate/lista-del-kit-de-emergencia, /faq,
                    /checkout, /about, /contact, /shipping-returns, /privacy, /cookies, /terms,
                    sitemap.ts, robots.ts
   presentation/    React components (ui/ design system + feature folders), contexts,

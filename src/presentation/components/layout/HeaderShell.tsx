@@ -42,7 +42,7 @@ export function HeaderShell({ children }: { children: ReactNode }) {
     <header
       data-transparent={transparent || undefined}
       className={cn(
-        "fixed inset-x-0 top-0 z-40 h-(--header-height) text-sand",
+        "fixed inset-x-0 top-0 z-40 h-(--header-height) text-sand print:hidden",
         "transition-[background-color,box-shadow,backdrop-filter] duration-350 ease-brand",
         transparent
           ? "bg-transparent"

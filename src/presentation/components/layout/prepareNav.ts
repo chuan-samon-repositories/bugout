@@ -7,7 +7,7 @@ import type { NavLink } from "./navigation";
 const nav = messages.shell.nav;
 
 /**
- * "Prepárate" dropdown: the card to start with, then the Prepárate page's main sections. Server-only in
+ * "Prepárate" dropdown: the card to start with, the Prepárate page's main sections and the kit checklist. Server-only in
  * practice (the header builds it): it reads the card deck, which client code must not bundle.
  */
 export function prepareLinks(): NavLink[] {
@@ -16,6 +16,7 @@ export function prepareLinks(): NavLink[] {
   return [
     ...(firstMinutes ? [{ href: routes.actionCard(firstMinutes.slug), label: firstMinutes.title }] : []),
     { href: routes.prepareSection(prepareAnchors.steps), label: nav.prepareSteps },
+    { href: routes.kitChecklist, label: nav.prepareChecklist },
     { href: routes.prepareSection(prepareAnchors.cards), label: nav.prepareCards },
     { href: routes.prepareSection(firstAid.anchor), label: nav.prepareFirstAid },
   ];

@@ -148,12 +148,15 @@ export const content = {
     emptyCta: 'Ver los productos',
   },
   whyPrepare: {
+    /** Breadcrumb and navigation name of the section. */
     title: 'Prepárate',
-    metaTitle: 'Cómo prepararse para una emergencia: guía y tarjetas de acción',
+    /** The page's <h1>. */
+    heading: 'Prepárate para una emergencia',
+    metaTitle: 'Cómo prepararse ante una emergencia, paso a paso',
     description:
       'Qué hacer antes, durante y después de una emergencia, en pasos cortos y con la fuente oficial de cada consejo.',
     metaDescription:
-      'Guía para prepararte ante apagones, inundaciones, incendios y otras emergencias: 5 pasos para empezar y tarjetas de acción paso a paso, con primeros auxilios basados en las guías ERC 2025.',
+      'Cómo prepararte ante apagones, inundaciones, incendios y otras emergencias: 5 pasos para empezar y qué hacer en cada caso, con fuentes oficiales.',
     startHere: {
       eyebrow: 'Empieza aquí',
       title: 'Si la emergencia es ahora',
@@ -220,6 +223,7 @@ export const content = {
           text: 'Ten a mano lo necesario para 72 horas: agua (al menos 2 litros por persona y día), comida que no necesite nevera, luz, radio, botiquín, documentos y medicación.',
           cards: ['CL-04', 'CL-08'],
           source: 'gencatKit',
+          checklistLink: 'Ver la lista del kit de emergencia',
           kitsLink: 'Ver los kits',
         },
         {
@@ -271,6 +275,8 @@ export const content = {
       course: 'Estas tarjetas no sustituyen a un curso. Para aprender primeros auxilios con práctica,',
       courseLink: 'busca un curso de Cruz Roja',
       updated: (date: string) => `Contenido revisado el ${date}.`,
+      authorship: 'Elaborado por Bugout a partir de las fuentes oficiales que cita cada tarjeta.',
+      authorshipLink: 'Quiénes somos',
       reviewedBy: (reviewer: string) => `Revisión sanitaria: ${reviewer}.`,
     },
     disclaimer:
@@ -282,6 +288,9 @@ export const content = {
       call112: 'Llama al 112 si',
       callNow: 'Llamar al 112',
       why: 'Por qué',
+      faq: 'Preguntas frecuentes',
+      products: 'Material útil',
+      productsText: 'Productos del catálogo que te ayudan en esta situación.',
       see: 'Ver',
       seeAlso: 'Ver también',
       sources: 'Fuentes',
@@ -292,6 +301,29 @@ export const content = {
       allCards: 'Todas las tarjetas',
     },
     ctaTitle: 'Elige tu kit',
+    checklist: {
+      title: 'Lista del kit de emergencia',
+      metaTitle: 'Lista del kit de emergencia: qué llevar',
+      description: 'Qué llevar en un kit de emergencia para 72 horas, según Protección Civil. Revísala en casa y marca lo que ya tienes.',
+      metaDescription:
+        'Qué llevar en un kit de emergencia para 72 horas, según Protección Civil: agua, botiquín, linterna, radio, documentos, dinero y lo que necesita tu familia.',
+      waterTitle: 'Cuánta agua de beber necesitas',
+      waterText: (litres: number, days: number) =>
+        `Al menos ${litres} litros por persona y día durante ${days} días, que es lo que la Comisión Europea recomienda poder aguantar sin ayuda. Guarda aparte agua para cocinar y para la higiene.`,
+      waterPeople: (people: number) => (people === 1 ? '1 persona' : `${people} personas`),
+      waterLitres: (litres: number) => `${litres} litros`,
+      waterCaption: 'Agua de beber para 72 horas',
+      waterPeopleHeader: 'Personas',
+      waterLitresHeader: 'Agua de beber',
+      cardsLabel: 'Qué hacer:',
+      productsLabel: 'En la tienda:',
+      review: 'Revisa el kit de vez en cuando: las fechas del agua y de la comida, las pilas y la medicación. Y que todos en casa sepan dónde está.',
+      kitsTitle: '¿Prefieres tenerlo ya preparado?',
+      kitsText: 'Nuestros kits ya llevan parte de esta lista. Compara qué incluye cada uno y completa el resto con lo que necesite tu familia.',
+      kitsLink: 'Comparar los kits',
+      print: 'Imprimir la lista',
+      stepsLink: 'Ver los 5 pasos para prepararte',
+    },
   },
   faqPage: {
     title: 'Preguntas frecuentes',

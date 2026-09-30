@@ -8,7 +8,13 @@ const TOP_LINKS = byLabel(['Kits', 'Productos', 'Prepárate']);
 const KIT_LINKS = byLabel(['Kit 24h', 'Kit 72h', 'Kit Custom']);
 const CATEGORY_LINKS = byLabel(Object.keys(CATEGORY_COUNTS).filter((label) => label !== 'Kits'));
 // The menu drawer lists each section's links under it. Kit links are derived from the catalog, so compare sets.
-const PREPARE_LINKS = byLabel(['Primeros 15 minutos', 'Cómo prepararte', 'Tarjetas de acción', 'Guía de primeros auxilios']);
+const PREPARE_LINKS = byLabel([
+  'Primeros 15 minutos',
+  'Cómo prepararte',
+  'Lista del kit de emergencia',
+  'Tarjetas de acción',
+  'Guía de primeros auxilios',
+]);
 const MENU_LINKS = byLabel([...TOP_LINKS, ...KIT_LINKS, ...CATEGORY_LINKS, ...PREPARE_LINKS]);
 
 async function linkLabels(scope: Locator): Promise<string[]> {
@@ -34,7 +40,7 @@ test.describe('navigation', () => {
   });
 
   test('the primary navigation marks the current page', async ({ page, isMobile }) => {
-    await openPage(page, '/why-prepare');
+    await openPage(page, '/preparate');
     let nav = await primaryNav(page, isMobile);
     await expect.poll(() => linkLabels(nav)).toEqual(isMobile ? MENU_LINKS : TOP_LINKS);
     await expect(nav.getByRole('link', { name: 'Prepárate' })).toHaveAttribute('aria-current', 'page');
@@ -150,8 +156,8 @@ test.describe('navigation', () => {
     await button.click();
     await expect(menu).toBeVisible();
     await menu.getByRole('link', { name: 'Prepárate' }).click();
-    await expect(page).toHaveURL('/why-prepare');
-    await expect(page.getByRole('heading', { level: 1, name: 'Prepárate' })).toBeVisible();
+    await expect(page).toHaveURL('/preparate');
+    await expect(page.getByRole('heading', { level: 1, name: 'Prepárate para una emergencia' })).toBeVisible();
     await expect(menu).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
 

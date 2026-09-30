@@ -76,7 +76,7 @@ describe("Header", () => {
     expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["Kits", "Productos", "Prepárate"]);
     expect(within(nav).getByRole("link", { name: "Kits" })).toHaveAttribute("href", "/products?category=kits");
     expect(within(nav).getByRole("link", { name: "Productos" })).toHaveAttribute("href", "/products");
-    expect(within(nav).getByRole("link", { name: "Prepárate" })).toHaveAttribute("href", "/why-prepare");
+    expect(within(nav).getByRole("link", { name: "Prepárate" })).toHaveAttribute("href", "/preparate");
     // The kit page is inside the Kits dropdown: only its own link is aria-current, "Kits" is highlighted.
     expect(within(nav).getByRole("link", { name: "Kits" })).not.toHaveAttribute("aria-current");
     expect(within(nav).getByRole("link", { name: "Kits" }).className.split(/\s+/)).toContain("text-sand");
@@ -98,7 +98,7 @@ describe("Header", () => {
       ["Kit 24h", "/products/kit-24h"],
       ["Kit 72h", "/products/kit-72h"],
       ["Productos", "/products"],
-      ["Prepárate", "/why-prepare"],
+      ["Prepárate", "/preparate"],
     ]);
 
     await user.unhover(within(nav).getByRole("link", { name: "Kits" }));
@@ -147,7 +147,7 @@ describe("Header", () => {
   });
 
   it("opens the Prepárate dropdown with the first-minutes card and the page's sections", async () => {
-    navigation.pathname = "/why-prepare";
+    navigation.pathname = "/preparate";
     const user = userEvent.setup();
     renderHeader();
     const nav = screen.getByRole("navigation", { name: "Principal" });
@@ -160,11 +160,12 @@ describe("Header", () => {
     await user.hover(within(nav).getByRole("link", { name: "Prepárate" }));
     const links = within(nav).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
     expect(links.slice(links.findIndex(([text]) => text === "Prepárate"))).toEqual([
-      ["Prepárate", "/why-prepare"],
-      ["Primeros 15 minutos", "/why-prepare/primeros-15-minutos"],
-      ["Cómo prepararte", "/why-prepare#como-prepararte"],
-      ["Tarjetas de acción", "/why-prepare#tarjetas"],
-      ["Guía de primeros auxilios", "/why-prepare#primeros-auxilios"],
+      ["Prepárate", "/preparate"],
+      ["Primeros 15 minutos", "/preparate/primeros-15-minutos"],
+      ["Cómo prepararte", "/preparate#como-prepararte"],
+      ["Lista del kit de emergencia", "/preparate/lista-del-kit-de-emergencia"],
+      ["Tarjetas de acción", "/preparate#tarjetas"],
+      ["Guía de primeros auxilios", "/preparate#primeros-auxilios"],
     ]);
     // Links to the page's own sections are never the current page: only one link is.
     expect(within(nav).getAllByRole("link").filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
@@ -246,6 +247,7 @@ describe("Header", () => {
       "Prepárate",
       "Primeros 15 minutos",
       "Cómo prepararte",
+      "Lista del kit de emergencia",
       "Tarjetas de acción",
       "Guía de primeros auxilios",
     ]);

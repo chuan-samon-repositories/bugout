@@ -71,7 +71,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         </a>
         <Providers>
           <Header nav={nav} />
-          <main id="main-content" tabIndex={-1} className="flex-1 pt-(--header-height) outline-none">
+          <main id="main-content" tabIndex={-1} className="flex-1 pt-(--header-height) outline-none print:pt-0">
             {children}
           </main>
           <Footer kits={nav.kits} />

@@ -95,7 +95,7 @@ export function primarySections(
       label: nav.products,
       children: data.categories.map((category) => ({ href: catalogUrl({ category: category.slug }), label: category.label })),
     },
-    { href: routes.whyPrepare, label: nav.whyPrepare, children: [...prepare] },
+    { href: routes.prepare, label: nav.whyPrepare, children: [...prepare] },
   ];
 }
 
@@ -117,7 +117,7 @@ const NAV_SCOPED_PARAMS = [catalogParams.category, catalogParams.onSale];
  */
 export function isCurrentLink(href: string, pathname: string, search: Pick<URLSearchParams, "get"> | null): boolean {
   const target = new URL(href, "http://localhost");
-  // A link to a section of a page (`/why-prepare#tarjetas`) is never the current page: the page's own link is.
+  // A link to a section of a page (`/preparate#tarjetas`) is never the current page: the page's own link is.
   if (target.hash || target.pathname !== pathname) return false;
   if (target.pathname !== routes.products) return true;
   if (!search) return false;

@@ -99,6 +99,13 @@ const nextConfig: NextConfig = {
     // Product photos come from Shopify's CDN when the Shopify provider is active.
     remotePatterns: [{ protocol: "https", hostname: "cdn.shopify.com", pathname: "/**" }],
   },
+  // The Prepárate section moved from English to Spanish paths; keep the old links working.
+  async redirects() {
+    return [
+      { source: "/why-prepare", destination: "/preparate", permanent: true },
+      { source: "/why-prepare/:slug", destination: "/preparate/:slug", permanent: true },
+    ];
+  },
   // PostHog calls its API with trailing slashes; don't redirect them.
   skipTrailingSlashRedirect: true,
   // Reverse proxy for PostHog (EU) so analytics requests stay first-party. Order matters.

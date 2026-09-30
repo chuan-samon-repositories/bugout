@@ -18,7 +18,7 @@ vi.mock("@/presentation/context/CartContext", () => ({
 
 import FaqPage from "./faq/page";
 import HowToChoosePage from "./how-to-choose/page";
-import WhyPreparePage from "./why-prepare/page";
+import WhyPreparePage from "./preparate/page";
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -59,10 +59,10 @@ describe("/how-to-choose", () => {
   });
 });
 
-describe("/why-prepare", () => {
+describe("/preparate", () => {
   it("guides the visitor from the emergency now to preparing, the cards and their sources", async () => {
     render(await WhyPreparePage());
-    expect(screen.getByRole("heading", { level: 1, name: "Prepárate" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Prepárate para una emergencia" })).toBeInTheDocument();
     expect(screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent)).toEqual([
       "Si la emergencia es ahora",
       "Las emergencias más habituales no son de película",
@@ -74,7 +74,7 @@ describe("/why-prepare", () => {
     ]);
     expect(screen.getByRole("link", { name: "Ver los primeros 15 minutos" })).toHaveAttribute(
       "href",
-      "/why-prepare/primeros-15-minutos",
+      "/preparate/primeros-15-minutos",
     );
     expect(screen.getByRole("link", { name: "112" })).toHaveAttribute("href", "tel:112");
     expect(screen.getByRole("link", { name: "91 562 04 20" })).toHaveAttribute("href", "tel:+34915620420");
@@ -93,11 +93,30 @@ describe("/why-prepare", () => {
       "Revisa y practica",
     ]);
     for (const item of within(steps).getAllByRole("listitem").filter((li) => li.parentElement?.tagName === "OL")) {
-      expect(within(item).getAllByRole("link").some((link) => link.getAttribute("href")?.startsWith("/why-prepare/"))).toBe(true);
+      expect(within(item).getAllByRole("link").some((link) => link.getAttribute("href")?.startsWith("/preparate/"))).toBe(true);
       const external = within(item).getAllByRole("link").filter((link) => link.getAttribute("target") === "_blank");
       expect(external.length).toBeGreaterThan(0);
       for (const link of external) expect(link).toHaveAttribute("rel", "noopener noreferrer");
     }
+  });
+
+  it('sends the "Prepara tu kit" step to the kit checklist and the kits', async () => {
+    render(await WhyPreparePage());
+    const steps = screen.getByRole("region", { name: "Prepárate en 5 pasos" });
+    expect(within(steps).getByRole("link", { name: /Ver la lista del kit de emergencia/ })).toHaveAttribute(
+      "href",
+      "/preparate/lista-del-kit-de-emergencia",
+    );
+    expect(within(steps).getByRole("link", { name: /Ver los kits/ })).toHaveAttribute("href", "/how-to-choose");
+  });
+
+  it("describes itself as a collection of every card", async () => {
+    render(await WhyPreparePage());
+    const collection = [...document.querySelectorAll('script[type="application/ld+json"]')]
+      .flatMap((script) => [JSON.parse(script.textContent ?? "null")].flat())
+      .find((data) => data["@type"] === "CollectionPage");
+    expect(collection.mainEntity.numberOfItems).toBe(ACTION_CARDS.length);
+    expect(collection.name).toBe("Prepárate para una emergencia");
   });
 
   it("groups every card by category, with jump links to each", async () => {
@@ -113,7 +132,7 @@ describe("/why-prepare", () => {
       const count = ACTION_CARDS.filter((card) => card.category === category.id).length;
       expect(within(group).getAllByRole("link")).toHaveLength(count);
     }
-    expect(within(cards).getByRole("link", { name: /Hemorragia grave/ })).toHaveAttribute("href", "/why-prepare/hemorragia-grave");
+    expect(within(cards).getByRole("link", { name: /Hemorragia grave/ })).toHaveAttribute("href", "/preparate/hemorragia-grave");
   });
 
   it("says which deck each kit carries, with counts from the catalog", async () => {

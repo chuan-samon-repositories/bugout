@@ -14,9 +14,9 @@ const CATEGORIES = [
 
 test.describe('Prepárate', () => {
   test('lists every category of cards and opens a card with its steps and official sources', async ({ page }) => {
-    await openPage(page, '/why-prepare');
+    await openPage(page, '/preparate');
     const main = page.getByRole('main');
-    await expect(main.getByRole('heading', { level: 1, name: 'Prepárate' })).toBeVisible();
+    await expect(main.getByRole('heading', { level: 1, name: 'Prepárate para una emergencia' })).toBeVisible();
     const cards = main.getByRole('region', { name: 'Tarjetas de acción' });
     const jump = cards.getByRole('navigation', { name: 'Categorías de tarjetas' });
     await expect(jump.getByRole('link')).toHaveText(CATEGORIES);
@@ -27,7 +27,7 @@ test.describe('Prepárate', () => {
     await expect(firstAid).toBeInViewport();
 
     await firstAid.getByRole('link', { name: /Hemorragia grave/ }).click();
-    await expect(page).toHaveURL('/why-prepare/hemorragia-grave');
+    await expect(page).toHaveURL('/preparate/hemorragia-grave');
     await expect(page.getByRole('heading', { level: 1, name: 'Hemorragia grave' })).toBeVisible();
     await expect(main.getByRole('region', { name: 'Qué hacer' }).getByRole('listitem')).toHaveCount(6);
     await expect(main.getByRole('region', { name: 'Llama al 112 si' }).getByRole('link', { name: 'Llamar al 112' })).toHaveAttribute(
@@ -44,13 +44,27 @@ test.describe('Prepárate', () => {
   });
 
   test('a printed card code opens its page', async ({ page }) => {
-    await openPage(page, '/why-prepare/pa-04');
-    await expect(page).toHaveURL('/why-prepare/hemorragia-grave');
+    await openPage(page, '/preparate/pa-04');
+    await expect(page).toHaveURL('/preparate/hemorragia-grave');
     await expect(page.getByRole('heading', { level: 1, name: 'Hemorragia grave' })).toBeVisible();
   });
 
+  test('the old English paths redirect permanently to the Spanish ones', async ({ page, request }) => {
+    for (const [from, to] of [
+      ['/why-prepare', '/preparate'],
+      ['/why-prepare/hemorragia-grave', '/preparate/hemorragia-grave'],
+      ['/why-prepare/pa-04', '/preparate/pa-04'],
+    ]) {
+      const response = await request.get(from, { maxRedirects: 0 });
+      expect(response.status(), from).toBe(308);
+      expect(response.headers().location, from).toBe(to);
+    }
+    await openPage(page, '/why-prepare/pa-04');
+    await expect(page).toHaveURL('/preparate/hemorragia-grave');
+  });
+
   test('an unknown card is a 404', async ({ page }) => {
-    const response = await page.goto('/why-prepare/no-existe');
+    const response = await page.goto('/preparate/no-existe');
     expect(response?.status()).toBe(404);
   });
 
@@ -59,8 +73,20 @@ test.describe('Prepárate', () => {
     const nav = await primaryNav(page, isMobile);
     if (!isMobile) await nav.getByRole('link', { name: 'Prepárate', exact: true }).hover();
     await nav.getByRole('link', { name: 'Primeros 15 minutos' }).click();
-    await expect(page).toHaveURL('/why-prepare/primeros-15-minutos');
+    await expect(page).toHaveURL('/preparate/primeros-15-minutos');
     await expect(page.getByRole('heading', { level: 1, name: 'Primeros 15 minutos' })).toBeVisible();
+  });
+
+  test('the kit checklist lists what to pack, with its cards and products', async ({ page }) => {
+    await openPage(page, '/preparate/lista-del-kit-de-emergencia');
+    const main = page.getByRole('main');
+    await expect(main.getByRole('heading', { level: 1, name: 'Lista del kit de emergencia' })).toBeVisible();
+    const basics = main.getByRole('region', { name: 'Lo básico' });
+    const radio = basics.getByRole('checkbox', { name: /Radio de pilas o de manivela/ });
+    await radio.check();
+    await expect(radio).toBeChecked();
+    await basics.getByRole('link', { name: 'Radio solar' }).click();
+    await expect(page).toHaveURL('/products/radio-solar');
   });
 
   test('the kit page says how many cards it includes and links to them', async ({ page }) => {
@@ -68,6 +94,6 @@ test.describe('Prepárate', () => {
     const contents = page.getByRole('main').getByRole('region', { name: 'Contenido completo' });
     await expect(contents.getByRole('heading', { name: 'Incluye 50 tarjetas de acción' })).toBeVisible();
     await contents.getByRole('link', { name: /Ver las tarjetas/ }).click();
-    await expect(page).toHaveURL('/why-prepare#tarjetas');
+    await expect(page).toHaveURL('/preparate#tarjetas');
   });
 });

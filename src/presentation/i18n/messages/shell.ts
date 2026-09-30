@@ -25,6 +25,7 @@ export const shell = {
     /** "Prepárate" dropdown links to the page's sections. */
     prepareSteps: 'Cómo prepararte',
     prepareCards: 'Tarjetas de acción',
+    prepareChecklist: 'Lista del kit de emergencia',
     /** Not "Primeros auxilios": that is also a product category in the Productos dropdown. */
     prepareFirstAid: 'Guía de primeros auxilios',
     contact: 'Contacto',

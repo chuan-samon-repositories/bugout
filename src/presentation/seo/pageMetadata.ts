@@ -29,6 +29,8 @@ export interface PageMetadataInput {
   absoluteTitle?: boolean;
   /** Keep the page out of search results. */
   noindex?: boolean;
+  /** An article (the action cards) instead of a plain page, with the date it was last updated (ISO). */
+  article?: { modifiedTime: string };
 }
 
 /**
@@ -43,14 +45,14 @@ export const defaultShareImage = (): ShareImage => ({
   ...SHARE_IMAGE_SIZE,
 });
 
-export function pageMetadata({ title, description, path, images, absoluteTitle, noindex }: PageMetadataInput): Metadata {
+export function pageMetadata({ title, description, path, images, absoluteTitle, noindex, article }: PageMetadataInput): Metadata {
   const imageList = (images && images.length > 0 ? images : [defaultShareImage()]).map((image) => ({ ...image }));
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
     alternates: { canonical: path },
     openGraph: {
-      type: "website",
+      ...(article ? { type: "article", modifiedTime: article.modifiedTime } : { type: "website" }),
       locale: OG_LOCALE,
       siteName: siteConfig.name,
       title,

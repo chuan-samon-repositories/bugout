@@ -29,7 +29,7 @@ export function WhyPrepareTeaser() {
               {paragraph}
             </p>
           ))}
-          <ButtonLink href={routes.whyPrepare} variant="secondary" className="mt-3">
+          <ButtonLink href={routes.prepare} variant="secondary" className="mt-3">
             {copy.whyMore}
           </ButtonLink>
         </Reveal>

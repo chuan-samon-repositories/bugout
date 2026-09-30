@@ -4,7 +4,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { loadCatalogOrEmpty } from "@/presentation/components/kits/loadCatalog";
 import { CardCodeBadge } from "@/presentation/components/prepare/CardCodeBadge";
 import { CardLinkList } from "@/presentation/components/prepare/CardLinkList";
-import { Call112Box, CardFields, CardSteps, DontList } from "@/presentation/components/prepare/CardSections";
+import { ProductGrid } from "@/presentation/components/catalog/ProductGrid";
+import { Call112Box, CardFaq, CardFields, CardSteps, DontList } from "@/presentation/components/prepare/CardSections";
 import { ContentNotice } from "@/presentation/components/prepare/ContentNotice";
 import { SourceList } from "@/presentation/components/prepare/SourceList";
 import { ArrowRightIcon, Container, PageHeader, cn, focusRing, textLinkClasses } from "@/presentation/components/ui";
@@ -12,18 +13,27 @@ import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
 import { ACTION_CARDS } from "@/presentation/prepare/cards";
 import { cardCategory } from "@/presentation/prepare/categories";
-import { cardByCode, cardBySlug, cardSources, kitDecks, kitsWithCard, relatedCards } from "@/presentation/prepare/deck";
+import {
+  cardByCode,
+  cardBySlug,
+  cardSources,
+  CONTENT_REVIEW,
+  helpfulProducts,
+  kitDecks,
+  kitsWithCard,
+  relatedCards,
+} from "@/presentation/prepare/deck";
 import type { ActionCard } from "@/presentation/prepare/types";
 import { prepareAnchors, routes } from "@/presentation/routes";
 import { JsonLd } from "@/presentation/seo/JsonLd";
-import { pageMetadata } from "@/presentation/seo/pageMetadata";
-import { breadcrumbJsonLd } from "@/presentation/seo/structuredData";
+import { pageMetadata, SHARE_IMAGE_SIZE } from "@/presentation/seo/pageMetadata";
+import { articleJsonLd, breadcrumbJsonLd } from "@/presentation/seo/structuredData";
 
 const copy = messages.content.whyPrepare;
 
 /** Regenerated at most every 5 minutes: "Incluida en" follows the catalog. */
 export const revalidate = 300;
-/** Card codes (`/why-prepare/pa-04`, printed as QR codes) are not prerendered: they redirect. */
+/** Card codes (`/preparate/pa-04`, printed as QR codes) are not prerendered: they redirect. */
 export const dynamicParams = true;
 
 interface ActionCardPageProps {
@@ -46,23 +56,48 @@ function resolveCard(slug: string): ActionCard {
 export async function generateMetadata({ params }: ActionCardPageProps): Promise<Metadata> {
   const card = cardBySlug((await params).slug);
   if (!card) return {};
-  return pageMetadata({ title: card.metaTitle, description: card.summary, path: routes.actionCard(card.slug) });
+  return pageMetadata({
+    title: card.metaTitle,
+    description: card.description,
+    path: routes.actionCard(card.slug),
+    images: [{ url: routes.actionCardShareImage(card.slug), alt: card.title, ...SHARE_IMAGE_SIZE }],
+    article: { modifiedTime: CONTENT_REVIEW.updatedAt },
+  });
 }
 
 export default async function ActionCardPage({ params }: ActionCardPageProps) {
   const card = resolveCard((await params).slug);
   const category = cardCategory(card.category);
-  const kits = card.extra ? [] : kitsWithCard(card, kitDecks(await loadCatalogOrEmpty("an action card page")));
+  const catalog = await loadCatalogOrEmpty("an action card page");
+  const kits = card.extra ? [] : kitsWithCard(card, kitDecks(catalog));
+  const helpful = helpfulProducts(card, catalog);
   const breadcrumbs = [
     { label: messages.common.home, href: routes.home },
-    { label: copy.title, href: routes.whyPrepare },
+    { label: copy.title, href: routes.prepare },
     { label: card.title },
   ];
   const related = relatedCards(card);
+  const sources = cardSources(card);
 
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd(breadcrumbs, routes.actionCard(card.slug), siteConfig.url)} />
+      <JsonLd
+        data={[
+          breadcrumbJsonLd(breadcrumbs, routes.actionCard(card.slug), siteConfig.url),
+          articleJsonLd(
+            {
+              headline: card.metaTitle,
+              description: card.description,
+              path: routes.actionCard(card.slug),
+              datePublished: CONTENT_REVIEW.publishedAt,
+              dateModified: CONTENT_REVIEW.updatedAt,
+              image: routes.actionCardShareImage(card.slug),
+              citations: sources.map((source) => ({ name: source.title, url: source.url, publisher: source.organisation })),
+            },
+            siteConfig.url,
+          ),
+        ]}
+      />
       <PageHeader title={card.title} description={card.summary} breadcrumbs={breadcrumbs} />
       <Container className="grid gap-10 pt-12 pb-24 lg:grid-cols-[minmax(0,1fr)_20rem] lg:gap-x-14 lg:gap-y-10">
         <div className="flex min-w-0 flex-col gap-10">
@@ -85,6 +120,7 @@ export default async function ActionCardPage({ params }: ActionCardPageProps) {
               </div>
             </section>
           )}
+          {card.faq && card.faq.length > 0 && <CardFaq id="faq-title" items={card.faq} />}
         </div>
 
         {/* On phones the sources come right after the card, before "Ver también". */}
@@ -123,7 +159,7 @@ export default async function ActionCardPage({ params }: ActionCardPageProps) {
             <h2 id="sources-title" className="mb-4 text-lg text-navy-deep">
               {copy.card.sources}
             </h2>
-            <SourceList sources={cardSources(card)} />
+            <SourceList sources={sources} />
           </section>
           <ContentNotice />
           <Link href={routes.prepareSection(prepareAnchors.cards)} className={textLinkClasses}>
@@ -138,6 +174,16 @@ export default async function ActionCardPage({ params }: ActionCardPageProps) {
               {copy.card.seeAlso}
             </h2>
             <CardLinkList cards={related} withCategoryName className="lg:grid-cols-2" />
+          </section>
+        )}
+
+        {helpful.length > 0 && (
+          <section aria-labelledby="products-title" className="min-w-0 lg:col-span-2">
+            <h2 id="products-title" className="mb-2 text-xl text-navy-deep sm:text-2xl">
+              {copy.card.products}
+            </h2>
+            <p className="mb-5 text-muted">{copy.card.productsText}</p>
+            <ProductGrid products={helpful} headingLevel={3} />
           </section>
         )}
       </Container>

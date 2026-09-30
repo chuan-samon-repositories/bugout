@@ -4,9 +4,10 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
 import { getContainer } from "@/infrastructure/config";
 import { ACTION_CARDS } from "@/presentation/prepare/cards";
+import { cardBySlug } from "@/presentation/prepare/deck";
 
 vi.mock("next/navigation", () => ({
-  usePathname: () => "/why-prepare/hemorragia-grave",
+  usePathname: () => "/preparate/hemorragia-grave",
   useSearchParams: () => new URLSearchParams(),
   notFound: () => {
     throw new Error("NEXT_NOT_FOUND");
@@ -16,7 +17,22 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
+vi.mock("@/presentation/context/CartContext", () => ({
+  useCart: () => ({ cart: null, addItem: vi.fn(async () => true), pending: false }),
+}));
+
+vi.mock("@/presentation/context/AnalyticsContext", () => ({
+  useAnalytics: () => ({ track: vi.fn(), captureException: vi.fn(), setConsent: vi.fn() }),
+}));
+
 import ActionCardPage, { generateMetadata, generateStaticParams } from "./page";
+
+/** The page's JSON-LD objects. */
+const jsonLd = () =>
+  [...document.querySelectorAll('script[type="application/ld+json"]')].flatMap((script) => {
+    const data = JSON.parse(script.textContent ?? "null");
+    return Array.isArray(data) ? data : [data];
+  });
 
 const renderCard = async (slug: string) => render(await ActionCardPage({ params: Promise.resolve({ slug }) }));
 
@@ -24,7 +40,7 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-describe("/why-prepare/[slug]", () => {
+describe("/preparate/[slug]", () => {
   it("shows when to call 112, the numbered steps, what not to do and why", async () => {
     await renderCard("hemorragia-grave");
     expect(screen.getByRole("heading", { level: 1, name: "Hemorragia grave" })).toBeInTheDocument();
@@ -41,7 +57,7 @@ describe("/why-prepare/[slug]", () => {
   it("links the cards its steps point to", async () => {
     await renderCard("primeros-15-minutos");
     const steps = screen.getByRole("region", { name: "Qué hacer" });
-    expect(within(steps).getByRole("link", { name: /¿Me quedo o me voy\?/ })).toHaveAttribute("href", "/why-prepare/confinarse-o-evacuar");
+    expect(within(steps).getByRole("link", { name: /¿Me quedo o me voy\?/ })).toHaveAttribute("href", "/preparate/confinarse-o-evacuar");
     const seeAlso = screen.getByRole("region", { name: "Ver también" });
     expect(within(seeAlso).getAllByRole("link").length).toBeGreaterThan(0);
   });
@@ -70,7 +86,7 @@ describe("/why-prepare/[slug]", () => {
     const aside = screen.getByRole("complementary", { name: "Tarjeta PA-04, Primeros auxilios" });
     expect(within(aside).getByRole("link", { name: "Kit 24h" })).toHaveAttribute("href", "/products/kit-24h");
     expect(within(aside).getByRole("link", { name: "Kit 72h" })).toHaveAttribute("href", "/products/kit-72h");
-    expect(within(aside).getByRole("link", { name: "Primeros auxilios" })).toHaveAttribute("href", "/why-prepare#primeros-auxilios");
+    expect(within(aside).getByRole("link", { name: "Primeros auxilios" })).toHaveAttribute("href", "/preparate#primeros-auxilios");
   });
 
   it("names only the Kit 72h for a card outside the essential deck, and no kit for an extra", async () => {
@@ -109,12 +125,56 @@ describe("/why-prepare/[slug]", () => {
     expect(document.body).not.toHaveTextContent(/Revisión sanitaria/);
   });
 
+  it("answers the questions people search for, after the context", async () => {
+    await renderCard("apagon-prolongado");
+    const faq = screen.getByRole("region", { name: "Preguntas frecuentes" });
+    expect(within(faq).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent)).toEqual([
+      "¿Cuánto aguanta la comida de la nevera sin luz?",
+      "¿Puedo usar un generador o una barbacoa dentro de casa?",
+      "¿Llamo al 112 para saber qué pasa?",
+    ]);
+    expect(faq).toHaveTextContent(/por debajo de 5 °C, según AESAN/);
+    const headings = screen.getAllByRole("heading", { level: 2 }).map((heading) => heading.textContent);
+    expect(headings.indexOf("Preguntas frecuentes")).toBeGreaterThan(headings.indexOf("Por qué"));
+  });
+
+  it("suggests catalog products for the situation, and none when the card has no category", async () => {
+    const { unmount } = await renderCard("luz-radio-y-bateria");
+    const products = screen.getByRole("region", { name: "Material útil" });
+    const names = within(products).getAllByRole("heading", { level: 3 }).map((heading) => heading.textContent);
+    expect(names).toEqual(expect.arrayContaining(["Radio solar", "Frontal"]));
+    unmount();
+
+    await renderCard("llamar-al-112");
+    expect(screen.queryByRole("region", { name: "Material útil" })).toBeNull();
+  });
+
+  it("describes the page as an article by the shop that cites its official sources", async () => {
+    await renderCard("fuga-de-gas");
+    const article = jsonLd().find((data) => data["@type"] === "Article");
+    expect(article).toMatchObject({
+      headline: "Fuga de gas en casa: qué hacer",
+      inLanguage: "es-ES",
+      datePublished: "2026-09-30",
+      dateModified: "2026-09-30",
+      author: { "@type": "Organization", name: "Bugout" },
+    });
+    expect(article.url).toMatch(/\/preparate\/fuga-de-gas$/);
+    expect(article.image).toMatch(/\/preparate\/fuga-de-gas\/share-image$/);
+    expect(article.citation.map((citation: { url: string }) => citation.url)).toEqual([
+      "https://www.comunidad.madrid/energia/gas-siempre-seguridad",
+      expect.stringContaining("seguretat_a_la_llar"),
+    ]);
+    expect(JSON.stringify(jsonLd())).not.toMatch(/reviewedBy|MedicalWebPage/);
+    expect(screen.getByRole("link", { name: "Quiénes somos" })).toHaveAttribute("href", "/about");
+  });
+
   it("redirects a printed card code to its page and 404s anything else", async () => {
     await expect(ActionCardPage({ params: Promise.resolve({ slug: "pa-04" }) })).rejects.toThrow(
-      "NEXT_REDIRECT /why-prepare/hemorragia-grave",
+      "NEXT_REDIRECT /preparate/hemorragia-grave",
     );
     await expect(ActionCardPage({ params: Promise.resolve({ slug: "PM-01" }) })).rejects.toThrow(
-      "NEXT_REDIRECT /why-prepare/primeros-15-minutos",
+      "NEXT_REDIRECT /preparate/primeros-15-minutos",
     );
     await expect(ActionCardPage({ params: Promise.resolve({ slug: "no-existe" }) })).rejects.toThrow("NEXT_NOT_FOUND");
   });
@@ -123,8 +183,14 @@ describe("/why-prepare/[slug]", () => {
     expect(generateStaticParams()).toEqual(ACTION_CARDS.map((card) => ({ slug: card.slug })));
     const metadata = await generateMetadata({ params: Promise.resolve({ slug: "apagon-prolongado" }) });
     expect(metadata.title).toBe("Qué hacer en un apagón largo");
-    expect(metadata.description).toBe("Qué hacer cuando se va la luz durante horas.");
-    expect(metadata.alternates?.canonical).toBe("/why-prepare/apagon-prolongado");
+    expect(metadata.description).toBe(cardBySlug("apagon-prolongado")?.description);
+    expect(metadata.description).toMatch(/^Qué hacer cuando se va la luz durante horas: comprueba el diferencial/);
+    expect(metadata.alternates?.canonical).toBe("/preparate/apagon-prolongado");
+    expect(metadata.title).toBe("Qué hacer en un apagón largo");
+    expect(metadata.openGraph).toMatchObject({ type: "article", modifiedTime: "2026-09-30" });
+    expect(metadata.openGraph?.images).toEqual([
+      expect.objectContaining({ url: "/preparate/apagon-prolongado/share-image", width: 1200, height: 630 }),
+    ]);
     expect(await generateMetadata({ params: Promise.resolve({ slug: "no-existe" }) })).toEqual({});
   });
 });

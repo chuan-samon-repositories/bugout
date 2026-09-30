@@ -11,12 +11,13 @@ import { sourceLinkClasses } from "@/presentation/components/prepare/SourceList"
 import { ArrowRightIcon, ButtonLink, Container, PageHeader, SectionHeading } from "@/presentation/components/ui";
 import { siteConfig } from "@/presentation/config/site";
 import { messages } from "@/presentation/i18n";
+import { ACTION_CARDS } from "@/presentation/prepare/cards";
 import { cardByCode, citedOrganisations, kitDecks } from "@/presentation/prepare/deck";
 import { SOURCES } from "@/presentation/prepare/sources";
 import { prepareAnchors, routes } from "@/presentation/routes";
 import { JsonLd } from "@/presentation/seo/JsonLd";
 import { pageMetadata } from "@/presentation/seo/pageMetadata";
-import { breadcrumbJsonLd } from "@/presentation/seo/structuredData";
+import { breadcrumbJsonLd, collectionPageJsonLd } from "@/presentation/seo/structuredData";
 
 const copy = messages.content.whyPrepare;
 
@@ -25,7 +26,7 @@ export const revalidate = 300;
 export const metadata: Metadata = pageMetadata({
   title: copy.metaTitle,
   description: copy.metaDescription,
-  path: routes.whyPrepare,
+  path: routes.prepare,
 });
 
 const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label: copy.title }];
@@ -33,15 +34,28 @@ const breadcrumbs = [{ label: messages.common.home, href: routes.home }, { label
 const sectionClass = "scroll-mt-28";
 
 export default async function WhyPreparePage() {
-  const products = await loadCatalogOrEmpty("the why-prepare page");
+  const products = await loadCatalogOrEmpty("the Prepárate page");
   const [first, second] = navData(products).kits;
   const decks = kitDecks(products);
   const firstMinutes = cardByCode("PM-01");
 
   return (
     <>
-      <JsonLd data={breadcrumbJsonLd(breadcrumbs, routes.whyPrepare, siteConfig.url)} />
-      <PageHeader title={copy.title} description={copy.description} breadcrumbs={breadcrumbs} />
+      <JsonLd
+        data={[
+          breadcrumbJsonLd(breadcrumbs, routes.prepare, siteConfig.url),
+          collectionPageJsonLd(
+            {
+              name: copy.heading,
+              description: copy.metaDescription,
+              path: routes.prepare,
+              items: ACTION_CARDS.map((card) => ({ name: card.title, path: routes.actionCard(card.slug) })),
+            },
+            siteConfig.url,
+          ),
+        ]}
+      />
+      <PageHeader title={copy.heading} description={copy.description} breadcrumbs={breadcrumbs} />
       <Container className="flex flex-col gap-20 pt-14 pb-24 sm:gap-24 sm:pt-16">
         <section id={prepareAnchors.startHere} aria-labelledby="start-here-title" className={sectionClass}>
           <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">

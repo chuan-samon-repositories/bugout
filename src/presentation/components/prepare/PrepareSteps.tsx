@@ -49,11 +49,17 @@ export function PrepareSteps() {
                   {source.organisation}
                 </ExternalLink>
               </p>
-              {"kitsLink" in step && (
-                <Link href={routes.howToChoose} className={cn(textLinkClasses, "mt-3")}>
-                  {step.kitsLink}
-                  <ArrowRightIcon className="size-4" />
-                </Link>
+              {"checklistLink" in step && (
+                <p className="mt-3 flex flex-wrap gap-x-5 gap-y-2">
+                  <Link href={routes.kitChecklist} className={textLinkClasses}>
+                    {step.checklistLink}
+                    <ArrowRightIcon className="size-4" />
+                  </Link>
+                  <Link href={routes.howToChoose} className={textLinkClasses}>
+                    {step.kitsLink}
+                    <ArrowRightIcon className="size-4" />
+                  </Link>
+                </p>
               )}
             </div>
           </li>

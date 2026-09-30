@@ -6,7 +6,7 @@ import { getContainer } from "@/infrastructure/config";
 import { ConsentBanner } from "@/presentation/components/consent/ConsentBanner";
 import { Footer } from "@/presentation/components/layout/Footer";
 import { Header } from "@/presentation/components/layout/Header";
-import { navData, type NavData } from "@/presentation/components/layout/navigation";
+import { EMPTY_NAV_DATA, navData, type NavData } from "@/presentation/components/layout/navigation";
 import { siteConfig } from "@/presentation/config/site";
 import { HTML_LANG, messages } from "@/presentation/i18n";
 import { defaultShareImage, OG_LOCALE } from "@/presentation/seo/pageMetadata";
@@ -43,16 +43,16 @@ export const metadata: Metadata = {
 };
 
 /**
- * Kits for the header, mobile menu and footer, read from the catalog once per render
+ * Kits and categories for the header, mobile menu and footer, read from the catalog once per render
  * (React cache dedupes calls within a request). A catalog failure must not break every page,
- * so it falls back to no kits and the navigation keeps only its fixed links.
+ * so it falls back to no kits or categories and the navigation keeps only its fixed links.
  */
 const loadNavData = cache(async (): Promise<NavData> => {
   try {
     return navData(await getContainer().getGetProductsUseCase().execute());
   } catch (error) {
     console.error("Could not load the kits for the navigation", error);
-    return { kits: [], flagshipSlug: null };
+    return EMPTY_NAV_DATA;
   }
 });
 

@@ -30,7 +30,7 @@ export function pickFlagship(products: readonly Product[]): Product | null {
  * The kits for the hero's calls to action: the flagship kit (the one "Compra ahora" opens, the Kit 72h) first, so
  * it gets the primary button, then the others in catalog order.
  */
-export function heroKits({ kits, flagshipSlug }: NavData): NavKit[] {
+export function heroKits({ kits, flagshipSlug }: Pick<NavData, "kits" | "flagshipSlug">): NavKit[] {
   const flagship = kits.find((kit) => kit.slug === flagshipSlug);
   return flagship ? [flagship, ...kits.filter((kit) => kit !== flagship)] : [...kits];
 }

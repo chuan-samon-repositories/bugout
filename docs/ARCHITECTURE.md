@@ -119,7 +119,7 @@ Pure helpers:
     - The banner reserves its height with an in-flow spacer.
 - **Server first:** pages are Server Components that load data via the container; only interactive parts are Client Components. Entities can't cross into Client Components, so pages pass a plain `ProductSnapshot` (`toProductSnapshot`) and the client rebuilds the entity with `fromProductSnapshot` (`presentation/components/catalog/productSnapshot.ts`). Other server-side behaviour:
   - The home page, product pages, `/how-to-choose`, `/why-prepare`, `/faq` and `sitemap.ts` export `revalidate = 300`.
-  - The root layout loads the catalog once and passes `navData(products)` (the kits and the flagship kit, the one with the most contents) to the header, mobile menu and footer. The home hero puts the flagship kit's button first (`heroKits`).
+  - The root layout loads the catalog once and passes `navData(products)` (the kits, their category, the loose products' categories and the flagship kit, the one with the most contents) to the header, mobile menu and footer. The header shows Kits, Productos and Prepárate (`primarySections`), with the kits and the categories in hover dropdowns (`PrimaryNav`). The home hero puts the flagship kit's button first (`heroKits`).
   - `/products/[slug]` renders kits with `KitGallery`, `PurchasePanel` (variant chips, price, stock, quantity, spec table) and the contents list; loose products share the frame and link the kits that include them.
   - `/products` parses filters with `parseCatalogSearchParams(input, { categories })`. Unknown categories are ignored, and the page is `noindex` for them. The catalog view syncs filters back to the URL with `window.history.replaceState` (no navigation).
   - The order confirmation view sets the tab title.

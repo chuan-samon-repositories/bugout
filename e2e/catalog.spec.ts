@@ -162,11 +162,11 @@ test.describe('catalog', () => {
   test('the "Productos" navigation link opens the catalog and is marked current', async ({ page, isMobile }) => {
     await openPage(page, '/');
     const nav = await primaryNav(page, isMobile);
-    await nav.getByRole('link', { name: 'Productos' }).click();
+    await nav.getByRole('link', { name: 'Productos', exact: true }).click();
     await expect(page).toHaveURL('/products');
     await expect(page).toHaveTitle('Kits y equipo de emergencia · Bugout');
     const current = await primaryNav(page, isMobile);
-    await expect(current.getByRole('link', { name: 'Productos' })).toHaveAttribute('aria-current', 'page');
+    await expect(current.getByRole('link', { name: 'Productos', exact: true })).toHaveAttribute('aria-current', 'page');
   });
 
   test('an unknown category in the URL is ignored and never echoed into the page', async ({ page }) => {

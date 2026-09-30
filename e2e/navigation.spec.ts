@@ -1,9 +1,14 @@
 import type { Locator } from '@playwright/test';
 import { expect, test } from './support/fixtures';
-import { menuButton, mobileMenu, openPage, primaryNav } from './support/site';
+import { CATEGORY_COUNTS, menuButton, mobileMenu, openPage, primaryNav } from './support/site';
 
-// Kit links are derived from the catalog, so compare the set of labels, not their order.
-const NAV_LINKS = ['Cómo elegir', 'Kit 24h', 'Kit 72h', 'Kit Custom', 'Prepárate', 'Productos', 'Sobre nosotros'];
+const byLabel = (labels: string[]) => [...labels].sort((a, b) => a.localeCompare(b, 'es'));
+/** The header's only top-level links; the kits and categories sit in their dropdowns. */
+const TOP_LINKS = byLabel(['Kits', 'Productos', 'Prepárate']);
+const KIT_LINKS = byLabel(['Kit 24h', 'Kit 72h', 'Kit Custom']);
+const CATEGORY_LINKS = byLabel(Object.keys(CATEGORY_COUNTS).filter((label) => label !== 'Kits'));
+// The menu drawer lists each section's links under it. Kit links are derived from the catalog, so compare sets.
+const MENU_LINKS = byLabel([...TOP_LINKS, ...KIT_LINKS, ...CATEGORY_LINKS]);
 
 async function linkLabels(scope: Locator): Promise<string[]> {
   return (await scope.getByRole('link').allInnerTexts()).map((label) => label.trim()).sort((a, b) => a.localeCompare(b, 'es'));
@@ -28,16 +33,16 @@ test.describe('navigation', () => {
   });
 
   test('the primary navigation marks the current page', async ({ page, isMobile }) => {
-    await openPage(page, '/about');
+    await openPage(page, '/why-prepare');
     let nav = await primaryNav(page, isMobile);
-    await expect.poll(() => linkLabels(nav)).toEqual(NAV_LINKS);
-    await expect(nav.getByRole('link', { name: 'Sobre nosotros' })).toHaveAttribute('aria-current', 'page');
+    await expect.poll(() => linkLabels(nav)).toEqual(isMobile ? MENU_LINKS : TOP_LINKS);
+    await expect(nav.getByRole('link', { name: 'Prepárate' })).toHaveAttribute('aria-current', 'page');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
 
     await page.goto('/products/kit-72h');
     nav = await primaryNav(page, isMobile);
-    await expect(nav.getByRole('link', { name: 'Kit 72h' })).toHaveAttribute('aria-current', 'page');
-    await expect(nav.getByRole('link', { name: 'Productos' })).not.toHaveAttribute('aria-current', /.*/);
+    // On desktop the kit's link is in the closed Kits dropdown, so look it up by attribute.
+    await expect(nav.locator('a[aria-current="page"]')).toHaveText('Kit 72h');
     await expect(nav.locator('[aria-current]')).toHaveCount(1);
 
     await page.goto('/products?sort=price-asc');
@@ -51,6 +56,45 @@ test.describe('navigation', () => {
     await openPage(page, '/');
     await expect(page.getByRole('banner').getByRole('navigation', { name: 'Principal' })).toBeVisible();
     await expect(menuButton(page)).toBeHidden();
+  });
+
+  test('hovering Kits and Productos opens their dropdowns, and a category filters the catalog', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'The dropdowns are part of the desktop header');
+    await openPage(page, '/about');
+    const nav = page.getByRole('banner').getByRole('navigation', { name: 'Principal' });
+    await expect.poll(() => linkLabels(nav)).toEqual(TOP_LINKS);
+
+    await nav.getByRole('link', { name: 'Kits', exact: true }).hover();
+    const kits = nav.locator('li', { has: page.getByRole('link', { name: 'Kits', exact: true }) }).getByRole('list');
+    await expect(kits).toBeVisible();
+    await expect.poll(() => linkLabels(kits)).toEqual(KIT_LINKS);
+
+    await nav.getByRole('link', { name: 'Productos', exact: true }).hover();
+    await expect(kits).toBeHidden();
+    const categories = nav.locator('li', { has: page.getByRole('link', { name: 'Productos', exact: true }) }).getByRole('list');
+    await expect.poll(() => linkLabels(categories)).toEqual(CATEGORY_LINKS);
+
+    await categories.getByRole('link', { name: 'Herramientas' }).click();
+    await expect(page).toHaveURL('/products?category=herramientas');
+    await expect(page.getByRole('heading', { level: 1, name: 'Herramientas y equipo de supervivencia' })).toBeVisible();
+    await expect(categories).toBeHidden();
+    await expect(nav.locator('a[aria-current="page"]')).toHaveText('Herramientas');
+  });
+
+  test('the dropdowns open from the keyboard and close with Escape', async ({ page, isMobile }) => {
+    test.skip(isMobile, 'The dropdowns are part of the desktop header');
+    await openPage(page, '/about');
+    const nav = page.getByRole('banner').getByRole('navigation', { name: 'Principal' });
+    const button = nav.getByRole('button', { name: 'Submenú de Kits' });
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect(button).toHaveAttribute('aria-expanded', 'true');
+    await page.keyboard.press('Tab');
+    await expect(nav.getByRole('link', { name: 'Kit 24h' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(button).toHaveAttribute('aria-expanded', 'false');
+    await expect(button).toBeFocused();
+    await expect(nav.getByRole('link', { name: 'Kit 24h' })).toBeHidden();
   });
 
   test('the header never overlaps between 1024px and 1280px', async ({ page, isMobile }) => {
@@ -94,7 +138,7 @@ test.describe('navigation', () => {
     await expect(menu).toBeVisible();
     await expect(menu).toHaveAttribute('aria-modal', 'true');
     await expect(button).toHaveAttribute('aria-expanded', 'true');
-    await expect.poll(() => linkLabels(menu.getByRole('navigation', { name: 'Principal' }))).toEqual(NAV_LINKS);
+    await expect.poll(() => linkLabels(menu.getByRole('navigation', { name: 'Principal' }))).toEqual(MENU_LINKS);
     await expect(menu.getByRole('link', { name: 'Compra ahora' })).toHaveAttribute('href', '/products/kit-72h');
 
     await page.keyboard.press('Escape');
@@ -104,9 +148,9 @@ test.describe('navigation', () => {
 
     await button.click();
     await expect(menu).toBeVisible();
-    await menu.getByRole('link', { name: 'Sobre nosotros' }).click();
-    await expect(page).toHaveURL('/about');
-    await expect(page.getByRole('heading', { level: 1, name: 'Sobre nosotros' })).toBeVisible();
+    await menu.getByRole('link', { name: 'Prepárate' }).click();
+    await expect(page).toHaveURL('/why-prepare');
+    await expect(page.getByRole('heading', { level: 1, name: 'Por qué prepararse' })).toBeVisible();
     await expect(menu).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
 

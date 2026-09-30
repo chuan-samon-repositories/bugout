@@ -103,7 +103,8 @@ test.describe('kits', () => {
     await expect(page).toHaveURL(`/products/${KITS.kitCustom.slug}`);
     await expect(page.getByRole('heading', { level: 2, name: 'Monta tu kit' })).toBeVisible();
     await expect(page.getByRole('main').getByRole('group', { name: 'Número de personas' })).toHaveCount(0);
-    if (!isMobile) await expect(page.getByRole('banner').getByRole('link', { name: 'Kit Custom' })).toHaveAttribute('aria-current', 'page');
+    // The kit's header link is in the closed Kits dropdown, so look it up by attribute.
+    if (!isMobile) await expect(page.getByRole('banner').locator('a[aria-current="page"]')).toHaveText('Kit Custom');
   });
 
   test('the Kit Custom builder puts the backpack and the chosen products in the cart at once', async ({ page }) => {

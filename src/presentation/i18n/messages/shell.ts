@@ -16,8 +16,10 @@ export const shell = {
   logoLabel: 'Bugout, ir al inicio',
   nav: {
     primary: 'Principal',
+    kits: 'Kits',
     products: 'Productos',
-    howToChoose: 'Cómo elegir',
+    /** Name of the button that opens a header dropdown, e.g. "Submenú de Kits". */
+    submenu: (label: string) => `Submenú de ${label}`,
     about: 'Sobre nosotros',
     whyPrepare: 'Prepárate',
     contact: 'Contacto',

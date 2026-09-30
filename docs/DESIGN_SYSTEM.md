@@ -35,8 +35,8 @@ Plus `max-w-site` (1180px container), `rounded-kit` (28px), `shadow-card`, `shad
 
 | Prototype (`bug-out`) | React | Notes |
 |---|---|---|
-| `.nav`, `.nav.scrolled`, `.progress-bar` | `layout/Header.tsx`, `HeaderShell.tsx`, `BrandLogo.tsx` | `fixed`; transparent over the home hero until 40px of scroll (`data-transparent`), solid navy with blur elsewhere; `main` has `pt-(--header-height)`. The links show from `xl` (1280px): below that they crowd the logo and cart. Logo images are requested at their display size (`atWidth()` in `config/brand.ts`); only the mark is `priority` |
-| `.nav__burger` dropdown | `layout/MobileMenu.tsx` | Dark `Drawer` with the nav and "Compra ahora", below `xl` |
+| `.nav`, `.nav.scrolled`, `.progress-bar` | `layout/Header.tsx`, `HeaderShell.tsx`, `BrandLogo.tsx` | `fixed`; transparent over the home hero until 40px of scroll (`data-transparent`), solid navy with blur elsewhere; `main` has `pt-(--header-height)`. The links (Kits, Productos, Prepárate; `PrimaryNav`) show from `xl` (1280px): below that they crowd the logo and cart. Kits and Productos open a navy dropdown (`bg-navy-darker`, `rounded-2xl`) on hover or with their chevron button, listing the kits and the product categories. Logo images are requested at their display size (`atWidth()` in `config/brand.ts`); only the mark is `priority` |
+| `.nav__burger` dropdown | `layout/MobileMenu.tsx` | Dark `Drawer` with the nav (each section's kits or categories listed under it) and "Compra ahora", below `xl` |
 | `.lang-switch` | — | Not ported: the site is Spanish only |
 | `.hero`, `.hero__frog`, `.hero__scroll` | `home/HomeHero.tsx`, `ui/FrogMascot.tsx` | Slides under the header with `-mt-(--header-height)`; the frog renders only when `isMascotEnabled()` |
 | `.kitcard-grid` / `.kitcard` | `kits/KitCard.tsx` (`KitCard`, `KitCardGrid`) | Label from `details.kit.label`, "Desde" from `priceRange()` |

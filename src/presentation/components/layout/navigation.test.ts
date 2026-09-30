@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildProduct } from "@/domain/testing/buildProduct";
-import { isCurrentLink, MAX_NAV_KITS, navData, primaryLinks, shopLinks } from "./navigation";
+import { EMPTY_NAV_DATA, isCurrentLink, MAX_NAV_KITS, navData, primarySections, shopLinks } from "./navigation";
 
 describe("isCurrentLink", () => {
   const search = (query: string) => new URLSearchParams(query);
@@ -33,13 +33,15 @@ const details = (contents: number, kit = true) => ({
 
 describe("navData", () => {
   const catalog = [
-    buildProduct({ id: "kit-24h", name: "Kit 24h", details: details(9) }),
-    buildProduct({ id: "manta", name: "Manta", details: details(0, false) }),
-    buildProduct({ id: "kit-72h", name: "Kit 72h", details: details(18) }),
-    buildProduct({ id: "kit-custom", name: "Kit Custom", details: details(1) }),
+    buildProduct({ id: "kit-24h", name: "Kit 24h", category: "kits", details: details(9) }),
+    buildProduct({ id: "manta", name: "Manta", category: "refugio-y-abrigo", details: details(0, false) }),
+    buildProduct({ id: "kit-72h", name: "Kit 72h", category: "kits", details: details(18) }),
+    buildProduct({ id: "linterna", category: "luz-y-energia" }),
+    buildProduct({ id: "saco", category: "refugio-y-abrigo" }),
+    buildProduct({ id: "kit-custom", name: "Kit Custom", category: "kits", details: details(1) }),
   ];
 
-  it("lists the kits in catalog order and picks the most complete one as flagship", () => {
+  it("lists the kits in catalog order, picks the most complete one as flagship and lists the loose products' categories", () => {
     expect(navData(catalog)).toEqual({
       kits: [
         { slug: "kit-24h", label: "Kit 24h" },
@@ -47,7 +49,17 @@ describe("navData", () => {
         { slug: "kit-custom", label: "Kit Custom" },
       ],
       flagshipSlug: "kit-72h",
+      kitsCategory: "kits",
+      categories: [
+        { slug: "refugio-y-abrigo", label: "Refugio y abrigo" },
+        { slug: "luz-y-energia", label: "Luz y energía" },
+      ],
     });
+  });
+
+  it("has no kits category when the kits are in different categories", () => {
+    const mixed = [buildProduct({ id: "a", category: "kits", details: details(1) }), buildProduct({ id: "b", category: "agua", details: details(1) })];
+    expect(navData(mixed).kitsCategory).toBeNull();
   });
 
   it("prefers a ready-made kit as flagship over a build-your-own one, and falls back to it", () => {
@@ -62,29 +74,55 @@ describe("navData", () => {
   it(`caps the kits at ${MAX_NAV_KITS} and copes with a catalog without kits`, () => {
     const many = Array.from({ length: 6 }, (_, index) => buildProduct({ id: `kit-${index}`, details: details(1) }));
     expect(navData(many).kits).toHaveLength(MAX_NAV_KITS);
-    expect(navData([buildProduct()])).toEqual({ kits: [], flagshipSlug: null });
+    expect(navData([buildProduct({ category: "agua" })])).toEqual({
+      kits: [],
+      flagshipSlug: null,
+      kitsCategory: null,
+      categories: [{ slug: "agua", label: "Agua" }],
+    });
   });
 });
 
-describe("shopLinks and primaryLinks", () => {
+describe("shopLinks and primarySections", () => {
   const kits = [
     { slug: "kit-24h", label: "Kit 24h" },
     { slug: "kit-72h", label: "Kit 72h" },
   ];
 
-  it("links every kit, then the catalog and content pages", () => {
-    expect(primaryLinks(kits)).toEqual([
-      { href: "/products/kit-24h", label: "Kit 24h" },
-      { href: "/products/kit-72h", label: "Kit 72h" },
-      { href: "/products", label: "Productos" },
-      { href: "/how-to-choose", label: "Cómo elegir" },
-      { href: "/about", label: "Sobre nosotros" },
-      { href: "/why-prepare", label: "Prepárate" },
+  it("offers Kits, Productos and Prepárate, with the kits and the categories in their dropdowns", () => {
+    const categories = [
+      { slug: "agua", label: "Agua" },
+      { slug: "herramientas", label: "Herramientas" },
+    ];
+    expect(primarySections({ kits, kitsCategory: "kits", categories })).toEqual([
+      {
+        href: "/products?category=kits",
+        label: "Kits",
+        children: [
+          { href: "/products/kit-24h", label: "Kit 24h" },
+          { href: "/products/kit-72h", label: "Kit 72h" },
+        ],
+      },
+      {
+        href: "/products",
+        label: "Productos",
+        children: [
+          { href: "/products?category=agua", label: "Agua" },
+          { href: "/products?category=herramientas", label: "Herramientas" },
+        ],
+      },
+      { href: "/why-prepare", label: "Prepárate", children: [] },
     ]);
     expect(shopLinks(kits).map((link) => link.label)).toEqual(["Kit 24h", "Kit 72h", "Productos sueltos", "Cómo elegir tu kit"]);
   });
 
-  it("keeps the fixed links when the catalog could not be loaded", () => {
-    expect(primaryLinks([]).map((link) => link.href)).toEqual(["/products", "/how-to-choose", "/about", "/why-prepare"]);
+  it("keeps the three sections, without dropdowns, when the catalog could not be loaded", () => {
+    const sections = primarySections(EMPTY_NAV_DATA);
+    expect(sections.map((section) => [section.label, section.href])).toEqual([
+      ["Kits", "/products"],
+      ["Productos", "/products"],
+      ["Prepárate", "/why-prepare"],
+    ]);
+    expect(sections.every((section) => section.children.length === 0)).toBe(true);
   });
 });

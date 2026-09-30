@@ -10,6 +10,11 @@ describe("isCurrentLink", () => {
     expect(isCurrentLink("/about", "/contact", null)).toBe(false);
   });
 
+  it("never marks a link to a section of a page as current", () => {
+    expect(isCurrentLink("/why-prepare#tarjetas", "/why-prepare", null)).toBe(false);
+    expect(isCurrentLink("/why-prepare", "/why-prepare", null)).toBe(true);
+  });
+
   it("matches catalog links by category and sale filters, ignoring sorting and prices", () => {
     expect(isCurrentLink("/products", "/products", search("sort=price-asc&min=10"))).toBe(true);
     expect(isCurrentLink("/products", "/products", search("category=herramientas"))).toBe(false);
@@ -114,6 +119,11 @@ describe("shopLinks and primarySections", () => {
       { href: "/why-prepare", label: "Prepárate", children: [] },
     ]);
     expect(shopLinks(kits).map((link) => link.label)).toEqual(["Kit 24h", "Kit 72h", "Productos sueltos", "Cómo elegir tu kit"]);
+  });
+
+  it("gives Prepárate the dropdown links it is passed", () => {
+    const prepare = [{ href: "/why-prepare#tarjetas", label: "Tarjetas de acción" }];
+    expect(primarySections(EMPTY_NAV_DATA, prepare)[2]).toEqual({ href: "/why-prepare", label: "Prepárate", children: prepare });
   });
 
   it("keeps the three sections, without dropdowns, when the catalog could not be loaded", () => {

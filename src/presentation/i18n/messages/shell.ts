@@ -22,6 +22,11 @@ export const shell = {
     submenu: (label: string) => `Submenú de ${label}`,
     about: 'Sobre nosotros',
     whyPrepare: 'Prepárate',
+    /** "Prepárate" dropdown links to the page's sections. */
+    prepareSteps: 'Cómo prepararte',
+    prepareCards: 'Tarjetas de acción',
+    /** Not "Primeros auxilios": that is also a product category in the Productos dropdown. */
+    prepareFirstAid: 'Guía de primeros auxilios',
     contact: 'Contacto',
     /** Header call to action, linking to the flagship kit. */
     cta: 'Compra ahora',
@@ -48,7 +53,7 @@ export const shell = {
     },
     looseProducts: 'Productos sueltos',
     howToChoose: 'Cómo elegir tu kit',
-    whyPrepare: 'Por qué prepararse',
+    whyPrepare: 'Prepárate',
     faq: 'Preguntas frecuentes',
     shippingReturns: 'Envíos y devoluciones',
     privacy: 'Privacidad',

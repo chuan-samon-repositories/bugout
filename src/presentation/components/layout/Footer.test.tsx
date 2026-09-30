@@ -76,7 +76,7 @@ describe("Footer", () => {
     for (const [name, href] of [
       ["Preguntas frecuentes", "/faq"],
       ["Envíos y devoluciones", "/shipping-returns"],
-      ["Por qué prepararse", "/why-prepare"],
+      ["Prepárate", "/why-prepare"],
       ["Contacto", "/contact"],
       ["Condiciones de venta", "/terms"],
     ]) {

@@ -7,6 +7,7 @@ import { CartButton } from "./CartButton";
 import { HeaderShell } from "./HeaderShell";
 import { MobileMenu } from "./MobileMenu";
 import { primarySections, type NavData } from "./navigation";
+import { prepareLinks } from "./prepareNav";
 import { PrimaryNav } from "./PrimaryNav";
 
 export interface HeaderProps {
@@ -15,7 +16,7 @@ export interface HeaderProps {
 }
 
 export function Header({ nav }: HeaderProps) {
-  const sections = primarySections(nav);
+  const sections = primarySections(nav, prepareLinks());
   const ctaHref = nav.flagshipSlug ? routes.product(nav.flagshipSlug) : routes.products;
   return (
     <HeaderShell>

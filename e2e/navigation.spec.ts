@@ -8,7 +8,8 @@ const TOP_LINKS = byLabel(['Kits', 'Productos', 'Prepárate']);
 const KIT_LINKS = byLabel(['Kit 24h', 'Kit 72h', 'Kit Custom']);
 const CATEGORY_LINKS = byLabel(Object.keys(CATEGORY_COUNTS).filter((label) => label !== 'Kits'));
 // The menu drawer lists each section's links under it. Kit links are derived from the catalog, so compare sets.
-const MENU_LINKS = byLabel([...TOP_LINKS, ...KIT_LINKS, ...CATEGORY_LINKS]);
+const PREPARE_LINKS = byLabel(['Primeros 15 minutos', 'Cómo prepararte', 'Tarjetas de acción', 'Guía de primeros auxilios']);
+const MENU_LINKS = byLabel([...TOP_LINKS, ...KIT_LINKS, ...CATEGORY_LINKS, ...PREPARE_LINKS]);
 
 async function linkLabels(scope: Locator): Promise<string[]> {
   return (await scope.getByRole('link').allInnerTexts()).map((label) => label.trim()).sort((a, b) => a.localeCompare(b, 'es'));
@@ -150,7 +151,7 @@ test.describe('navigation', () => {
     await expect(menu).toBeVisible();
     await menu.getByRole('link', { name: 'Prepárate' }).click();
     await expect(page).toHaveURL('/why-prepare');
-    await expect(page.getByRole('heading', { level: 1, name: 'Por qué prepararse' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Prepárate' })).toBeVisible();
     await expect(menu).toBeHidden();
     await expect(button).toHaveAttribute('aria-expanded', 'false');
 

@@ -146,13 +146,28 @@ describe("Header", () => {
     expect(button).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("has no dropdown for Prepárate", () => {
+  it("opens the Prepárate dropdown with the first-minutes card and the page's sections", async () => {
+    navigation.pathname = "/why-prepare";
+    const user = userEvent.setup();
     renderHeader();
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(within(nav).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
       "Submenú de Kits",
       "Submenú de Productos",
+      "Submenú de Prepárate",
     ]);
+
+    await user.hover(within(nav).getByRole("link", { name: "Prepárate" }));
+    const links = within(nav).getAllByRole("link").map((link) => [link.textContent, link.getAttribute("href")]);
+    expect(links.slice(links.findIndex(([text]) => text === "Prepárate"))).toEqual([
+      ["Prepárate", "/why-prepare"],
+      ["Primeros 15 minutos", "/why-prepare/primeros-15-minutos"],
+      ["Cómo prepararte", "/why-prepare#como-prepararte"],
+      ["Tarjetas de acción", "/why-prepare#tarjetas"],
+      ["Guía de primeros auxilios", "/why-prepare#primeros-auxilios"],
+    ]);
+    // Links to the page's own sections are never the current page: only one link is.
+    expect(within(nav).getAllByRole("link").filter((link) => link.hasAttribute("aria-current"))).toHaveLength(1);
   });
 
   it("links the call to action to the flagship kit, or to the catalog without kits", () => {
@@ -164,7 +179,10 @@ describe("Header", () => {
     expect(screen.getByRole("link", { name: "Compra ahora" })).toHaveAttribute("href", "/products");
     const nav = screen.getByRole("navigation", { name: "Principal" });
     expect(within(nav).getAllByRole("link").map((link) => link.textContent)).toEqual(["Kits", "Productos", "Prepárate"]);
-    expect(within(nav).queryByRole("button")).toBeNull();
+    // Without the catalog, only Prepárate (which does not depend on it) keeps its dropdown.
+    expect(within(nav).getAllByRole("button").map((button) => button.getAttribute("aria-label"))).toEqual([
+      "Submenú de Prepárate",
+    ]);
   });
 
   it("is transparent over the home hero until the visitor scrolls, and solid elsewhere", () => {
@@ -226,6 +244,10 @@ describe("Header", () => {
       "Agua",
       "Herramientas",
       "Prepárate",
+      "Primeros 15 minutos",
+      "Cómo prepararte",
+      "Tarjetas de acción",
+      "Guía de primeros auxilios",
     ]);
 
     const preventNavigation = (event: MouseEvent) => event.preventDefault();

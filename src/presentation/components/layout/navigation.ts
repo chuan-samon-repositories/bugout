@@ -76,9 +76,14 @@ const kitLinks = (kits: readonly NavKit[]): NavLink[] =>
 
 /**
  * Header and mobile menu: "Kits" (the kits category, with every kit in its dropdown),
- * "Productos" (the catalog, with a link per category filtering it) and "Prepárate".
+ * "Productos" (the catalog, with a link per category filtering it) and "Prepárate" (the first-minutes card
+ * and the Prepárate page's sections).
  */
-export function primarySections(data: Pick<NavData, "kits" | "kitsCategory" | "categories">): NavSection[] {
+export function primarySections(
+  data: Pick<NavData, "kits" | "kitsCategory" | "categories">,
+  /** The "Prepárate" dropdown (`prepareLinks()`, kept out of this module so the cards never reach client code). */
+  prepare: readonly NavLink[] = [],
+): NavSection[] {
   return [
     {
       href: data.kitsCategory ? catalogUrl({ category: data.kitsCategory }) : routes.products,
@@ -90,7 +95,7 @@ export function primarySections(data: Pick<NavData, "kits" | "kitsCategory" | "c
       label: nav.products,
       children: data.categories.map((category) => ({ href: catalogUrl({ category: category.slug }), label: category.label })),
     },
-    { href: routes.whyPrepare, label: nav.whyPrepare, children: [] },
+    { href: routes.whyPrepare, label: nav.whyPrepare, children: [...prepare] },
   ];
 }
 
@@ -112,7 +117,8 @@ const NAV_SCOPED_PARAMS = [catalogParams.category, catalogParams.onSale];
  */
 export function isCurrentLink(href: string, pathname: string, search: Pick<URLSearchParams, "get"> | null): boolean {
   const target = new URL(href, "http://localhost");
-  if (target.pathname !== pathname) return false;
+  // A link to a section of a page (`/why-prepare#tarjetas`) is never the current page: the page's own link is.
+  if (target.hash || target.pathname !== pathname) return false;
   if (target.pathname !== routes.products) return true;
   if (!search) return false;
   return NAV_SCOPED_PARAMS.every((key) => target.searchParams.get(key) === search.get(key));

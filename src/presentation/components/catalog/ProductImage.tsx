@@ -14,9 +14,8 @@ interface ProductImageProps {
 }
 
 /**
- * Square product picture that fills its (relative) parent. Catalog photos are
- * shot on the brand navy, so the placeholder for products without photos is
- * navy too, rather than an unrelated stock image.
+ * Square product picture that fills its (relative) parent. The placeholder for
+ * products without photos is the brand navy, rather than an unrelated stock image.
  */
 export function ProductImage({ product, index = 0, sizes, priority = false, className }: ProductImageProps) {
   const image = product.images[index];
